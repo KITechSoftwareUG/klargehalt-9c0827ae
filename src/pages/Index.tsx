@@ -1,13 +1,37 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Helmet } from "react-helmet-async";
+import Header from "@/components/Header";
+import HeroSection from "@/components/HeroSection";
+import FeaturesSection from "@/components/FeaturesSection";
+import SecuritySection from "@/components/SecuritySection";
+import PricingSection from "@/components/PricingSection";
+import ContactSection from "@/components/ContactSection";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <>
+      <Helmet>
+        <title>EntgeltGuard - EU-Entgelttransparenz rechtssicher umsetzen</title>
+        <meta 
+          name="description" 
+          content="B2B-Compliance-SaaS für die EU-Entgelttransparenzrichtlinie. Schützen Sie Ihr Unternehmen vor Klagen, Bußgeldern und Chaos mit unserer DSGVO-konformen Lösung." 
+        />
+        <meta name="keywords" content="Entgelttransparenz, EU-Richtlinie, Compliance, DSGVO, Gehaltsdaten, B2B SaaS, Pay Transparency" />
+        <link rel="canonical" href="https://entgeltguard.de" />
+      </Helmet>
+      
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main>
+          <HeroSection />
+          <FeaturesSection />
+          <SecuritySection />
+          <PricingSection />
+          <ContactSection />
+        </main>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 
