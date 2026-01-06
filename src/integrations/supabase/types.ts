@@ -14,6 +14,257 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          company_id: string
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: Database["public"]["Enums"]["audit_entity"]
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          record_hash: string
+          user_agent: string | null
+          user_email: string
+          user_id: string
+          user_role: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          company_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: Database["public"]["Enums"]["audit_entity"]
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_hash?: string
+          user_agent?: string | null
+          user_email: string
+          user_id: string
+          user_role: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          company_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: Database["public"]["Enums"]["audit_entity"]
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_hash?: string
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string
+          user_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          address: string | null
+          country: string | null
+          created_at: string
+          employee_count_range: string | null
+          id: string
+          industry: string | null
+          is_active: boolean | null
+          legal_name: string | null
+          name: string
+          settings: Json | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          country?: string | null
+          created_at?: string
+          employee_count_range?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          legal_name?: string | null
+          name: string
+          settings?: Json | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          country?: string | null
+          created_at?: string
+          employee_count_range?: string | null
+          id?: string
+          industry?: string | null
+          is_active?: boolean | null
+          legal_name?: string | null
+          name?: string
+          settings?: Json | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          birth_date: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          department: string | null
+          email: string | null
+          employee_number: string | null
+          first_name: string
+          gender: string | null
+          hire_date: string | null
+          id: string
+          is_active: boolean | null
+          job_level: Database["public"]["Enums"]["job_level"] | null
+          job_profile_id: string | null
+          last_name: string
+          location: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          birth_date?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          department?: string | null
+          email?: string | null
+          employee_number?: string | null
+          first_name: string
+          gender?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_level?: Database["public"]["Enums"]["job_level"] | null
+          job_profile_id?: string | null
+          last_name: string
+          location?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          birth_date?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          department?: string | null
+          email?: string | null
+          employee_number?: string | null
+          first_name?: string
+          gender?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_level?: Database["public"]["Enums"]["job_level"] | null
+          job_profile_id?: string | null
+          last_name?: string
+          location?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_job_profile_id_fkey"
+            columns: ["job_profile_id"]
+            isOneToOne: false
+            referencedRelation: "job_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      info_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_id: string | null
+          id: string
+          notes: string | null
+          processed_by: string | null
+          request_date: string
+          request_type: string
+          requester_id: string
+          response_data: Json | null
+          response_date: string | null
+          status: Database["public"]["Enums"]["request_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          notes?: string | null
+          processed_by?: string | null
+          request_date?: string
+          request_type: string
+          requester_id: string
+          response_data?: Json | null
+          response_date?: string | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          notes?: string | null
+          processed_by?: string | null
+          request_date?: string
+          request_type?: string
+          requester_id?: string
+          response_data?: Json | null
+          response_date?: string | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "info_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "info_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_profiles: {
         Row: {
           company_id: string
@@ -64,7 +315,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pay_bands: {
         Row: {
@@ -121,6 +380,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_id: string | null
           company_name: string | null
           created_at: string
           email: string
@@ -130,6 +390,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           company_name?: string | null
           created_at?: string
           email: string
@@ -139,6 +400,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           company_name?: string | null
           created_at?: string
           email?: string
@@ -147,7 +409,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       salary_components: {
         Row: {
@@ -196,6 +466,56 @@ export type Database = {
           },
         ]
       }
+      salary_info: {
+        Row: {
+          base_salary_encrypted: string
+          created_at: string
+          created_by: string
+          currency: string | null
+          effective_date: string
+          employee_id: string
+          id: string
+          salary_components: Json | null
+          total_compensation_encrypted: string | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          base_salary_encrypted: string
+          created_at?: string
+          created_by: string
+          currency?: string | null
+          effective_date: string
+          employee_id: string
+          id?: string
+          salary_components?: Json | null
+          total_compensation_encrypted?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          base_salary_encrypted?: string
+          created_at?: string
+          created_by?: string
+          currency?: string | null
+          effective_date?: string
+          employee_id?: string
+          id?: string
+          salary_components?: Json | null
+          total_compensation_encrypted?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_info_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -222,6 +542,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_audit_log: {
+        Args: {
+          _action: Database["public"]["Enums"]["audit_action"]
+          _company_id: string
+          _entity_id?: string
+          _entity_name?: string
+          _entity_type: Database["public"]["Enums"]["audit_entity"]
+          _metadata?: Json
+          _new_values?: Json
+          _old_values?: Json
+        }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -236,8 +569,28 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "hr_manager" | "employee"
+      audit_action:
+        | "create"
+        | "update"
+        | "delete"
+        | "view"
+        | "export"
+        | "login"
+        | "logout"
+        | "request_info"
+      audit_entity:
+        | "job_profile"
+        | "pay_band"
+        | "salary_component"
+        | "employee"
+        | "salary_info"
+        | "info_request"
+        | "user"
+        | "company"
+        | "report"
       employment_type: "full_time" | "part_time" | "contract" | "intern"
       job_level: "junior" | "mid" | "senior" | "lead" | "principal" | "director"
+      request_status: "pending" | "processing" | "completed" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -366,8 +719,30 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "hr_manager", "employee"],
+      audit_action: [
+        "create",
+        "update",
+        "delete",
+        "view",
+        "export",
+        "login",
+        "logout",
+        "request_info",
+      ],
+      audit_entity: [
+        "job_profile",
+        "pay_band",
+        "salary_component",
+        "employee",
+        "salary_info",
+        "info_request",
+        "user",
+        "company",
+        "report",
+      ],
       employment_type: ["full_time", "part_time", "contract", "intern"],
       job_level: ["junior", "mid", "senior", "lead", "principal", "director"],
+      request_status: ["pending", "processing", "completed", "rejected"],
     },
   },
 } as const

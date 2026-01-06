@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompany } from '@/hooks/useCompany';
 import { Button } from '@/components/ui/button';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import JobProfilesView from '@/components/dashboard/JobProfilesView';
 import PayBandsView from '@/components/dashboard/PayBandsView';
+import EmployeesView from '@/components/dashboard/EmployeesView';
+import AuditLogsView from '@/components/dashboard/AuditLogsView';
+import CompanySetup from '@/components/dashboard/CompanySetup';
 import { 
   Shield, 
   Users, 
@@ -19,11 +23,12 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-type DashboardView = 'overview' | 'users' | 'job-profiles' | 'pay-bands' | 'audit' | 'reports' | 'settings' | 'my-data' | 'comparison' | 'requests';
+type DashboardView = 'overview' | 'users' | 'job-profiles' | 'pay-bands' | 'employees' | 'audit' | 'reports' | 'settings' | 'my-data' | 'comparison' | 'requests';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, role, loading, signOut } = useAuth();
+  const { company, loading: companyLoading, fetchCompany } = useCompany();
   const [activeView, setActiveView] = useState<DashboardView>('overview');
 
   useEffect(() => {
@@ -37,7 +42,11 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  if (loading) {
+  const handleCompanySetupComplete = () => {
+    fetchCompany();
+  };
+
+  if (loading || companyLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -47,6 +56,24 @@ const Dashboard = () => {
 
   if (!user) {
     return null;
+  }
+
+  // Show company setup if admin/hr_manager without company
+  if ((role === 'admin' || role === 'hr_manager') && !company) {
+    return (
+      <>
+        <Helmet>
+          <title>Firma einrichten - KlarGehalt</title>
+        </Helmet>
+        <div className="min-h-screen bg-background p-8">
+          <div className="flex items-center gap-2 mb-8">
+            <Shield className="h-8 w-8 text-primary" />
+            <span className="text-xl font-bold text-primary">KlarGehalt</span>
+          </div>
+          <CompanySetup onComplete={handleCompanySetupComplete} />
+        </div>
+      </>
+    );
   }
 
   const roleLabels: Record<string, string> = {
@@ -70,7 +97,7 @@ const Dashboard = () => {
     if (role === 'admin') {
       return [
         ...baseItems,
-        { label: 'Benutzerverwaltung', icon: Users, view: 'users' as const },
+        { label: 'Mitarbeiter', icon: Users, view: 'employees' as const },
         { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as const },
         { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as const },
         { label: 'Audit-Logs', icon: FileText, view: 'audit' as const },
@@ -80,7 +107,7 @@ const Dashboard = () => {
     } else if (role === 'hr_manager') {
       return [
         ...baseItems,
-        { label: 'Mitarbeiter', icon: Users, view: 'users' as const },
+        { label: 'Mitarbeiter', icon: Users, view: 'employees' as const },
         { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as const },
         { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as const },
         { label: 'Anfragen', icon: FileText, view: 'requests' as const },
@@ -103,6 +130,10 @@ const Dashboard = () => {
         return <JobProfilesView />;
       case 'pay-bands':
         return <PayBandsView />;
+      case 'employees':
+        return <EmployeesView />;
+      case 'audit':
+        return <AuditLogsView />;
       case 'overview':
       default:
         return <DashboardOverview onNavigate={(view) => setActiveView(view as DashboardView)} />;
@@ -115,8 +146,8 @@ const Dashboard = () => {
         return 'Job-Profile';
       case 'pay-bands':
         return 'Gehaltsbänder';
-      case 'users':
-        return 'Benutzerverwaltung';
+      case 'employees':
+        return 'Mitarbeiter';
       case 'audit':
         return 'Audit-Logs';
       case 'reports':
@@ -150,6 +181,14 @@ const Dashboard = () => {
               <Shield className="h-8 w-8 text-primary" />
               <span className="text-xl font-bold text-primary">KlarGehalt</span>
             </div>
+
+            {/* Company info */}
+            {company && (
+              <div className="px-4 py-3 border-b border-border">
+                <p className="text-xs text-muted-foreground">Firma</p>
+                <p className="font-medium text-foreground truncate">{company.name}</p>
+              </div>
+            )}
 
             {/* Navigation */}
             <nav className="flex-1 space-y-1 p-4">
