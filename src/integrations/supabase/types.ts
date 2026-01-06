@@ -325,6 +325,36 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          success: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       pay_bands: {
         Row: {
           created_at: string
@@ -516,6 +546,95 @@ export type Database = {
           },
         ]
       }
+      sso_configurations: {
+        Row: {
+          attribute_mapping: Json | null
+          certificate_encrypted: string | null
+          company_id: string
+          created_at: string
+          entity_id: string | null
+          id: string
+          is_enabled: boolean | null
+          metadata_url: string | null
+          provider: string
+          sso_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_mapping?: Json | null
+          certificate_encrypted?: string | null
+          company_id: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          metadata_url?: string | null
+          provider: string
+          sso_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_mapping?: Json | null
+          certificate_encrypted?: string | null
+          company_id?: string
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          metadata_url?: string | null
+          provider?: string
+          sso_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sso_configurations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_mfa_settings: {
+        Row: {
+          backup_codes_encrypted: string | null
+          created_at: string
+          id: string
+          last_verified_at: string | null
+          mfa_enabled: boolean | null
+          mfa_method: string | null
+          phone_number_encrypted: string | null
+          totp_secret_encrypted: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes_encrypted?: string | null
+          created_at?: string
+          id?: string
+          last_verified_at?: string | null
+          mfa_enabled?: boolean | null
+          mfa_method?: string | null
+          phone_number_encrypted?: string | null
+          totp_secret_encrypted?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes_encrypted?: string | null
+          created_at?: string
+          id?: string
+          last_verified_at?: string | null
+          mfa_enabled?: boolean | null
+          mfa_method?: string | null
+          phone_number_encrypted?: string | null
+          totp_secret_encrypted?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -537,6 +656,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          device_fingerprint: string | null
+          expires_at: string
+          id: string
+          ip_address: unknown
+          is_active: boolean | null
+          last_activity_at: string
+          logout_reason: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity_at?: string
+          logout_reason?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity_at?: string
+          logout_reason?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -555,6 +727,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -566,6 +739,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_login_attempt: {
+        Args: {
+          _email: string
+          _failure_reason?: string
+          _ip_address?: unknown
+          _success: boolean
+          _user_agent?: string
+        }
+        Returns: string
+      }
+      user_belongs_to_company: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
+      validate_session: { Args: never; Returns: boolean }
+      verify_tenant_access: { Args: { _company_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "hr_manager" | "employee"
