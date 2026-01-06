@@ -12,6 +12,8 @@ import AuditLogsView from '@/components/dashboard/AuditLogsView';
 import CompanySetup from '@/components/dashboard/CompanySetup';
 import { PayGapReportView } from '@/components/dashboard/PayGapReportView';
 import { InfoRequestsView } from '@/components/dashboard/InfoRequestsView';
+import { EmployeeSalaryComparisonView } from '@/components/dashboard/EmployeeSalaryComparisonView';
+import { getNavigationForRole } from '@/components/ui/role-components';
 import { 
   Shield, 
   Users, 
@@ -140,6 +142,8 @@ const Dashboard = () => {
         return <PayGapReportView />;
       case 'requests':
         return <InfoRequestsView />;
+      case 'comparison':
+        return <EmployeeSalaryComparisonView />;
       case 'overview':
       default:
         return <DashboardOverview onNavigate={(view) => setActiveView(view as DashboardView)} />;

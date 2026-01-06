@@ -67,6 +67,9 @@ export default {
           "warning-bg": "hsl(var(--status-warning-bg))",
           danger: "hsl(var(--status-danger))",
           "danger-bg": "hsl(var(--status-danger-bg))",
+          // Legacy aliases
+          ok: "hsl(var(--status-ok))",
+          action: "hsl(var(--status-action))",
         },
       },
       borderRadius: {
