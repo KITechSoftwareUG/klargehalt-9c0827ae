@@ -1,12 +1,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useJobProfiles, usePayBands } from '@/hooks/useJobProfiles';
-import { Button } from '@/components/ui/button';
+import { useEmployees } from '@/hooks/useEmployees';
 import { 
   Shield, 
   Users, 
   FileText, 
-  BarChart3,
-  AlertTriangle,
   CheckCircle,
   Clock,
   Building2,
@@ -20,17 +18,18 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
-  const { user, profile, role } = useAuth();
+  const { role } = useAuth();
   const { jobProfiles } = useJobProfiles();
   const { payBands } = usePayBands();
+  const { employees } = useEmployees();
 
   // Role-specific stats with real data
   const getStatsForRole = () => {
     if (role === 'admin' || role === 'hr_manager') {
       return [
-        { label: 'Job-Profile', value: jobProfiles.length.toString(), icon: Building2, color: 'text-primary' },
-        { label: 'Gehaltsbänder', value: payBands.length.toString(), icon: Scale, color: 'text-status-ok' },
-        { label: 'Offene Anfragen', value: '0', icon: Clock, color: 'text-status-warning' },
+        { label: 'Mitarbeiter', value: employees.length.toString(), icon: Users, color: 'text-primary' },
+        { label: 'Job-Profile', value: jobProfiles.length.toString(), icon: Building2, color: 'text-status-ok' },
+        { label: 'Gehaltsbänder', value: payBands.length.toString(), icon: Scale, color: 'text-status-warning' },
         { label: 'Compliance-Status', value: jobProfiles.length > 0 && payBands.length > 0 ? 'OK' : 'Offen', icon: CheckCircle, color: 'text-status-ok' },
       ];
     } else {
@@ -87,27 +86,38 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
         {(role === 'admin' || role === 'hr_manager') && (
           <>
             <ActionCard 
-              title="Job-Profile verwalten"
-              description="Erstellen und bearbeiten Sie Stellenprofile für Ihre Entgeltstruktur."
+              title="Mitarbeiter verwalten"
+              description="Erfassen und pflegen Sie die Mitarbeiterdaten Ihres Unternehmens."
+              icon={Users}
+              status={employees.length > 0 ? 'ok' : 'warning'}
+              badge={employees.length === 0 ? 'Neu anlegen' : undefined}
+              onClick={() => onNavigate('employees')}
+            />
+            <ActionCard 
+              title="Job-Profile definieren"
+              description="Erstellen Sie Stellenprofile mit Verantwortlichkeiten und Qualifikationen."
               icon={Building2}
               status={jobProfiles.length > 0 ? 'ok' : 'warning'}
               badge={jobProfiles.length === 0 ? 'Neu anlegen' : undefined}
               onClick={() => onNavigate('job-profiles')}
             />
             <ActionCard 
-              title="Gehaltsbänder definieren"
+              title="Gehaltsbänder festlegen"
               description="Legen Sie Gehaltsspannen pro Job-Profil und Karrierestufe fest."
               icon={Scale}
               status={payBands.length > 0 ? 'ok' : 'warning'}
               badge={payBands.length === 0 ? 'Neu anlegen' : undefined}
               onClick={() => onNavigate('pay-bands')}
             />
-            <ActionCard 
-              title="Compliance-Bericht"
-              description="Generieren Sie revisionssichere Berichte für Behörden."
-              icon={FileText}
-              status="ok"
-            />
+            {role === 'admin' && (
+              <ActionCard 
+                title="Audit-Logs einsehen"
+                description="Revisionssichere Protokollierung aller Datenänderungen."
+                icon={FileText}
+                status="ok"
+                onClick={() => onNavigate('audit')}
+              />
+            )}
           </>
         )}
         {role === 'employee' && (
