@@ -25,7 +25,7 @@ const Header = () => {
               <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground tracking-tight">
-              EntgeltGuard
+              KlarGehalt
             </span>
           </a>
 
