@@ -8,65 +8,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const loginSchema = z.object({
   email: z.string().email('Bitte geben Sie eine gültige E-Mail-Adresse ein'),
-  password: z.string().min(6, 'Das Passwort muss mindestens 6 Zeichen lang sein'),
+  password: z.string().min(6, 'Das Passwort muss mindestens 6 Zeichen lang sein')
 });
-
 const signupSchema = loginSchema.extend({
   fullName: z.string().min(2, 'Bitte geben Sie Ihren vollständigen Namen ein'),
   companyName: z.string().min(2, 'Bitte geben Sie Ihren Firmennamen ein'),
-  role: z.enum(['admin', 'hr_manager', 'employee']),
+  role: z.enum(['admin', 'hr_manager', 'employee'])
 });
-
 type AppRole = 'admin' | 'hr_manager' | 'employee';
-
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
-  const { toast } = useToast();
+  const {
+    user,
+    signIn,
+    signUp
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [role, setRole] = useState<AppRole>('employee');
-
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       if (isLogin) {
-        const validation = loginSchema.safeParse({ email, password });
+        const validation = loginSchema.safeParse({
+          email,
+          password
+        });
         if (!validation.success) {
           toast({
             title: 'Validierungsfehler',
             description: validation.error.errors[0].message,
-            variant: 'destructive',
+            variant: 'destructive'
           });
           setLoading(false);
           return;
         }
-
-        const { error } = await signIn(email, password);
+        const {
+          error
+        } = await signIn(email, password);
         if (error) {
           let message = 'Ein Fehler ist aufgetreten';
           if (error.message.includes('Invalid login credentials')) {
@@ -75,28 +71,35 @@ const Auth = () => {
           toast({
             title: 'Anmeldung fehlgeschlagen',
             description: message,
-            variant: 'destructive',
+            variant: 'destructive'
           });
         } else {
           toast({
             title: 'Erfolgreich angemeldet',
-            description: 'Willkommen zurück bei EntgeltGuard!',
+            description: 'Willkommen zurück bei EntgeltGuard!'
           });
           navigate('/dashboard');
         }
       } else {
-        const validation = signupSchema.safeParse({ email, password, fullName, companyName, role });
+        const validation = signupSchema.safeParse({
+          email,
+          password,
+          fullName,
+          companyName,
+          role
+        });
         if (!validation.success) {
           toast({
             title: 'Validierungsfehler',
             description: validation.error.errors[0].message,
-            variant: 'destructive',
+            variant: 'destructive'
           });
           setLoading(false);
           return;
         }
-
-        const { error } = await signUp(email, password, fullName, companyName, role);
+        const {
+          error
+        } = await signUp(email, password, fullName, companyName, role);
         if (error) {
           let message = 'Ein Fehler ist aufgetreten';
           if (error.message.includes('User already registered')) {
@@ -105,12 +108,12 @@ const Auth = () => {
           toast({
             title: 'Registrierung fehlgeschlagen',
             description: message,
-            variant: 'destructive',
+            variant: 'destructive'
           });
         } else {
           toast({
             title: 'Erfolgreich registriert',
-            description: 'Willkommen bei EntgeltGuard!',
+            description: 'Willkommen bei EntgeltGuard!'
           });
           navigate('/dashboard');
         }
@@ -119,21 +122,17 @@ const Auth = () => {
       toast({
         title: 'Fehler',
         description: 'Ein unerwarteter Fehler ist aufgetreten.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
-
     setLoading(false);
   };
-
   const roleLabels: Record<AppRole, string> = {
     admin: 'Administrator',
     hr_manager: 'HR-Manager',
-    employee: 'Mitarbeiter',
+    employee: 'Mitarbeiter'
   };
-
-  return (
-    <>
+  return <>
       <Helmet>
         <title>{isLogin ? 'Anmelden' : 'Registrieren'} - EntgeltGuard</title>
         <meta name="description" content="Melden Sie sich bei EntgeltGuard an oder erstellen Sie ein neues Konto." />
@@ -150,7 +149,7 @@ const Auth = () => {
           <div className="relative z-10 flex flex-col justify-center p-12 text-white">
             <div className="flex items-center gap-3 mb-8">
               <Shield className="h-12 w-12" />
-              <span className="text-3xl font-bold">EntgeltGuard</span>
+              <span className="text-3xl font-bold">KlarGehalt</span>
             </div>
             <h1 className="text-4xl font-bold mb-4">
               EU-Entgelttransparenz rechtssicher umsetzen
@@ -178,11 +177,7 @@ const Auth = () => {
         {/* Right side - Form */}
         <div className="w-full lg:w-1/2 flex flex-col">
           <div className="p-6">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="text-muted-foreground hover:text-foreground"
-            >
+            <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Zurück zur Startseite
             </Button>
@@ -202,38 +197,20 @@ const Auth = () => {
                   {isLogin ? 'Willkommen zurück' : 'Konto erstellen'}
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  {isLogin 
-                    ? 'Melden Sie sich an, um auf Ihr Dashboard zuzugreifen' 
-                    : 'Registrieren Sie sich für EntgeltGuard'
-                  }
+                  {isLogin ? 'Melden Sie sich an, um auf Ihr Dashboard zuzugreifen' : 'Registrieren Sie sich für EntgeltGuard'}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {!isLogin && (
-                  <>
+                {!isLogin && <>
                     <div className="space-y-2">
                       <Label htmlFor="fullName">Vollständiger Name</Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        placeholder="Max Mustermann"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                      />
+                      <Input id="fullName" type="text" placeholder="Max Mustermann" value={fullName} onChange={e => setFullName(e.target.value)} required />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="companyName">Firmenname</Label>
-                      <Input
-                        id="companyName"
-                        type="text"
-                        placeholder="Musterfirma GmbH"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        required
-                      />
+                      <Input id="companyName" type="text" placeholder="Musterfirma GmbH" value={companyName} onChange={e => setCompanyName(e.target.value)} required />
                     </div>
 
                     <div className="space-y-2">
@@ -249,65 +226,37 @@ const Auth = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
-                )}
+                  </>}
 
                 <div className="space-y-2">
                   <Label htmlFor="email">E-Mail-Adresse</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="max@musterfirma.de"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <Input id="email" type="email" placeholder="max@musterfirma.de" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Passwort</Label>
                   <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                    <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
                 <Button type="submit" className="w-full" variant="hero" disabled={loading}>
-                  {loading ? 'Wird verarbeitet...' : (isLogin ? 'Anmelden' : 'Registrieren')}
+                  {loading ? 'Wird verarbeitet...' : isLogin ? 'Anmelden' : 'Registrieren'}
                 </Button>
               </form>
 
               <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-primary hover:text-primary/80 font-medium transition-colors"
-                >
-                  {isLogin 
-                    ? 'Noch kein Konto? Jetzt registrieren' 
-                    : 'Bereits ein Konto? Jetzt anmelden'
-                  }
+                <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary hover:text-primary/80 font-medium transition-colors">
+                  {isLogin ? 'Noch kein Konto? Jetzt registrieren' : 'Bereits ein Konto? Jetzt anmelden'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
-  );
+    </>;
 };
-
 export default Auth;
