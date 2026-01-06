@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Shield, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   const navItems = [
     { label: "Funktionen", href: "#features" },
@@ -41,12 +44,20 @@ const Header = () => {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Anmelden
-            </Button>
-            <Button variant="hero" size="sm">
-              Demo anfragen
-            </Button>
+            {user ? (
+              <Button variant="hero" size="sm" asChild>
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/auth">Anmelden</Link>
+                </Button>
+                <Button variant="hero" size="sm" asChild>
+                  <Link to="/auth">Demo anfragen</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -74,12 +85,20 @@ const Header = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 px-4">
-                <Button variant="outline" className="w-full">
-                  Anmelden
-                </Button>
-                <Button variant="hero" className="w-full">
-                  Demo anfragen
-                </Button>
+                {user ? (
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to="/auth">Anmelden</Link>
+                    </Button>
+                    <Button variant="hero" className="w-full" asChild>
+                      <Link to="/auth">Demo anfragen</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>
