@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      job_profiles: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          department: string | null
+          description: string | null
+          employment_type: Database["public"]["Enums"]["employment_type"] | null
+          id: string
+          is_active: boolean | null
+          min_experience_years: number | null
+          required_qualifications: string | null
+          responsibilities: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          department?: string | null
+          description?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_type"]
+            | null
+          id?: string
+          is_active?: boolean | null
+          min_experience_years?: number | null
+          required_qualifications?: string | null
+          responsibilities?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          department?: string | null
+          description?: string | null
+          employment_type?:
+            | Database["public"]["Enums"]["employment_type"]
+            | null
+          id?: string
+          is_active?: boolean | null
+          min_experience_years?: number | null
+          required_qualifications?: string | null
+          responsibilities?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pay_bands: {
+        Row: {
+          created_at: string
+          created_by: string
+          currency: string | null
+          id: string
+          job_level: Database["public"]["Enums"]["job_level"]
+          job_profile_id: string
+          max_salary: number
+          median_salary: number | null
+          min_salary: number
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          currency?: string | null
+          id?: string
+          job_level: Database["public"]["Enums"]["job_level"]
+          job_profile_id: string
+          max_salary: number
+          median_salary?: number | null
+          min_salary: number
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          currency?: string | null
+          id?: string
+          job_level?: Database["public"]["Enums"]["job_level"]
+          job_profile_id?: string
+          max_salary?: number
+          median_salary?: number | null
+          min_salary?: number
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_bands_job_profile_id_fkey"
+            columns: ["job_profile_id"]
+            isOneToOne: false
+            referencedRelation: "job_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -43,6 +148,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      salary_components: {
+        Row: {
+          component_name: string
+          component_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_percentage: boolean | null
+          max_value: number | null
+          min_value: number | null
+          pay_band_id: string
+          updated_at: string
+        }
+        Insert: {
+          component_name: string
+          component_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_percentage?: boolean | null
+          max_value?: number | null
+          min_value?: number | null
+          pay_band_id: string
+          updated_at?: string
+        }
+        Update: {
+          component_name?: string
+          component_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_percentage?: boolean | null
+          max_value?: number | null
+          min_value?: number | null
+          pay_band_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_components_pay_band_id_fkey"
+            columns: ["pay_band_id"]
+            isOneToOne: false
+            referencedRelation: "pay_bands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -84,6 +236,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "hr_manager" | "employee"
+      employment_type: "full_time" | "part_time" | "contract" | "intern"
+      job_level: "junior" | "mid" | "senior" | "lead" | "principal" | "director"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -212,6 +366,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "hr_manager", "employee"],
+      employment_type: ["full_time", "part_time", "contract", "intern"],
+      job_level: ["junior", "mid", "senior", "lead", "principal", "director"],
     },
   },
 } as const
