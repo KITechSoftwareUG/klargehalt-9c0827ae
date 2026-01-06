@@ -52,6 +52,68 @@ export type Database = {
           },
         ]
       }
+      audit_exports: {
+        Row: {
+          actions: string[] | null
+          company_id: string
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          entity_types: string[] | null
+          export_type: string
+          exported_at: string
+          exported_by: string
+          file_hash: string
+          format: string
+          id: string
+          ip_address: unknown
+          record_count: number
+          user_agent: string | null
+        }
+        Insert: {
+          actions?: string[] | null
+          company_id: string
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          entity_types?: string[] | null
+          export_type: string
+          exported_at?: string
+          exported_by: string
+          file_hash: string
+          format?: string
+          id?: string
+          ip_address?: unknown
+          record_count: number
+          user_agent?: string | null
+        }
+        Update: {
+          actions?: string[] | null
+          company_id?: string
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          entity_types?: string[] | null
+          export_type?: string
+          exported_at?: string
+          exported_by?: string
+          file_hash?: string
+          format?: string
+          id?: string
+          ip_address?: unknown
+          record_count?: number
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_exports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -65,7 +127,9 @@ export type Database = {
           metadata: Json | null
           new_values: Json | null
           old_values: Json | null
+          previous_hash: string | null
           record_hash: string
+          sequence_number: number | null
           user_agent: string | null
           user_email: string
           user_id: string
@@ -83,7 +147,9 @@ export type Database = {
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
+          previous_hash?: string | null
           record_hash?: string
+          sequence_number?: number | null
           user_agent?: string | null
           user_email: string
           user_id: string
@@ -101,7 +167,9 @@ export type Database = {
           metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
+          previous_hash?: string | null
           record_hash?: string
+          sequence_number?: number | null
           user_agent?: string | null
           user_email?: string
           user_id?: string
@@ -1635,7 +1703,35 @@ export type Database = {
           next_reset: string
         }[]
       }
+      create_audit_export: {
+        Args: {
+          _actions?: string[]
+          _date_from?: string
+          _date_to?: string
+          _entity_types?: string[]
+          _export_type: string
+          _format?: string
+        }
+        Returns: {
+          data: Json
+          export_id: string
+          record_count: number
+        }[]
+      }
       create_audit_log: {
+        Args: {
+          _action: Database["public"]["Enums"]["audit_action"]
+          _company_id: string
+          _entity_id?: string
+          _entity_name?: string
+          _entity_type: Database["public"]["Enums"]["audit_entity"]
+          _metadata?: Json
+          _new_values?: Json
+          _old_values?: Json
+        }
+        Returns: string
+      }
+      create_audit_log_v2: {
         Args: {
           _action: Database["public"]["Enums"]["audit_action"]
           _company_id: string
@@ -1673,6 +1769,17 @@ export type Database = {
         Returns: string
       }
       generate_pay_equity_report: { Args: never; Returns: Json }
+      get_audit_statistics: {
+        Args: { _company_id: string; _days?: number }
+        Returns: {
+          daily_activity: Json
+          records_by_action: Json
+          records_by_entity: Json
+          records_by_user: Json
+          top_users: Json
+          total_records: number
+        }[]
+      }
       get_department_statistics: {
         Args: never
         Returns: {
@@ -1785,6 +1892,16 @@ export type Database = {
         }
         Returns: string
       }
+      log_login_v2: {
+        Args: {
+          _email: string
+          _failure_reason?: string
+          _ip_address?: unknown
+          _success: boolean
+          _user_agent?: string
+        }
+        Returns: string
+      }
       submit_info_request: {
         Args: {
           _ip_address?: unknown
@@ -1803,6 +1920,20 @@ export type Database = {
         Returns: boolean
       }
       validate_session: { Args: never; Returns: boolean }
+      verify_audit_chain: {
+        Args: {
+          _company_id: string
+          _from_sequence?: number
+          _to_sequence?: number
+        }
+        Returns: {
+          checked_records: number
+          error_message: string
+          first_invalid_id: string
+          first_invalid_sequence: number
+          is_valid: boolean
+        }[]
+      }
       verify_tenant_access: { Args: { _company_id: string }; Returns: boolean }
     }
     Enums: {
