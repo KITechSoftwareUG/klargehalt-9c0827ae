@@ -339,6 +339,87 @@ export type Database = {
           },
         ]
       }
+      employee_info_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          ip_address: unknown
+          processed_at: string | null
+          rejection_reason:
+            | Database["public"]["Enums"]["rejection_reason"]
+            | null
+          request_hash: string
+          request_number: number
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          requester_employee_id: string | null
+          requester_user_id: string
+          status: Database["public"]["Enums"]["request_processing_status"]
+          submitted_at: string
+          updated_at: string
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          processed_at?: string | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["rejection_reason"]
+            | null
+          request_hash: string
+          request_number?: number
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          requester_employee_id?: string | null
+          requester_user_id: string
+          status?: Database["public"]["Enums"]["request_processing_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          processed_at?: string | null
+          rejection_reason?:
+            | Database["public"]["Enums"]["rejection_reason"]
+            | null
+          request_hash?: string
+          request_number?: number
+          request_type?: Database["public"]["Enums"]["info_request_type"]
+          requester_employee_id?: string | null
+          requester_user_id?: string
+          status?: Database["public"]["Enums"]["request_processing_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_info_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_info_requests_requester_employee_id_fkey"
+            columns: ["requester_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           birth_date: string | null
@@ -413,6 +494,53 @@ export type Database = {
             columns: ["job_profile_id"]
             isOneToOne: false
             referencedRelation: "job_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      info_request_responses: {
+        Row: {
+          anonymization_applied: Json
+          created_at: string
+          generated_by: string
+          id: string
+          request_id: string
+          response_data: Json
+          response_hash: string
+          valid_from: string
+          valid_until: string | null
+          version_number: number
+        }
+        Insert: {
+          anonymization_applied?: Json
+          created_at?: string
+          generated_by?: string
+          id?: string
+          request_id: string
+          response_data: Json
+          response_hash: string
+          valid_from?: string
+          valid_until?: string | null
+          version_number?: number
+        }
+        Update: {
+          anonymization_applied?: Json
+          created_at?: string
+          generated_by?: string
+          id?: string
+          request_id?: string
+          response_data?: Json
+          response_hash?: string
+          valid_from?: string
+          valid_until?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "info_request_responses_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "employee_info_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -1014,6 +1142,50 @@ export type Database = {
           },
         ]
       }
+      request_rate_limits: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          max_requests_per_month: number
+          request_count: number
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          max_requests_per_month?: number
+          request_count?: number
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          max_requests_per_month?: number
+          request_count?: number
+          request_type?: Database["public"]["Enums"]["info_request_type"]
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_rate_limits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1452,6 +1624,17 @@ export type Database = {
           suppression_reason: string
         }[]
       }
+      check_request_rate_limit: {
+        Args: {
+          _request_type: Database["public"]["Enums"]["info_request_type"]
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          max_allowed: number
+          next_reset: string
+        }[]
+      }
       create_audit_log: {
         Args: {
           _action: Database["public"]["Enums"]["audit_action"]
@@ -1509,6 +1692,32 @@ export type Database = {
           max_annual: number
           min_annual: number
           reference_point: number
+        }[]
+      }
+      get_info_request_response: {
+        Args: { _request_id: string }
+        Returns: {
+          anonymization_note: string
+          expires_at: string
+          generated_at: string
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          request_type_label: string
+          response_data: Json
+        }[]
+      }
+      get_my_info_requests: {
+        Args: never
+        Returns: {
+          expires_at: string
+          has_response: boolean
+          id: string
+          processed_at: string
+          rejection_reason: Database["public"]["Enums"]["rejection_reason"]
+          request_type: Database["public"]["Enums"]["info_request_type"]
+          request_type_label: string
+          status: Database["public"]["Enums"]["request_processing_status"]
+          status_label: string
+          submitted_at: string
         }[]
       }
       get_next_job_profile_version: {
@@ -1576,6 +1785,19 @@ export type Database = {
         }
         Returns: string
       }
+      submit_info_request: {
+        Args: {
+          _ip_address?: unknown
+          _request_type: Database["public"]["Enums"]["info_request_type"]
+          _user_agent?: string
+        }
+        Returns: {
+          error_code: string
+          error_message: string
+          request_id: string
+          success: boolean
+        }[]
+      }
       user_belongs_to_company: {
         Args: { _company_id: string }
         Returns: boolean
@@ -1605,7 +1827,30 @@ export type Database = {
         | "company"
         | "report"
       employment_type: "full_time" | "part_time" | "contract" | "intern"
+      info_request_type:
+        | "salary_band_position"
+        | "salary_criteria"
+        | "career_progression"
+        | "pay_gap_category"
+        | "qualification_requirements"
       job_level: "junior" | "mid" | "senior" | "lead" | "principal" | "director"
+      rejection_reason:
+        | "rate_limit_exceeded"
+        | "insufficient_data"
+        | "employee_not_found"
+        | "no_assignment"
+        | "privacy_threshold"
+        | "system_error"
+      request_processing_status:
+        | "submitted"
+        | "validating"
+        | "approved"
+        | "processing"
+        | "ready"
+        | "viewed"
+        | "expired"
+        | "rejected"
+        | "cancelled"
       request_status: "pending" | "processing" | "completed" | "rejected"
     }
     CompositeTypes: {
@@ -1757,7 +2002,33 @@ export const Constants = {
         "report",
       ],
       employment_type: ["full_time", "part_time", "contract", "intern"],
+      info_request_type: [
+        "salary_band_position",
+        "salary_criteria",
+        "career_progression",
+        "pay_gap_category",
+        "qualification_requirements",
+      ],
       job_level: ["junior", "mid", "senior", "lead", "principal", "director"],
+      rejection_reason: [
+        "rate_limit_exceeded",
+        "insufficient_data",
+        "employee_not_found",
+        "no_assignment",
+        "privacy_threshold",
+        "system_error",
+      ],
+      request_processing_status: [
+        "submitted",
+        "validating",
+        "approved",
+        "processing",
+        "ready",
+        "viewed",
+        "expired",
+        "rejected",
+        "cancelled",
+      ],
       request_status: ["pending", "processing", "completed", "rejected"],
     },
   },

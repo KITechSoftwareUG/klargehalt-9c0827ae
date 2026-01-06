@@ -11,6 +11,7 @@ import EmployeesView from '@/components/dashboard/EmployeesView';
 import AuditLogsView from '@/components/dashboard/AuditLogsView';
 import CompanySetup from '@/components/dashboard/CompanySetup';
 import { PayGapReportView } from '@/components/dashboard/PayGapReportView';
+import { InfoRequestsView } from '@/components/dashboard/InfoRequestsView';
 import { 
   Shield, 
   Users, 
@@ -137,6 +138,8 @@ const Dashboard = () => {
         return <AuditLogsView />;
       case 'reports':
         return <PayGapReportView />;
+      case 'requests':
+        return <InfoRequestsView />;
       case 'overview':
       default:
         return <DashboardOverview onNavigate={(view) => setActiveView(view as DashboardView)} />;
