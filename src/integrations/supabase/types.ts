@@ -177,6 +177,130 @@ export type Database = {
         }
         Relationships: []
       }
+      data_change_history: {
+        Row: {
+          action: string
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          company_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_hash: string
+          version_number: number | null
+        }
+        Insert: {
+          action: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          company_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_hash?: string
+          version_number?: number | null
+        }
+        Update: {
+          action?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          company_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_hash?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_change_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_assignments: {
+        Row: {
+          assigned_by: string
+          assignment_reason: string | null
+          created_at: string
+          effective_from: string
+          effective_until: string | null
+          employee_id: string
+          id: string
+          job_level_id: string
+          job_profile_version_id: string
+          notes: string | null
+          pay_band_version_id: string
+        }
+        Insert: {
+          assigned_by: string
+          assignment_reason?: string | null
+          created_at?: string
+          effective_from: string
+          effective_until?: string | null
+          employee_id: string
+          id?: string
+          job_level_id: string
+          job_profile_version_id: string
+          notes?: string | null
+          pay_band_version_id: string
+        }
+        Update: {
+          assigned_by?: string
+          assignment_reason?: string | null
+          created_at?: string
+          effective_from?: string
+          effective_until?: string | null
+          employee_id?: string
+          id?: string
+          job_level_id?: string
+          job_profile_version_id?: string
+          notes?: string | null
+          pay_band_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_assignments_job_level_id_fkey"
+            columns: ["job_level_id"]
+            isOneToOne: false
+            referencedRelation: "job_levels_normalized"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_assignments_job_profile_version_id_fkey"
+            columns: ["job_profile_version_id"]
+            isOneToOne: false
+            referencedRelation: "job_profile_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_assignments_pay_band_version_id_fkey"
+            columns: ["pay_band_version_id"]
+            isOneToOne: false
+            referencedRelation: "pay_band_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           birth_date: string | null
@@ -318,6 +442,159 @@ export type Database = {
           },
         ]
       }
+      job_families: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_families_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_levels_normalized: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_experience_years: number | null
+          min_experience_years: number | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_experience_years?: number | null
+          min_experience_years?: number | null
+          name: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_experience_years?: number | null
+          min_experience_years?: number | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_levels_normalized_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_profile_versions: {
+        Row: {
+          change_reason: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          education_level: string | null
+          id: string
+          job_profile_id: string
+          min_experience_years: number | null
+          required_qualifications: string | null
+          responsibilities: string | null
+          title: string
+          valid_from: string
+          valid_until: string | null
+          version_number: number
+        }
+        Insert: {
+          change_reason?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          education_level?: string | null
+          id?: string
+          job_profile_id: string
+          min_experience_years?: number | null
+          required_qualifications?: string | null
+          responsibilities?: string | null
+          title: string
+          valid_from?: string
+          valid_until?: string | null
+          version_number: number
+        }
+        Update: {
+          change_reason?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          education_level?: string | null
+          id?: string
+          job_profile_id?: string
+          min_experience_years?: number | null
+          required_qualifications?: string | null
+          responsibilities?: string | null
+          title?: string
+          valid_from?: string
+          valid_until?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_profile_versions_job_profile_id_fkey"
+            columns: ["job_profile_id"]
+            isOneToOne: false
+            referencedRelation: "job_profiles_normalized"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_profiles: {
         Row: {
           company_id: string
@@ -378,6 +655,58 @@ export type Database = {
           },
         ]
       }
+      job_profiles_normalized: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string
+          current_version_id: string | null
+          id: string
+          is_active: boolean | null
+          job_family_id: string | null
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_family_id?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_family_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_current_version"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "job_profile_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_profiles_normalized_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_profiles_normalized_job_family_id_fkey"
+            columns: ["job_family_id"]
+            isOneToOne: false
+            referencedRelation: "job_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_attempts: {
         Row: {
           created_at: string
@@ -407,6 +736,65 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
+      }
+      pay_band_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          change_reason: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          id: string
+          max_annual: number
+          min_annual: number
+          pay_band_id: string
+          reference_point: number | null
+          valid_from: string
+          valid_until: string | null
+          version_number: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          change_reason?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          id?: string
+          max_annual: number
+          min_annual: number
+          pay_band_id: string
+          reference_point?: number | null
+          valid_from: string
+          valid_until?: string | null
+          version_number: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          change_reason?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          id?: string
+          max_annual?: number
+          min_annual?: number
+          pay_band_id?: string
+          reference_point?: number | null
+          valid_from?: string
+          valid_until?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_band_versions_pay_band_id_fkey"
+            columns: ["pay_band_id"]
+            isOneToOne: false
+            referencedRelation: "pay_bands_normalized"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pay_bands: {
         Row: {
@@ -457,6 +845,65 @@ export type Database = {
             columns: ["job_profile_id"]
             isOneToOne: false
             referencedRelation: "job_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pay_bands_normalized: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_version_id: string | null
+          id: string
+          is_active: boolean | null
+          job_level_id: string
+          job_profile_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_level_id: string
+          job_profile_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_level_id?: string
+          job_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pb_current_version"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "pay_band_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_bands_normalized_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_bands_normalized_job_level_id_fkey"
+            columns: ["job_level_id"]
+            isOneToOne: false
+            referencedRelation: "job_levels_normalized"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_bands_normalized_job_profile_id_fkey"
+            columns: ["job_profile_id"]
+            isOneToOne: false
+            referencedRelation: "job_profiles_normalized"
             referencedColumns: ["id"]
           },
         ]
@@ -558,6 +1005,62 @@ export type Database = {
           },
         ]
       }
+      salary_component_types: {
+        Row: {
+          category: string
+          code: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_monetary: boolean | null
+          is_recurring: boolean | null
+          is_taxable: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          code: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_monetary?: boolean | null
+          is_recurring?: boolean | null
+          is_taxable?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_monetary?: boolean | null
+          is_recurring?: boolean | null
+          is_taxable?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_component_types_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_components: {
         Row: {
           component_name: string
@@ -601,6 +1104,63 @@ export type Database = {
             columns: ["pay_band_id"]
             isOneToOne: false
             referencedRelation: "pay_bands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_components_normalized: {
+        Row: {
+          component_type_id: string
+          conditions: string | null
+          created_at: string
+          frequency: string | null
+          id: string
+          is_percentage: boolean | null
+          max_value: number | null
+          min_value: number
+          pay_band_version_id: string
+          percentage_of: string | null
+          typical_value: number | null
+        }
+        Insert: {
+          component_type_id: string
+          conditions?: string | null
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_percentage?: boolean | null
+          max_value?: number | null
+          min_value?: number
+          pay_band_version_id: string
+          percentage_of?: string | null
+          typical_value?: number | null
+        }
+        Update: {
+          component_type_id?: string
+          conditions?: string | null
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_percentage?: boolean | null
+          max_value?: number | null
+          min_value?: number
+          pay_band_version_id?: string
+          percentage_of?: string | null
+          typical_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_components_normalized_component_type_id_fkey"
+            columns: ["component_type_id"]
+            isOneToOne: false
+            referencedRelation: "salary_component_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_components_normalized_pay_band_version_id_fkey"
+            columns: ["pay_band_version_id"]
+            isOneToOne: false
+            referencedRelation: "pay_band_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -835,6 +1395,57 @@ export type Database = {
           _old_values?: Json
         }
         Returns: string
+      }
+      create_job_profile_version: {
+        Args: {
+          _change_reason: string
+          _description: string
+          _education_level: string
+          _job_profile_id: string
+          _min_experience_years: number
+          _required_qualifications: string
+          _responsibilities: string
+          _title: string
+        }
+        Returns: string
+      }
+      create_pay_band_version: {
+        Args: {
+          _change_reason: string
+          _max_annual: number
+          _min_annual: number
+          _pay_band_id: string
+          _reference_point: number
+          _valid_from: string
+        }
+        Returns: string
+      }
+      get_employee_current_pay_band: {
+        Args: { _employee_id: string }
+        Returns: {
+          currency: string
+          job_level_name: string
+          job_profile_title: string
+          max_annual: number
+          min_annual: number
+          reference_point: number
+        }[]
+      }
+      get_next_job_profile_version: {
+        Args: { _job_profile_id: string }
+        Returns: number
+      }
+      get_next_pay_band_version: {
+        Args: { _pay_band_id: string }
+        Returns: number
+      }
+      get_pay_band_statistics: {
+        Args: { _pay_band_id: string }
+        Returns: {
+          employee_count: number
+          gender_ratio: Json
+          median_in_band: number
+        }[]
       }
       get_user_company_id: { Args: never; Returns: string }
       get_user_permissions: {
