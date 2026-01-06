@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      anonymization_config: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          max_deviation_percent: number
+          min_group_size: number
+          rounding_precision: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          max_deviation_percent?: number
+          min_group_size?: number
+          rounding_precision?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          max_deviation_percent?: number
+          min_group_size?: number
+          rounding_precision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anonymization_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -1383,6 +1421,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analyze_salary_deviations: {
+        Args: { _threshold_percent?: number }
+        Returns: {
+          affected_count: number
+          deviation_percent: number
+          deviation_type: string
+          is_critical: boolean
+          job_level_id: string
+          job_level_name: string
+          job_profile_id: string
+          job_profile_title: string
+          recommendation: string
+        }[]
+      }
+      calculate_gender_pay_gap: {
+        Args: {
+          _department?: string
+          _job_level_id?: string
+          _job_profile_id?: string
+        }
+        Returns: {
+          category: string
+          female_count: number
+          female_median: number
+          gap_percent: number
+          is_reportable: boolean
+          male_count: number
+          male_median: number
+          suppression_reason: string
+        }[]
+      }
       create_audit_log: {
         Args: {
           _action: Database["public"]["Enums"]["audit_action"]
@@ -1420,6 +1489,17 @@ export type Database = {
         }
         Returns: string
       }
+      generate_pay_equity_report: { Args: never; Returns: Json }
+      get_department_statistics: {
+        Args: never
+        Returns: {
+          avg_tenure_years: number
+          department: string
+          gender_distribution: Json
+          is_suppressed: boolean
+          total_employees: number
+        }[]
+      }
       get_employee_current_pay_band: {
         Args: { _employee_id: string }
         Returns: {
@@ -1445,6 +1525,16 @@ export type Database = {
           employee_count: number
           gender_ratio: Json
           median_in_band: number
+        }[]
+      }
+      get_safe_salary_statistics: {
+        Args: { _job_level_id?: string; _job_profile_id: string }
+        Returns: {
+          group_size: number
+          is_suppressed: boolean
+          statistic_type: string
+          suppression_reason: string
+          value: number
         }[]
       }
       get_user_company_id: { Args: never; Returns: string }
