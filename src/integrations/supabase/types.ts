@@ -79,6 +79,59 @@ export type Database = {
           },
         ]
       }
+      auditor_access: {
+        Row: {
+          access_reason: string
+          company_id: string
+          created_at: string
+          granted_by: string
+          id: string
+          is_revoked: boolean | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          access_reason: string
+          company_id: string
+          created_at?: string
+          granted_by: string
+          id?: string
+          is_revoked?: boolean | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+          valid_from?: string
+          valid_until: string
+        }
+        Update: {
+          access_reason?: string
+          company_id?: string
+          created_at?: string
+          granted_by?: string
+          id?: string
+          is_revoked?: boolean | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditor_access_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
@@ -408,6 +461,33 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string | null
@@ -446,6 +526,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_code: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_code: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_code?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_code_fkey"
+            columns: ["permission_code"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -728,10 +837,27 @@ export type Database = {
         Returns: string
       }
       get_user_company_id: { Args: never; Returns: string }
+      get_user_permissions: {
+        Args: never
+        Returns: {
+          category: string
+          permission_code: string
+          permission_name: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_all_permissions: {
+        Args: { _permission_codes: string[] }
+        Returns: boolean
+      }
+      has_any_permission: {
+        Args: { _permission_codes: string[] }
+        Returns: boolean
+      }
+      has_permission: { Args: { _permission_code: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -757,7 +883,7 @@ export type Database = {
       verify_tenant_access: { Args: { _company_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "hr_manager" | "employee"
+      app_role: "admin" | "hr_manager" | "employee" | "legal" | "auditor"
       audit_action:
         | "create"
         | "update"
@@ -907,7 +1033,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "hr_manager", "employee"],
+      app_role: ["admin", "hr_manager", "employee", "legal", "auditor"],
       audit_action: [
         "create",
         "update",
