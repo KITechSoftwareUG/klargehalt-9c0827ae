@@ -11,13 +11,13 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>EntgeltGuard - EU-Entgelttransparenz rechtssicher umsetzen</title>
+        <title>KlarGehalt.de - EU-Entgelttransparenz rechtssicher umsetzen</title>
         <meta 
           name="description" 
           content="B2B-Compliance-SaaS für die EU-Entgelttransparenzrichtlinie. Schützen Sie Ihr Unternehmen vor Klagen, Bußgeldern und Chaos mit unserer DSGVO-konformen Lösung." 
         />
         <meta name="keywords" content="Entgelttransparenz, EU-Richtlinie, Compliance, DSGVO, Gehaltsdaten, B2B SaaS, Pay Transparency" />
-        <link rel="canonical" href="https://entgeltguard.de" />
+        <link rel="canonical" href="https://klargehalt.de" />
       </Helmet>
       
       <div className="min-h-screen bg-background">

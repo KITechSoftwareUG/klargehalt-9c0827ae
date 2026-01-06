@@ -92,7 +92,7 @@ const HeroSection = () => {
                 <div className="w-3 h-3 rounded-full bg-status-warning" />
                 <div className="w-3 h-3 rounded-full bg-status-success" />
                 <span className="ml-2 text-xs text-muted-foreground font-medium">
-                  EntgeltGuard Dashboard
+                  KlarGehalt Dashboard
                 </span>
               </div>
 
