@@ -8,3 +8,22 @@ export const createClient = () =>
         supabaseUrl!,
         supabaseKey!,
     );
+
+export const createClientWithToken = (clerkToken: string | null) => {
+    return createBrowserClient(
+        supabaseUrl!,
+        supabaseKey!,
+        {
+            global: {
+                // Get the custom header from the Clerk JWT
+                headers: clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {},
+            },
+            // Disable default auth persistence as we rely on Clerk
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false,
+            }
+        }
+    );
+};

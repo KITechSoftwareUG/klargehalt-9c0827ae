@@ -11,7 +11,8 @@ import { Progress } from '@/components/ui/progress';
 import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileText } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/utils/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
+import { useSession } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
@@ -22,6 +23,7 @@ type ConsultingOption = 'self-service' | 'guided' | 'full-service';
 export default function OnboardingPage() {
     const router = useRouter();
     const { user } = useAuth();
+    const { session } = useSession();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -60,7 +62,14 @@ export default function OnboardingPage() {
         }
 
         setLoading(true);
-        const supabase = createClient();
+        // Get the Clerk Token for Supabase
+        let token = null;
+        try {
+            token = await session?.getToken({ template: 'supabase' });
+        } catch (e) {
+            console.error('Clerk Supabase Token Error:', e);
+        }
+        const supabase = createClientWithToken(token || null);
 
         try {
             // Create company

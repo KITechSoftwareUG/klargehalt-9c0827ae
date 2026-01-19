@@ -2,18 +2,23 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-    /* config options here */
-    reactStrictMode: true,
+  /* config options here */
+  reactStrictMode: true,
 
-    // Optimize images
-    images: {
-        domains: ['gdiefibmquualkfrthog.supabase.co'],
-    },
+  // Optimize images
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'gdiefibmquualkfrthog.supabase.co',
+      },
+    ],
+  },
 
-    // Experimental features
-    experimental: {
-        optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    },
+  // Experimental features
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
 };
 
 export default withSentryConfig(nextConfig, {
@@ -22,7 +27,7 @@ export default withSentryConfig(nextConfig, {
 
   org: "kitech-software-ug-haftungsbes",
 
-  project: "ethixai",
+  project: "klargehalt",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,

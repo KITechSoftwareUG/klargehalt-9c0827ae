@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
+import { useSession } from '@clerk/nextjs';
 
 export interface Permission {
   code: string;
@@ -70,6 +71,7 @@ export function usePermissions() {
   const [permissionCodes, setPermissionCodes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { session } = useSession();
 
   const fetchPermissions = useCallback(async () => {
     if (!user) {
@@ -82,13 +84,21 @@ export function usePermissions() {
     setLoading(true);
 
     // Create authenticated client
-    const supabase = createClient();
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    const supabase = createClientWithToken(token || null);
 
     // Call the database function to get user's permissions
     const { data, error } = await supabase.rpc('get_user_permissions');
 
     if (error) {
-      console.error('Error fetching permissions:', error);
+      console.error('Error fetching permissions:', JSON.stringify(error, null, 2), error);
+      // It seems the error object is empty or not serializing well.
+      // Often this happens with Supabase errors if the network request fails completely or RLS blocks it silently.
       setPermissions([]);
       setPermissionCodes(new Set());
     } else {
@@ -103,7 +113,7 @@ export function usePermissions() {
     }
 
     setLoading(false);
-  }, [user]);
+  }, [user, session]);
 
   useEffect(() => {
     fetchPermissions();

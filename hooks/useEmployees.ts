@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useUser } from '@clerk/nextjs';
+import { createClientWithToken } from '@/utils/supabase/client';
+import { useUser, useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface Employee {
@@ -43,12 +43,23 @@ export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, isLoaded } = useUser();
-  const supabase = createClient();
+  const { session } = useSession();
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   const fetchEmployees = async () => {
     if (!isLoaded || !user) return;
 
     setLoading(true);
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('employees')
       .select('*')
@@ -56,7 +67,7 @@ export function useEmployees() {
 
     if (error) {
       console.error('Error fetching employees:', error);
-      toast.error('Fehler beim Laden der Mitarbeiter');
+      toast.error(`Fehler beim Laden der Mitarbeiter: ${error.message}`);
     } else {
       setEmployees((data || []) as Employee[]);
     }
@@ -66,6 +77,7 @@ export function useEmployees() {
   const getCompanyId = async (): Promise<string | null> => {
     if (!user) return null;
 
+    const supabase = await getSupabase();
     const { data } = await supabase
       .from('profiles')
       .select('company_id')
@@ -84,6 +96,7 @@ export function useEmployees() {
       return null;
     }
 
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('employees')
       .insert({
@@ -106,6 +119,7 @@ export function useEmployees() {
   };
 
   const updateEmployee = async (id: string, formData: Partial<EmployeeFormData>): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('employees')
       .update(formData)
@@ -123,6 +137,7 @@ export function useEmployees() {
   };
 
   const deleteEmployee = async (id: string): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('employees')
       .delete()

@@ -53,7 +53,7 @@ export default function Page() {
           <a
             target="_blank"
             rel="noopener"
-            href="https://kitech-software-ug-haftungsbes.sentry.io/issues/?project=4510714173063248"
+            href="https://kitech-software-ug-haftungsbes.sentry.io/issues/?project=4510714186039376"
           >
             Issues Page
           </a>

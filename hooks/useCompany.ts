@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
+import { useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface Company {
@@ -37,11 +38,22 @@ export function useCompany() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { session } = useSession();
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   const getCompanyId = async (): Promise<string | null> => {
     if (!user) return null;
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
     const { data } = await supabase
       .from('profiles')
       .select('company_id')
@@ -65,7 +77,7 @@ export function useCompany() {
       return;
     }
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('companies')
       .select('*')
@@ -86,7 +98,7 @@ export function useCompany() {
       return null;
     }
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
 
     // Add created_by field
     const companyData = {
@@ -129,7 +141,7 @@ export function useCompany() {
       return false;
     }
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('companies')
       .update(formData)

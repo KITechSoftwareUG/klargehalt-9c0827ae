@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useUser, useClerk } from '@clerk/nextjs';
+import { createClient, createClientWithToken } from '@/utils/supabase/client';
+import { useUser, useClerk, useSession } from '@clerk/nextjs';
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
 
@@ -33,6 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<AppRole | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
+  const { session } = useSession(); // Add this at top level of component
+
   useEffect(() => {
     if (!isLoaded) return;
     if (!isSignedIn || !user) {
@@ -44,10 +46,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchData = async () => {
       setDataLoading(true);
-      const supabase = createClient();
       try {
+        let token: string | null = null;
+        try {
+          // Get JWT from Clerk for Supabase
+          // Ensure you have created a JWT Template named 'supabase' in Clerk Dashboard
+          token = await session?.getToken({ template: 'supabase' }) || null;
+        } catch (tokenError: any) {
+          console.error('CLERK CONFIGURATION ERROR: Failed to retrieve Supabase token. Ensure a JWT Template named "supabase" is created in Clerk Dashboard.', JSON.stringify(tokenError, null, 2), tokenError);
+          // We continue without a token, which might mean RLS failure, but prevents runtime crash.
+        }
+
+        // Use authenticated client (or anon if token failed)
+        const supabase = createClientWithToken(token);
+
         // Fetch profile
-        const { data: profileData } = await supabase
+        const { data: profileData, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
@@ -55,6 +69,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (profileData) {
           setProfile(profileData as Profile);
+        } else {
+          // Create profile if not exists (Client-side sync)
+          const newProfile = {
+            user_id: user.id,
+            email: user.primaryEmailAddress?.emailAddress || '',
+            full_name: user.fullName || '',
+          };
+
+          const { data: createdProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert(newProfile)
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating profile:', createError);
+          } else {
+            setProfile(createdProfile as Profile);
+          }
         }
 
         // Fetch role
@@ -75,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchData();
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, user, session]);
 
   return (
     <AuthContext.Provider

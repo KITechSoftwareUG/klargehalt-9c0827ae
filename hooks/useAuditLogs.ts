@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
+import { useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface AuditLog {
@@ -33,12 +34,24 @@ export function useAuditLogs(filters?: AuditLogFilters) {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const { user } = useAuth();
+  const { session } = useSession();
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   const fetchAuditLogs = async (page = 0, pageSize = 50) => {
     if (!user) return;
-    
+
     setLoading(true);
-    
+
+    const supabase = await getSupabase();
     let query = supabase
       .from('audit_logs')
       .select('*', { count: 'exact' })
@@ -76,6 +89,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
   const exportAuditLogs = async (format: 'csv' | 'json' = 'csv') => {
     if (!user) return null;
 
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('audit_logs')
       .select('*')
@@ -97,18 +111,18 @@ export function useAuditLogs(filters?: AuditLogFilters) {
         log.entity_name || '',
         log.record_hash
       ]);
-      
+
       const csvContent = [headers, ...rows]
         .map(row => row.map(cell => `"${cell}"`).join(','))
         .join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
-      
+
       toast.success('Audit-Logs exportiert');
       return csvContent;
     }

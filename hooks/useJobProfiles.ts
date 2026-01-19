@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { useUser } from '@clerk/nextjs';
+import { createClientWithToken } from '@/utils/supabase/client';
+import { useUser, useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface JobProfile {
@@ -60,12 +60,23 @@ export function useJobProfiles() {
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, isLoaded } = useUser();
-  const supabase = createClient();
+  const { session } = useSession();
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   const fetchJobProfiles = async () => {
     if (!isLoaded || !user) return;
 
     setLoading(true);
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('job_profiles')
       .select('*')
@@ -73,7 +84,7 @@ export function useJobProfiles() {
 
     if (error) {
       console.error('Error fetching job profiles:', error);
-      toast.error('Fehler beim Laden der Job-Profile');
+      toast.error(`Fehler beim Laden der Job-Profile: ${error.message}`);
     } else {
       setJobProfiles(data || []);
     }
@@ -82,6 +93,7 @@ export function useJobProfiles() {
 
   const getCompanyId = async (): Promise<string | null> => {
     if (!user) return null;
+    const supabase = await getSupabase();
 
     const { data } = await supabase
       .from('profiles')
@@ -101,6 +113,7 @@ export function useJobProfiles() {
       return null;
     }
 
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('job_profiles')
       .insert({
@@ -123,6 +136,7 @@ export function useJobProfiles() {
   };
 
   const updateJobProfile = async (id: string, formData: Partial<JobProfileFormData>): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('job_profiles')
       .update(formData)
@@ -140,6 +154,7 @@ export function useJobProfiles() {
   };
 
   const deleteJobProfile = async (id: string): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('job_profiles')
       .delete()
@@ -176,12 +191,18 @@ export function usePayBands(jobProfileId?: string) {
   const [payBands, setPayBands] = useState<PayBand[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, isLoaded } = useUser();
-  const supabase = createClient();
+  const { session } = useSession();
+
+  const getSupabase = async () => {
+    const token = await session?.getToken({ template: 'supabase' });
+    return createClientWithToken(token || null);
+  };
 
   const fetchPayBands = async () => {
     if (!isLoaded || !user) return;
 
     setLoading(true);
+    const supabase = await getSupabase();
     let query = supabase.from('pay_bands').select('*');
 
     if (jobProfileId) {
@@ -202,6 +223,7 @@ export function usePayBands(jobProfileId?: string) {
   const createPayBand = async (formData: PayBandFormData): Promise<PayBand | null> => {
     if (!user) return null;
 
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('pay_bands')
       .insert({
@@ -223,6 +245,7 @@ export function usePayBands(jobProfileId?: string) {
   };
 
   const updatePayBand = async (id: string, formData: Partial<PayBandFormData>): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('pay_bands')
       .update(formData)
@@ -240,6 +263,7 @@ export function usePayBands(jobProfileId?: string) {
   };
 
   const deletePayBand = async (id: string): Promise<boolean> => {
+    const supabase = await getSupabase();
     const { error } = await supabase
       .from('pay_bands')
       .delete()

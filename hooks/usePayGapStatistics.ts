@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useSession } from '@clerk/nextjs';
 
 // Typen für aggregierte Statistiken
 export interface SalaryStatistic {
@@ -83,8 +84,19 @@ export interface PayEquityReport {
 
 export function usePayGapStatistics() {
   const { user } = useAuth();
+  const { session } = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   // Sichere Gehaltsstatistiken abrufen
   const getSalaryStatistics = useCallback(async (
@@ -94,7 +106,7 @@ export function usePayGapStatistics() {
     if (!user) return [];
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase
         .rpc('get_safe_salary_statistics', {
@@ -114,7 +126,7 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Gender Pay Gap berechnen
   const calculateGenderPayGap = useCallback(async (
@@ -125,7 +137,7 @@ export function usePayGapStatistics() {
     if (!user) return [];
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase
         .rpc('calculate_gender_pay_gap', {
@@ -146,7 +158,7 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Abweichungsanalyse
   const analyzeDeviations = useCallback(async (
@@ -155,7 +167,7 @@ export function usePayGapStatistics() {
     if (!user) return [];
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase
         .rpc('analyze_salary_deviations', {
@@ -174,14 +186,14 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Abteilungsstatistiken
   const getDepartmentStatistics = useCallback(async (): Promise<DepartmentStatistic[]> => {
     if (!user) return [];
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase
         .rpc('get_department_statistics');
@@ -206,14 +218,14 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Vollständiger Pay Equity Report
   const generatePayEquityReport = useCallback(async (): Promise<PayEquityReport | null> => {
     if (!user) return null;
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase
         .rpc('generate_pay_equity_report');
@@ -236,7 +248,7 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   return {
     loading,

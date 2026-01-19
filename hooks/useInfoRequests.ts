@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useSession } from '@clerk/nextjs';
 
 // Vordefinierte Anfrage-Typen (keine Freitextfelder)
 export const REQUEST_TYPES = {
@@ -65,17 +66,28 @@ export interface InfoRequestResponse {
 
 export function useInfoRequests() {
   const { user } = useAuth();
+  const { session } = useSession();
   const { toast } = useToast();
   const [requests, setRequests] = useState<InfoRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [rateLimits, setRateLimits] = useState<Record<InfoRequestType, RateLimitInfo>>({} as any);
+
+  const getSupabase = async () => {
+    let token = null;
+    try {
+      token = await session?.getToken({ template: 'supabase' });
+    } catch (e) {
+      console.error('Clerk Supabase Token Error:', e);
+    }
+    return createClientWithToken(token || null);
+  };
 
   // Anfragen laden
   const fetchRequests = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase.rpc('get_my_info_requests');
 
@@ -90,13 +102,13 @@ export function useInfoRequests() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Rate-Limit für einen Typ prüfen
   const checkRateLimit = useCallback(async (requestType: InfoRequestType): Promise<RateLimitInfo | null> => {
     if (!user) return null;
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase.rpc('check_request_rate_limit', {
         _request_type: requestType
@@ -111,7 +123,7 @@ export function useInfoRequests() {
       console.error('Rate limit check failed:', error);
       return null;
     }
-  }, [user]);
+  }, [user, session]);
 
   // Alle Rate-Limits laden
   const fetchAllRateLimits = useCallback(async () => {
@@ -126,7 +138,7 @@ export function useInfoRequests() {
     if (!user) return false;
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase.rpc('submit_info_request', {
         _request_type: requestType
@@ -164,13 +176,13 @@ export function useInfoRequests() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, fetchRequests, checkRateLimit]);
+  }, [user, toast, fetchRequests, checkRateLimit, session]);
 
   // Antwort abrufen
   const getResponse = useCallback(async (requestId: string): Promise<InfoRequestResponse | null> => {
     if (!user) return null;
 
-    const supabase = createClient();
+    const supabase = await getSupabase();
     try {
       const { data, error } = await supabase.rpc('get_info_request_response', {
         _request_id: requestId
@@ -194,7 +206,7 @@ export function useInfoRequests() {
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user, toast, session]);
 
   // Initial laden
   useEffect(() => {
