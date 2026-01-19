@@ -22,20 +22,17 @@ export default clerkMiddleware(async (auth, request) => {
     const searchParams = request.nextUrl.searchParams.toString();
     const path = `${url.pathname}${searchParams.length > 0 ? `?${searchParams}` : ""}`;
 
-    // 1. App Subdomain Logic
-    if (hostname === `app.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`) {
+    // 1. App Subdomain Logic (app.domain.tld)
+    if (hostname.startsWith("app.")) {
         if (!isPublicRoute(request)) {
             await auth.protect();
         }
         return NextResponse.rewrite(new URL(`/(app)${path}`, request.url));
     }
 
-    // 2. Marketing Domain Logic
-    if (hostname === process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname === `www.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`) {
-        return NextResponse.rewrite(new URL(`/(marketing)${path}`, request.url));
-    }
-
-    return NextResponse.next();
+    // 2. Fallback to Marketing (Everything else)
+    // This catches domain.tld, www.domain.tld, localhost, and Vercel preview URLs
+    return NextResponse.rewrite(new URL(`/(marketing)${path}`, request.url));
 });
 
 export const config = {
