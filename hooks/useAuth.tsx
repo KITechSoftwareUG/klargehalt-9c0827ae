@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Ensure you have created a JWT Template named 'supabase' in Clerk Dashboard
           token = await session?.getToken({ template: 'supabase' }) || null;
         } catch (tokenError: any) {
-          console.error('CLERK CONFIGURATION ERROR: Failed to retrieve Supabase token. Ensure a JWT Template named "supabase" is created in Clerk Dashboard.', JSON.stringify(tokenError, null, 2), tokenError);
+          // console.error('CLERK CONFIGURATION ERROR: Failed to retrieve Supabase token. Ensure a JWT Template named "supabase" is created in Clerk Dashboard.', JSON.stringify(tokenError, null, 2), tokenError);
           // We continue without a token, which might mean RLS failure, but prevents runtime crash.
         }
 
