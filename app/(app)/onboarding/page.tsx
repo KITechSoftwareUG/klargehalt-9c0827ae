@@ -12,7 +12,7 @@ import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileTe
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { createClientWithToken } from '@/utils/supabase/client';
-import { useSession } from '@clerk/nextjs';
+import { useSession, useOrganizationList } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
@@ -24,6 +24,7 @@ export default function OnboardingPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { session } = useSession();
+    const { createOrganization, setActive } = useOrganizationList();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -52,41 +53,54 @@ export default function OnboardingPage() {
     };
 
     const handleComplete = async () => {
-        if (!user) {
+        if (!user || !createOrganization || !setActive) {
             toast({
                 title: 'Fehler',
-                description: 'Sie müssen angemeldet sein.',
+                description: 'Initialisierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
                 variant: 'destructive',
             });
             return;
         }
 
         setLoading(true);
-        // Get the Clerk Token for Supabase
-        let token = null;
-        try {
-            token = await session?.getToken({ template: 'supabase' });
-        } catch (e) {
-            console.error('Clerk Supabase Token Error:', e);
-        }
-        const supabase = createClientWithToken(token || null);
 
         try {
-            // Create company
+            // STEP 1: Create Organization in Clerk
+            // This is the source of truth for our Tenant-Model
+            const organization = await createOrganization({
+                name: companyName || `${fullName}'s Firma`
+            });
+
+            // STEP 2: Set the new organization as active
+            await setActive({ organization: organization.id });
+
+            // STEP 3: Get the NEW Clerk Token (which now contains the orgId claim)
+            // We wait a tiny bit to ensure Clerk has processed the session change
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const token = await session?.getToken({ template: 'supabase' });
+
+            if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
+
+            const supabase = createClientWithToken(token);
+
+            // STEP 4: Create Supabase records
+            // Note: organization_id is automatically picked up from JWT via RLS & Default Value
+
+            // 4a. Create company in Supabase
             const { data: company, error: companyError } = await supabase
                 .from('companies')
                 .insert({
                     name: companyName,
                     industry,
                     size: companySize,
-                    created_by: user.id,
+                    organization_id: organization.id // Explicit redundanz for safety
                 })
                 .select()
                 .single();
 
             if (companyError) throw companyError;
 
-            // Update user profile
+            // 4b. Update user profile
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({
@@ -97,7 +111,7 @@ export default function OnboardingPage() {
 
             if (profileError) throw profileError;
 
-            // Set user role
+            // 4c. Set user role (Optional: depending on your user_roles schema)
             const { error: roleError } = await supabase
                 .from('user_roles')
                 .upsert({
@@ -108,7 +122,7 @@ export default function OnboardingPage() {
 
             if (roleError) throw roleError;
 
-            // Store onboarding preferences
+            // 4d. Store onboarding preferences
             const { error: prefsError } = await supabase
                 .from('onboarding_data')
                 .insert({
@@ -130,8 +144,8 @@ export default function OnboardingPage() {
         } catch (error: any) {
             console.error('Onboarding error:', error);
             toast({
-                title: 'Fehler',
-                description: error.message || 'Ein Fehler ist aufgetreten.',
+                title: 'Fehler beim Abschluss',
+                description: error.message || 'Ein technisches Problem ist aufgetreten.',
                 variant: 'destructive',
             });
         } finally {
