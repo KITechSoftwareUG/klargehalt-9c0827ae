@@ -12,13 +12,7 @@ const isPublicRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, request) => {
     const url = request.nextUrl;
-    let hostname = request.headers.get("host")!.replace(".localhost:3000", `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`);
-
-    // Special case for Vercel preview URLs
-    if (hostname.includes("vercel.app")) {
-        hostname = `${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`;
-    }
-
+    const hostname = request.headers.get("host") || "";
     const searchParams = request.nextUrl.searchParams.toString();
     const path = `${url.pathname}${searchParams.length > 0 ? `?${searchParams}` : ""}`;
 
