@@ -18,6 +18,11 @@ export default clerkMiddleware(async (auth, request) => {
 
     // 1. App Subdomain Logic (app.domain.tld)
     if (hostname.startsWith("app.")) {
+        // If visiting the root of the app subdomain, go to dashboard
+        if (url.pathname === "/") {
+            return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+
         if (!isPublicRoute(request)) {
             await auth.protect();
         }
