@@ -1,11 +1,12 @@
 import { Logo } from "@/components/Logo";
+import { getMarketingUrl } from "@/utils/url";
 
 const Footer = () => {
   const footerLinks = {
     produkt: [
-      { label: "Funktionen", href: "#features" },
-      { label: "Sicherheit", href: "#security" },
-      { label: "Preise", href: "#pricing" },
+      { label: "Funktionen", href: getMarketingUrl("/#features") },
+      { label: "Sicherheit", href: getMarketingUrl("/#security") },
+      { label: "Preise", href: getMarketingUrl("/#pricing") },
       { label: "Roadmap", href: "#" },
     ],
     unternehmen: [
@@ -24,7 +25,7 @@ const Footer = () => {
       { label: "Hilfe-Center", href: "#" },
       { label: "Dokumentation", href: "#" },
       { label: "Status", href: "#" },
-      { label: "Kontakt", href: "#contact" },
+      { label: "Kontakt", href: getMarketingUrl("/#contact") },
     ],
   };
 
@@ -34,7 +35,7 @@ const Footer = () => {
         <div className="grid lg:grid-cols-6 gap-12 mb-12">
           {/* Brand */}
           <div className="lg:col-span-2 space-y-4">
-            <a href="/" className="flex items-center gap-2">
+            <a href={getMarketingUrl("/")} className="flex items-center gap-2">
               <Logo className="w-9 h-9" variant="light" />
               <span className="text-xl font-bold text-primary-foreground tracking-tight lowercase">
                 klargehalt
