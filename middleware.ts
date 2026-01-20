@@ -11,16 +11,17 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, request) => {
     const url = request.nextUrl;
     const hostname = request.headers.get("host") || "";
-
-    // Normalize path to prevent double slashes
     const pathname = url.pathname;
-    const searchParams = url.searchParams.toString();
-    const fullPath = `${pathname}${searchParams ? `?${searchParams}` : ""}`;
 
     // 1. App Subdomain Logic (app.klargehalt.de)
     if (hostname.startsWith("app.") || hostname.includes("-app-")) {
 
-        // Auth-Check für App-Subdomain
+        // Redirect: app.klargehalt.de/ -> /dashboard
+        if (pathname === "/") {
+            return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+
+        // Auth-Check for App-Subdomain
         if (!isPublicRoute(request)) {
             const authObj = await auth();
             if (!authObj.userId) {
@@ -31,22 +32,12 @@ export default clerkMiddleware(async (auth, request) => {
             }
         }
 
-        // Redirect: app.klargehalt.de/ -> /dashboard
-        if (pathname === "/") {
-            return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-
-        // Rewrite to (app) group folder
-        // For /dashboard, this becomes /(app)/dashboard
-        // We use the URL constructor properly to avoid slash issues
-        url.pathname = `/(app)${pathname}`;
-        return NextResponse.rewrite(url);
+        return NextResponse.next();
     }
 
-    // 2. Marketing Domain Logic (klargehalt.de & others)
-    // Avoid double slashes and rewrite to (marketing)
-    url.pathname = `/(marketing)${pathname}`;
-    return NextResponse.rewrite(url);
+    // 2. Marketing Domain / Localhost Logic
+    // Next.js automatically finds files in (marketing) or (app) if they are uniquely defined
+    return NextResponse.next();
 });
 
 export const config = {
