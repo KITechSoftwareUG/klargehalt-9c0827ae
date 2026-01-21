@@ -1,5 +1,7 @@
 'use client';
 
+// Trigger deployment check for env variables
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
