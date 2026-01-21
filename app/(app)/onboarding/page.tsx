@@ -67,16 +67,22 @@ export default function OnboardingPage() {
         try {
             // STEP 1: Create Organization in Clerk
             // This is the source of truth for our Tenant-Model
+            console.log('Creating Clerk Organization...');
             const organization = await createOrganization({
                 name: companyName || `${fullName}'s Firma`
             });
 
+            if (!organization) throw new Error("Organisation konnte in Clerk nicht erstellt werden.");
+            console.log('Clerk Org created:', organization.id);
+
             // STEP 2: Set the new organization as active
+            // This updates the local session
             await setActive({ organization: organization.id });
+            console.log('Clerk Org activated');
 
             // STEP 3: Get the NEW Clerk Token (which now contains the orgId claim)
-            // We wait a tiny bit to ensure Clerk has processed the session change
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // We wait a bit to ensure the session update has propagated
+            await new Promise(resolve => setTimeout(resolve, 800));
             const token = await session?.getToken({ template: 'supabase' });
 
             if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
@@ -84,65 +90,77 @@ export default function OnboardingPage() {
             const supabase = createClientWithToken(token);
 
             // STEP 4: Create Supabase records
-            // Note: organization_id is automatically picked up from JWT via RLS & Default Value
 
             // 4a. Create company in Supabase
+            // Note: organization_id is the primary key for multi-tenancy
             const { data: company, error: companyError } = await supabase
                 .from('companies')
                 .insert({
                     name: companyName,
                     industry,
                     size: companySize,
-                    organization_id: organization.id // Explicit redundanz for safety
+                    organization_id: organization.id,
+                    created_by: user.id
                 })
                 .select()
                 .single();
 
-            if (companyError) throw companyError;
+            if (companyError) {
+                console.error('Supabase Company Error:', companyError);
+                throw new Error(`Firma konnte nicht in DB gespeichert werden: ${companyError.message}`);
+            }
 
-            // 4b. Update user profile
+            // 4b. Sync user profile
+            // Use upsert to handle cases where the profile might or might not exist
             const { error: profileError } = await supabase
                 .from('profiles')
-                .update({
+                .upsert({
+                    user_id: user.id,
                     full_name: fullName,
                     company_name: companyName,
-                })
-                .eq('user_id', user.id);
+                    organization_id: organization.id // Link profile to current org
+                }, { onConflict: 'user_id' });
 
-            if (profileError) throw profileError;
+            if (profileError) {
+                console.error('Supabase Profile Error:', profileError);
+                throw new Error(`Profil konnte nicht synchronisiert werden: ${profileError.message}`);
+            }
 
-            // 4c. Set user role (Optional: depending on your user_roles schema)
+            // 4c. Set user role 
             const { error: roleError } = await supabase
                 .from('user_roles')
                 .upsert({
                     user_id: user.id,
                     role: role,
+                    organization_id: organization.id,
                     company_id: company.id,
                 });
 
-            if (roleError) throw roleError;
+            if (roleError) console.error('User Roles Error:', roleError);
 
             // 4d. Store onboarding preferences
             const { error: prefsError } = await supabase
                 .from('onboarding_data')
                 .insert({
                     user_id: user.id,
+                    organization_id: organization.id,
                     company_id: company.id,
                     company_size: companySize,
                     consulting_option: consultingOption,
                     completed_at: new Date().toISOString(),
                 });
 
-            if (prefsError) throw prefsError;
+            if (prefsError) console.error('Onboarding Data Error:', prefsError);
 
             toast({
                 title: 'Willkommen bei KlarGehalt!',
                 description: 'Ihr Onboarding wurde erfolgreich abgeschlossen.',
             });
 
-            router.push('/dashboard');
+            // Brief delay to ensure state is clear before redirect
+            setTimeout(() => router.push('/dashboard'), 500);
         } catch (error: any) {
-            console.error('Onboarding error:', error);
+            console.error('Onboarding error detailed:', error);
             toast({
                 title: 'Fehler beim Abschluss',
                 description: error.message || 'Ein technisches Problem ist aufgetreten.',

@@ -461,7 +461,7 @@ export default function BookConsultingPage() {
                             <Button onClick={() => router.push('/dashboard')} className="flex-1">
                                 Zum Dashboard
                             </Button>
-                            <Button onClick={() => router.push('/')} variant="outline" className="flex-1">
+                            <Button onClick={() => window.location.href = 'https://klargehalt.de'} variant="outline" className="flex-1">
                                 Zur Startseite
                             </Button>
                         </div>
