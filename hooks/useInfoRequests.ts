@@ -65,7 +65,7 @@ export interface InfoRequestResponse {
 }
 
 export function useInfoRequests() {
-  const { user } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
   const { toast } = useToast();
   const [requests, setRequests] = useState<InfoRequest[]>([]);
@@ -73,22 +73,17 @@ export function useInfoRequests() {
   const [rateLimits, setRateLimits] = useState<Record<InfoRequestType, RateLimitInfo>>({} as any);
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
   // Anfragen laden
   const fetchRequests = useCallback(async () => {
-    if (!user) return;
+    if (!isLoaded || !user || !orgId) return;
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('get_my_info_requests');
 
       if (error) throw error;
@@ -102,14 +97,14 @@ export function useInfoRequests() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Rate-Limit für einen Typ prüfen
   const checkRateLimit = useCallback(async (requestType: InfoRequestType): Promise<RateLimitInfo | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('check_request_rate_limit', {
         _request_type: requestType
       });
@@ -123,23 +118,23 @@ export function useInfoRequests() {
       console.error('Rate limit check failed:', error);
       return null;
     }
-  }, [user, session]);
+  }, [isLoaded, user, orgId, session]);
 
   // Alle Rate-Limits laden
   const fetchAllRateLimits = useCallback(async () => {
-    if (!user) return;
+    if (!isLoaded || !user || !orgId) return;
 
     const types = Object.keys(REQUEST_TYPES) as InfoRequestType[];
     await Promise.all(types.map(type => checkRateLimit(type)));
-  }, [user, checkRateLimit]);
+  }, [isLoaded, user, orgId, checkRateLimit]);
 
   // Anfrage einreichen
   const submitRequest = useCallback(async (requestType: InfoRequestType): Promise<boolean> => {
-    if (!user) return false;
+    if (!isLoaded || !user || !orgId) return false;
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('submit_info_request', {
         _request_type: requestType
       });
@@ -176,14 +171,14 @@ export function useInfoRequests() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, fetchRequests, checkRateLimit, session]);
+  }, [isLoaded, user, orgId, toast, fetchRequests, checkRateLimit, session]);
 
   // Antwort abrufen
   const getResponse = useCallback(async (requestId: string): Promise<InfoRequestResponse | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('get_info_request_response', {
         _request_id: requestId
       });
@@ -206,15 +201,15 @@ export function useInfoRequests() {
       });
       return null;
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Initial laden
   useEffect(() => {
-    if (user) {
+    if (isLoaded && user && orgId) {
       fetchRequests();
       fetchAllRateLimits();
     }
-  }, [user, fetchRequests, fetchAllRateLimits]);
+  }, [isLoaded, user, orgId, fetchRequests, fetchAllRateLimits]);
 
   return {
     requests,

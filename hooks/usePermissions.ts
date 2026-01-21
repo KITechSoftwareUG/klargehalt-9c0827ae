@@ -70,11 +70,11 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionCodes, setPermissionCodes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
 
   const fetchPermissions = useCallback(async () => {
-    if (!user) {
+    if (!isLoaded || !user || !orgId) {
       setPermissions([]);
       setPermissionCodes(new Set());
       setLoading(false);
@@ -83,37 +83,31 @@ export function usePermissions() {
 
     setLoading(true);
 
-    // Create authenticated client
-    let token = null;
     try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
-    const supabase = createClientWithToken(token || null);
+      const token = await session?.getToken({ template: 'supabase' });
+      const supabase = createClientWithToken(token || null);
 
-    // Call the database function to get user's permissions
-    const { data, error } = await supabase.rpc('get_user_permissions');
+      // Call the database function to get user's permissions
+      const { data, error } = await supabase.rpc('get_user_permissions');
 
-    if (error) {
-      console.error('Error fetching permissions:', JSON.stringify(error, null, 2), error);
-      // It seems the error object is empty or not serializing well.
-      // Often this happens with Supabase errors if the network request fails completely or RLS blocks it silently.
-      setPermissions([]);
-      setPermissionCodes(new Set());
-    } else {
+      if (error) throw error;
+
       // Map the database response to our Permission interface
-      const perms: Permission[] = (data || []).map((row: { permission_code: string; permission_name: string; category: string }) => ({
+      const perms: Permission[] = (data || []).map((row: any) => ({
         code: row.permission_code,
         name: row.permission_name,
         category: row.category,
       }));
       setPermissions(perms);
       setPermissionCodes(new Set(perms.map(p => p.code)));
+    } catch (error: any) {
+      console.error('Error fetching permissions:', error);
+      setPermissions([]);
+      setPermissionCodes(new Set());
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }, [user, session]);
+  }, [isLoaded, user, orgId, session]);
 
   useEffect(() => {
     fetchPermissions();

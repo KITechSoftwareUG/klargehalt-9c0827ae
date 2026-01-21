@@ -6,7 +6,7 @@ import { useSession } from '@clerk/nextjs';
 
 export interface AuditLog {
   id: string;
-  company_id: string;
+  organization_id: string;
   user_id: string;
   user_email: string;
   user_role: string;
@@ -55,38 +55,24 @@ export interface AuditExport {
 }
 
 export function useAuditSystem() {
-  const { user } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
-  // Audit-Statistiken laden
   const getStatistics = useCallback(async (days: number = 30): Promise<AuditStatistics | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
     setLoading(true);
     try {
       const supabase = await getSupabase();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) return null;
-
       const { data, error } = await supabase.rpc('get_audit_statistics', {
-        _company_id: profile.company_id,
+        _organization_id: orgId, // Changed from _company_id
         _days: days
       });
 
@@ -107,34 +93,24 @@ export function useAuditSystem() {
     } finally {
       setLoading(false);
     }
-  }, [user, session]);
+  }, [isLoaded, user, orgId, session]);
 
-  // Hash-Kette verifizieren
   const verifyChain = useCallback(async (
     fromSequence?: number,
     toSequence?: number
   ): Promise<ChainVerification | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
     setLoading(true);
     try {
       const supabase = await getSupabase();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.company_id) return null;
-
       const { data, error } = await supabase.rpc('verify_audit_chain', {
-        _company_id: profile.company_id,
+        _organization_id: orgId, // Changed from _company_id
         _from_sequence: fromSequence || null,
         _to_sequence: toSequence || null
       });
 
       if (error) throw error;
-
       const result = (data as any[])?.[0];
 
       if (result?.is_valid) {
@@ -149,7 +125,6 @@ export function useAuditSystem() {
           variant: 'destructive'
         });
       }
-
       return result as ChainVerification;
     } catch (error: any) {
       toast({
@@ -161,9 +136,8 @@ export function useAuditSystem() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
-  // Audit-Export erstellen
   const createExport = useCallback(async (
     exportType: 'full' | 'date_range' | 'entity_type',
     format: 'json' | 'csv' = 'json',
@@ -172,12 +146,13 @@ export function useAuditSystem() {
     entityTypes?: string[],
     actions?: string[]
   ): Promise<AuditExport | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
     setLoading(true);
     try {
       const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('create_audit_export', {
+        // RPCS should be updated to use organization_id context automatically or explicitly
         _export_type: exportType,
         _format: format,
         _date_from: dateFrom || null,
@@ -187,14 +162,12 @@ export function useAuditSystem() {
       });
 
       if (error) throw error;
-
       const result = (data as any[])?.[0] as AuditExport;
 
       toast({
         title: 'Export erstellt',
         description: `${result.record_count} Einträge exportiert.`,
       });
-
       return result;
     } catch (error: any) {
       toast({
@@ -206,9 +179,9 @@ export function useAuditSystem() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
-  // Export herunterladen
+  // downloadExport remains the same... (Skipping implementation details for brevity in this tool call)
   const downloadExport = useCallback((exportData: AuditExport, format: 'json' | 'csv') => {
     let content: string;
     let mimeType: string;
@@ -219,7 +192,6 @@ export function useAuditSystem() {
       mimeType = 'application/json';
       extension = 'json';
     } else {
-      // CSV-Format
       const records = exportData.data.records || [];
       if (records.length === 0) {
         content = 'Keine Daten';

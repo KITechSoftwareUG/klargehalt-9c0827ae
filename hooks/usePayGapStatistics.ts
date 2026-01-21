@@ -83,18 +83,13 @@ export interface PayEquityReport {
 }
 
 export function usePayGapStatistics() {
-  const { user } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
@@ -103,11 +98,11 @@ export function usePayGapStatistics() {
     jobProfileId: string,
     jobLevelId?: string
   ): Promise<SalaryStatistic[]> => {
-    if (!user) return [];
+    if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .rpc('get_safe_salary_statistics', {
           _job_profile_id: jobProfileId,
@@ -126,7 +121,7 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Gender Pay Gap berechnen
   const calculateGenderPayGap = useCallback(async (
@@ -134,11 +129,11 @@ export function usePayGapStatistics() {
     jobLevelId?: string,
     department?: string
   ): Promise<GenderPayGap[]> => {
-    if (!user) return [];
+    if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .rpc('calculate_gender_pay_gap', {
           _job_profile_id: jobProfileId || null,
@@ -158,17 +153,17 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Abweichungsanalyse
   const analyzeDeviations = useCallback(async (
     thresholdPercent: number = 20
   ): Promise<DeviationAnalysis[]> => {
-    if (!user) return [];
+    if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .rpc('analyze_salary_deviations', {
           _threshold_percent: thresholdPercent
@@ -186,21 +181,20 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Abteilungsstatistiken
   const getDepartmentStatistics = useCallback(async (): Promise<DepartmentStatistic[]> => {
-    if (!user) return [];
+    if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .rpc('get_department_statistics');
 
       if (error) throw error;
 
-      // Typ-Transformation für JSONB-Felder
       return (data || []).map((item: any) => ({
         department: item.department,
         total_employees: item.total_employees,
@@ -218,15 +212,15 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   // Vollständiger Pay Equity Report
   const generatePayEquityReport = useCallback(async (): Promise<PayEquityReport | null> => {
-    if (!user) return null;
+    if (!isLoaded || !user || !orgId) return null;
 
     setLoading(true);
-    const supabase = await getSupabase();
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .rpc('generate_pay_equity_report');
 
@@ -248,7 +242,7 @@ export function usePayGapStatistics() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, session]);
+  }, [isLoaded, user, orgId, toast, session]);
 
   return {
     loading,
