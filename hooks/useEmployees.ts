@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { createClientWithToken } from '@/utils/supabase/client';
-import { useUser, useSession } from '@clerk/nextjs';
+import { useSession } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export interface Employee {
   id: string;
-  company_id: string;
+  organization_id: string;
   user_id: string | null;
   employee_number: string | null;
   first_name: string;
@@ -42,123 +43,115 @@ export interface EmployeeFormData {
 export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isLoaded } = useUser();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
   const fetchEmployees = async () => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user || !orgId) {
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .order('last_name');
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('last_name');
 
-    if (error) {
-      console.error('Error fetching employees:', error);
-      toast.error(`Fehler beim Laden der Mitarbeiter: ${error.message}`);
-    } else {
+      if (error) throw error;
       setEmployees((data || []) as Employee[]);
+    } catch (error: any) {
+      console.error('Error fetching employees:', error);
+      toast.error(`Fehler beim Laden der Mitarbeiter`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
-
-  const getCompanyId = async (): Promise<string | null> => {
-    if (!user) return null;
-
-    const supabase = await getSupabase();
-    const { data } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    return data?.company_id || null;
   };
 
   const createEmployee = async (formData: EmployeeFormData): Promise<Employee | null> => {
-    if (!user) return null;
-
-    const companyId = await getCompanyId();
-    if (!companyId) {
-      toast.error('Keine Firma zugeordnet');
+    if (!user || !orgId) {
+      toast.error('Keine Organisation zugeordnet');
       return null;
     }
 
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('employees')
-      .insert({
-        ...formData,
-        company_id: companyId,
-        created_by: user.id,
-      })
-      .select()
-      .single();
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('employees')
+        .insert({
+          ...formData,
+          organization_id: orgId,
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Mitarbeiter erfolgreich erstellt');
+      await fetchEmployees();
+      return data as Employee;
+    } catch (error: any) {
       console.error('Error creating employee:', error);
       toast.error('Fehler beim Erstellen des Mitarbeiters');
       return null;
     }
-
-    toast.success('Mitarbeiter erfolgreich erstellt');
-    await fetchEmployees();
-    return data as Employee;
   };
 
   const updateEmployee = async (id: string, formData: Partial<EmployeeFormData>): Promise<boolean> => {
-    const supabase = await getSupabase();
-    const { error } = await supabase
-      .from('employees')
-      .update(formData)
-      .eq('id', id);
+    try {
+      const supabase = await getSupabase();
+      const { error } = await supabase
+        .from('employees')
+        .update(formData)
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Mitarbeiter erfolgreich aktualisiert');
+      await fetchEmployees();
+      return true;
+    } catch (error: any) {
       console.error('Error updating employee:', error);
       toast.error('Fehler beim Aktualisieren des Mitarbeiters');
       return false;
     }
-
-    toast.success('Mitarbeiter erfolgreich aktualisiert');
-    await fetchEmployees();
-    return true;
   };
 
   const deleteEmployee = async (id: string): Promise<boolean> => {
-    const supabase = await getSupabase();
-    const { error } = await supabase
-      .from('employees')
-      .delete()
-      .eq('id', id);
+    try {
+      const supabase = await getSupabase();
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Mitarbeiter erfolgreich gelöscht');
+      await fetchEmployees();
+      return true;
+    } catch (error: any) {
       console.error('Error deleting employee:', error);
       toast.error('Fehler beim Löschen des Mitarbeiters');
       return false;
     }
-
-    toast.success('Mitarbeiter erfolgreich gelöscht');
-    await fetchEmployees();
-    return true;
   };
 
   useEffect(() => {
-    if (isLoaded && user) {
+    if (isLoaded && user && orgId) {
       fetchEmployees();
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, orgId]);
 
   return {
     employees,

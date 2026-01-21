@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 export interface Company {
   id: string;
+  organization_id: string;
   name: string;
   legal_name: string | null;
   tax_id: string | null;
@@ -37,130 +38,110 @@ export interface CompanyFormData {
 export function useCompany() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
-  const getCompanyId = async (): Promise<string | null> => {
-    if (!user) return null;
-
-    const supabase = await getSupabase();
-    const { data } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    return data?.company_id || null;
-  };
-
   const fetchCompany = async () => {
-    if (!user) {
+    if (!isLoaded || !user || !orgId) {
+      setCompany(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const companyId = await getCompanyId();
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('organization_id', orgId)
+        .maybeSingle();
 
-    if (!companyId) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('id', companyId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching company:', error);
-    } else {
+      if (error) throw error;
       setCompany(data as Company | null);
+    } catch (error: any) {
+      console.error('Error fetching company:', error);
+      toast.error('Fehler beim Laden der Firmendaten');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const createCompany = async (formData: CompanyFormData): Promise<Company | null> => {
-    if (!user) {
-      toast.error('Sie müssen angemeldet sein');
+    if (!user || !orgId) {
+      toast.error('Sie müssen Mitglied einer Organisation sein');
       return null;
     }
 
-    const supabase = await getSupabase();
+    try {
+      const supabase = await getSupabase();
 
-    // Add created_by field
-    const companyData = {
-      ...formData,
-      created_by: user.id,
-      country: formData.country || 'DE',
-    };
+      const companyData = {
+        ...formData,
+        organization_id: orgId,
+        created_by: user.id,
+        country: formData.country || 'DE',
+      };
 
-    const { data, error } = await supabase
-      .from('companies')
-      .insert(companyData)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('companies')
+        .insert(companyData)
+        .select()
+        .single();
 
-    if (error) {
+      if (error) throw error;
+
+      // Optional: Sync back to profile
+      await supabase
+        .from('profiles')
+        .update({ company_name: formData.name })
+        .eq('user_id', user.id);
+
+      toast.success('Firma erfolgreich erstellt');
+      setCompany(data as Company);
+      return data as Company;
+    } catch (error: any) {
       console.error('Error creating company:', error);
       toast.error(`Fehler beim Erstellen der Firma: ${error.message}`);
       return null;
     }
-
-    // Link company to user profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ company_id: data.id, company_name: formData.name })
-      .eq('user_id', user.id);
-
-    if (profileError) {
-      console.error('Error linking company to profile:', profileError);
-    }
-
-    toast.success('Firma erfolgreich erstellt');
-    const newCompany = data as Company;
-    setCompany(newCompany);
-    return newCompany;
   };
 
   const updateCompany = async (formData: Partial<CompanyFormData>): Promise<boolean> => {
     if (!company) {
-      toast.error('Keine Firma gefunden');
+      toast.error('Keine Firma zum Aktualisieren gefunden');
       return false;
     }
 
-    const supabase = await getSupabase();
-    const { error } = await supabase
-      .from('companies')
-      .update(formData)
-      .eq('id', company.id);
+    try {
+      const supabase = await getSupabase();
+      const { error } = await supabase
+        .from('companies')
+        .update(formData)
+        .eq('id', company.id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Firma erfolgreich aktualisiert');
+      await fetchCompany();
+      return true;
+    } catch (error: any) {
       console.error('Error updating company:', error);
       toast.error(`Fehler beim Aktualisieren der Firma: ${error.message}`);
       return false;
     }
-
-    toast.success('Firma erfolgreich aktualisiert');
-    await fetchCompany();
-    return true;
   };
 
   useEffect(() => {
-    fetchCompany();
-  }, [user]);
+    if (isLoaded && user && orgId) {
+      fetchCompany();
+    }
+  }, [isLoaded, user, orgId]);
 
   return {
     company,

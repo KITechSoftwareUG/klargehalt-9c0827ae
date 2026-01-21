@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { createClient, createClientWithToken } from '@/utils/supabase/client';
-import { useUser, useClerk, useSession } from '@clerk/nextjs';
+import { useUser, useClerk, useSession, useOrganization } from '@clerk/nextjs';
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
 
@@ -10,17 +10,20 @@ interface Profile {
   email: string;
   full_name: string | null;
   company_name: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface AuthContextType {
-  user: any; // Using any for compatibility or explicit Clerk UserResource
+  user: any;
   isLoaded: boolean;
   isSignedIn: boolean;
   profile: Profile | null;
   role: AppRole | null;
-  loading: boolean; // Computed combined loading state
+  organization: any;
+  orgId: string | null;
+  loading: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -28,15 +31,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { organization, isLoaded: isOrgLoaded } = useOrganization();
   const { signOut } = useClerk();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
-  const { session } = useSession(); // Add this at top level of component
+  const { session } = useSession();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !isOrgLoaded) return;
     if (!isSignedIn || !user) {
       setProfile(null);
       setRole(null);
@@ -49,19 +53,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         let token: string | null = null;
         try {
-          // Get JWT from Clerk for Supabase
-          // Ensure you have created a JWT Template named 'supabase' in Clerk Dashboard
           token = await session?.getToken({ template: 'supabase' }) || null;
         } catch (tokenError: any) {
-          // console.error('CLERK CONFIGURATION ERROR: Failed to retrieve Supabase token. Ensure a JWT Template named "supabase" is created in Clerk Dashboard.', JSON.stringify(tokenError, null, 2), tokenError);
-          // We continue without a token, which might mean RLS failure, but prevents runtime crash.
+          console.error('Clerk Token Error:', tokenError);
         }
 
-        // Use authenticated client (or anon if token failed)
         const supabase = createClientWithToken(token);
 
-        // Fetch profile
-        const { data: profileData, error } = await supabase
+        // Fetch profile - Filtered by user_id (global/security)
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
@@ -75,22 +75,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user_id: user.id,
             email: user.primaryEmailAddress?.emailAddress || '',
             full_name: user.fullName || '',
+            organization_id: organization?.id || null
           };
 
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
-            .insert(newProfile)
+            .upsert(newProfile, { onConflict: 'user_id' })
             .select()
             .single();
 
-          if (createError) {
-            console.error('Error creating profile:', createError);
-          } else {
+          if (!createError) {
             setProfile(createdProfile as Profile);
           }
         }
 
-        // Fetch role
+        // Fetch role from DB (custom roles) or fallback to Clerk role
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
@@ -101,24 +100,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setRole(roleData.role as AppRole);
         }
       } catch (error) {
-        console.error('Error fetching profile/role:', error);
+        console.error('Error fetching global auth data:', error);
       } finally {
         setDataLoading(false);
       }
     };
 
     fetchData();
-  }, [isLoaded, isSignedIn, user, session]);
+  }, [isLoaded, isOrgLoaded, isSignedIn, user, session, organization?.id]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isLoaded,
+        isLoaded: isLoaded && isOrgLoaded,
         isSignedIn: !!isSignedIn,
         profile,
         role,
-        loading: !isLoaded || dataLoading,
+        organization,
+        orgId: organization?.id || null,
+        loading: !isLoaded || !isOrgLoaded || dataLoading,
         signOut: async () => await signOut()
       }}
     >

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { createClientWithToken } from '@/utils/supabase/client';
-import { useUser, useSession } from '@clerk/nextjs';
+import { useSession } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export interface JobProfile {
   id: string;
-  company_id: string;
+  organization_id: string;
   title: string;
   description: string | null;
   responsibilities: string | null;
@@ -59,123 +60,115 @@ export interface PayBandFormData {
 export function useJobProfiles() {
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isLoaded } = useUser();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
 
   const getSupabase = async () => {
-    let token = null;
-    try {
-      token = await session?.getToken({ template: 'supabase' });
-    } catch (e) {
-      console.error('Clerk Supabase Token Error:', e);
-    }
+    const token = await session?.getToken({ template: 'supabase' });
     return createClientWithToken(token || null);
   };
 
   const fetchJobProfiles = async () => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user || !orgId) {
+      setJobProfiles([]);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('job_profiles')
-      .select('*')
-      .order('title');
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('job_profiles')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('title');
 
-    if (error) {
-      console.error('Error fetching job profiles:', error);
-      toast.error(`Fehler beim Laden der Job-Profile: ${error.message}`);
-    } else {
+      if (error) throw error;
       setJobProfiles(data || []);
+    } catch (error: any) {
+      console.error('Error fetching job profiles:', error);
+      toast.error(`Fehler beim Laden der Job-Profile`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
-
-  const getCompanyId = async (): Promise<string | null> => {
-    if (!user) return null;
-    const supabase = await getSupabase();
-
-    const { data } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    return data?.company_id || null;
   };
 
   const createJobProfile = async (formData: JobProfileFormData): Promise<JobProfile | null> => {
-    if (!user) return null;
-
-    const companyId = await getCompanyId();
-    if (!companyId) {
-      toast.error('Keine Firma zugeordnet');
+    if (!user || !orgId) {
+      toast.error('Keine Organisation zugeordnet');
       return null;
     }
 
-    const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('job_profiles')
-      .insert({
-        ...formData,
-        company_id: companyId,
-        created_by: user.id,
-      })
-      .select()
-      .single();
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('job_profiles')
+        .insert({
+          ...formData,
+          organization_id: orgId,
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Job-Profil erfolgreich erstellt');
+      await fetchJobProfiles();
+      return data;
+    } catch (error: any) {
       console.error('Error creating job profile:', error);
       toast.error('Fehler beim Erstellen des Job-Profils');
       return null;
     }
-
-    toast.success('Job-Profil erfolgreich erstellt');
-    await fetchJobProfiles();
-    return data;
   };
 
   const updateJobProfile = async (id: string, formData: Partial<JobProfileFormData>): Promise<boolean> => {
-    const supabase = await getSupabase();
-    const { error } = await supabase
-      .from('job_profiles')
-      .update(formData)
-      .eq('id', id);
+    try {
+      const supabase = await getSupabase();
+      const { error } = await supabase
+        .from('job_profiles')
+        .update(formData)
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Job-Profil erfolgreich aktualisiert');
+      await fetchJobProfiles();
+      return true;
+    } catch (error: any) {
       console.error('Error updating job profile:', error);
       toast.error('Fehler beim Aktualisieren des Job-Profils');
       return false;
     }
-
-    toast.success('Job-Profil erfolgreich aktualisiert');
-    await fetchJobProfiles();
-    return true;
   };
 
   const deleteJobProfile = async (id: string): Promise<boolean> => {
-    const supabase = await getSupabase();
-    const { error } = await supabase
-      .from('job_profiles')
-      .delete()
-      .eq('id', id);
+    try {
+      const supabase = await getSupabase();
+      const { error } = await supabase
+        .from('job_profiles')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
+      if (error) throw error;
+
+      toast.success('Job-Profil erfolgreich gelöscht');
+      await fetchJobProfiles();
+      return true;
+    } catch (error: any) {
       console.error('Error deleting job profile:', error);
       toast.error('Fehler beim Löschen des Job-Profils');
       return false;
     }
-
-    toast.success('Job-Profil erfolgreich gelöscht');
-    await fetchJobProfiles();
-    return true;
   };
 
   useEffect(() => {
-    if (isLoaded && user) {
+    if (isLoaded && user && orgId) {
       fetchJobProfiles();
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, orgId]);
 
   return {
     jobProfiles,
@@ -190,7 +183,7 @@ export function useJobProfiles() {
 export function usePayBands(jobProfileId?: string) {
   const [payBands, setPayBands] = useState<PayBand[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isLoaded } = useUser();
+  const { user, orgId, isLoaded } = useAuth();
   const { session } = useSession();
 
   const getSupabase = async () => {
