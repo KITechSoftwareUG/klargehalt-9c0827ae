@@ -15,10 +15,13 @@ export const createClientWithToken = (clerkToken: string | null) => {
         supabaseKey!,
         {
             global: {
-                // Get the custom header from the Clerk JWT
-                headers: clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {},
+                headers: {
+                    // Always include the apikey header (the anon key)
+                    apikey: supabaseKey!,
+                    // Only include the Authorization header if we have a token
+                    ...(clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {}),
+                },
             },
-            // Disable default auth persistence as we rely on Clerk
             auth: {
                 persistSession: false,
                 autoRefreshToken: false,
