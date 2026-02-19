@@ -2,6 +2,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Trigger rebuild: 2026-02-19T10:06:04
   /* config options here */
   reactStrictMode: true,
 
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'gdiefibmquualkfrthog.supabase.co',
+        hostname: 'btbucjkczpejplykyvkj.supabase.co',
       },
     ],
   },

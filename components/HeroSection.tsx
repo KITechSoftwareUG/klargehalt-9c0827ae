@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Shield, ArrowRight, CheckCircle2 } from "lucide-react";
+import Link from 'next/link';
+import { getAppUrl } from '@/utils/url';
 
 const HeroSection = () => {
   const benefits = [
@@ -12,7 +14,7 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center pt-20 lg:pt-0 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-background to-background" />
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.015]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -39,7 +41,7 @@ const HeroSection = () => {
                 umsetzen
               </h1>
               <p className="text-lg lg:text-xl text-muted-foreground max-w-xl leading-relaxed">
-                Schützen Sie Ihr Unternehmen vor Klagen, Bußgeldern und Chaos. 
+                Schützen Sie Ihr Unternehmen vor Klagen, Bußgeldern und Chaos.
                 Unsere B2B-Lösung sichert Sie bei der Umsetzung der EU-Entgelttransparenzrichtlinie ab.
               </p>
             </div>
@@ -59,13 +61,17 @@ const HeroSection = () => {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in animation-delay-300">
-              <Button variant="hero" size="xl" className="group">
-                Kostenlose Demo
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </Button>
-              <Button variant="hero-outline" size="xl">
-                Mehr erfahren
-              </Button>
+              <Link href={getAppUrl('/sign-up')}>
+                <Button variant="hero" size="xl" className="group w-full sm:w-auto">
+                  Kostenlose Demo
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+              <Link href="#features">
+                <Button variant="hero-outline" size="xl" className="w-full sm:w-auto">
+                  Mehr erfahren
+                </Button>
+              </Link>
             </div>
 
             {/* Trust Indicators */}

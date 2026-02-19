@@ -22,6 +22,8 @@ export interface Company {
   settings: unknown;
   created_at: string;
   updated_at: string;
+  subscription_tier: 'basis' | 'manager' | 'excellence';
+  trial_ends_at: string | null;
 }
 
 export interface CompanyFormData {
@@ -47,7 +49,7 @@ export function useCompany() {
   };
 
   const fetchCompany = async () => {
-    if (!isLoaded || !user || !orgId) {
+    if (!isLoaded || !user) {
       setCompany(null);
       setLoading(false);
       return;
@@ -56,17 +58,22 @@ export function useCompany() {
     setLoading(true);
     try {
       const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('organization_id', orgId)
-        .maybeSingle();
+      let query = supabase.from('companies').select('*');
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      } else {
+        // Fallback: Demo-Firma (ohne Org-ID)
+        query = query.is('organization_id', null).limit(1);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
       setCompany(data as Company | null);
     } catch (error: any) {
-      console.error('Error fetching company:', error);
-      toast.error('Fehler beim Laden der Firmendaten');
+      console.error('Detailed error fetching company:', error);
+      toast.error(`Fehler beim Laden der Firmendaten: ${error.message || 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }
@@ -145,7 +152,9 @@ export function useCompany() {
 
   return {
     company,
+    currentCompany: company, // Alias für Konsistenz
     loading,
+    isLoading: loading, // Alias für Konsistenz
     fetchCompany,
     createCompany,
     updateCompany,

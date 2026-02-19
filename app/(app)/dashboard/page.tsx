@@ -28,8 +28,12 @@ import { PayGapReportView } from '@/components/dashboard/PayGapReportView';
 import AuditLogsView from '@/components/dashboard/AuditLogsView';
 import CompanySetup from '@/components/dashboard/CompanySetup';
 import { InfoRequestsView } from '@/components/dashboard/InfoRequestsView';
+import PayEquityHRView from '@/components/dashboard/PayEquityHRView';
+import PayEquityManagementView from '@/components/dashboard/PayEquityManagementView';
+import MySalaryComparisonView from '@/components/dashboard/MySalaryComparisonView';
+import { LayoutDashboard, Target, Briefcase } from 'lucide-react';
 
-type DashboardView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests';
+type DashboardView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -53,6 +57,9 @@ export default function DashboardPage() {
     const navItems = [
         { label: 'Übersicht', icon: BarChart3, view: 'overview' as const },
         { label: 'Mitarbeiter', icon: Users, view: 'employees' as const },
+        { label: 'Gehaltscheck', icon: Target, view: 'my-salary' as const },
+        { label: 'Analyse (Beta)', icon: LayoutDashboard, view: 'pay-equity-hr' as const },
+        { label: 'Strategie', icon: Briefcase, view: 'pay-equity-mgmt' as const },
         { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as const },
         { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as const },
         { label: 'Berichte', icon: TrendingUp, view: 'reports' as const },
@@ -67,6 +74,12 @@ export default function DashboardPage() {
                 return <DashboardOverview onNavigate={(view) => setActiveView(view as DashboardView)} />;
             case 'employees':
                 return <EmployeesView />;
+            case 'my-salary':
+                return <MySalaryComparisonView />;
+            case 'pay-equity-hr':
+                return <PayEquityHRView />;
+            case 'pay-equity-mgmt':
+                return <PayEquityManagementView />;
             case 'job-profiles':
                 return <JobProfilesView />;
             case 'pay-bands':

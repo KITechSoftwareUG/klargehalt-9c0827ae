@@ -1,8 +1,7 @@
 'use client';
 
 // Trigger deployment check for env variables
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,12 @@ export default function OnboardingPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { session } = useSession();
-    const { createOrganization, setActive } = useOrganizationList();
+    // Fetch existing memberships to avoid "limit exceeded" error
+    const { createOrganization, setActive, userMemberships, isLoaded: isOrgListLoaded } = useOrganizationList({
+        userMemberships: {
+            infinite: true,
+        },
+    });
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -57,9 +61,16 @@ export default function OnboardingPage() {
     const handleComplete = async () => {
         if (!user || !createOrganization || !setActive) {
             toast({
-                title: 'Fehler',
-                description: 'Initialisierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
-                variant: 'destructive',
+                title: 'Initialisierung...',
+                description: 'Bitte warten Sie kurz, bis das System bereit ist.',
+            });
+            return;
+        }
+
+        if (!isOrgListLoaded) {
+            toast({
+                title: 'Laden...',
+                description: 'Organisationsdaten werden noch geladen.',
             });
             return;
         }
@@ -67,90 +78,158 @@ export default function OnboardingPage() {
         setLoading(true);
 
         try {
-            // STEP 1: Create Organization in Clerk
+            // STEP 1: Check/Create Organization in Clerk
             // This is the source of truth for our Tenant-Model
-            console.log('Creating Clerk Organization...');
-            const organization = await createOrganization({
-                name: companyName || `${fullName}'s Firma`
-            });
+            let organization;
+            let existingOrgId = null;
 
-            if (!organization) throw new Error("Organisation konnte in Clerk nicht erstellt werden.");
-            console.log('Clerk Org created:', organization.id);
+            // Check if user is already in an organization
+            if (userMemberships.data && userMemberships.data.length > 0) {
+                console.log('Using existing organization:', userMemberships.data[0].organization.id);
+                organization = userMemberships.data[0].organization;
+                existingOrgId = organization.id;
+            } else {
+                console.log('Creating Clerk Organization...');
+                try {
+                    organization = await createOrganization({
+                        name: companyName || `${fullName}'s Firma`
+                    });
+                } catch (orgError: any) {
+                    console.error("Clerk Create Error:", orgError);
+                    // Fallback: Check again if maybe it was created in race condition
+                    if (orgError?.errors?.[0]?.code === 'organization_limit_exceeded') {
+                        throw new Error("Sie haben bereits die maximale Anzahl an Organisationen erstellt. Bitte kontaktieren Sie den Support.");
+                    }
+                    throw orgError;
+                }
+            }
+
+            if (!organization) throw new Error("Organisation konnte in Clerk nicht erstellt/gefunden werden.");
 
             // STEP 2: Set the new organization as active
             // This updates the local session
-            await setActive({ organization: organization.id });
-            console.log('Clerk Org activated');
+            if (existingOrgId !== organization.id || !session?.lastActiveOrganizationId) {
+                await setActive({ organization: organization.id });
+                console.log('Clerk Org activated');
+            }
 
             // STEP 3: Get the NEW Clerk Token (which now contains the orgId claim)
             // We wait a bit to ensure the session update has propagated
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time
             const token = await session?.getToken({ template: 'supabase' });
 
             if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
 
             const supabase = createClientWithToken(token);
 
-            // STEP 4: Create Supabase records
+            // STEP 4: Create Supabase records (IDEMPOTENT / SAFE)
 
-            // 4a. Create company in Supabase
-            // Note: organization_id is the primary key for multi-tenancy
-            const { data: company, error: companyError } = await supabase
+            // 4a. Check existing Company
+            const { data: existingCompany } = await supabase
                 .from('companies')
-                .insert({
-                    name: companyName,
-                    industry,
-                    size: companySize,
-                    organization_id: organization.id,
-                    created_by: user.id
-                })
-                .select()
-                .single();
+                .select('*')
+                .eq('organization_id', organization.id)
+                .maybeSingle();
 
-            if (companyError) {
-                console.error('Supabase Company Error:', companyError);
-                throw new Error(`Firma konnte nicht in DB gespeichert werden: ${companyError.message}`);
+            let companyId;
+
+            if (existingCompany) {
+                console.log("Updating existing company...");
+                const { data: updatedCompany, error: updateError } = await supabase
+                    .from('companies')
+                    .update({
+                        name: companyName,
+                        industry,
+                        size: companySize,
+                        // Don't update created_by to preserve history
+                    })
+                    .eq('id', existingCompany.id)
+                    .select()
+                    .single();
+
+                if (updateError) throw updateError;
+                companyId = updatedCompany.id;
+            } else {
+                console.log("Creating new company...");
+                const { data: newCompany, error: insertError } = await supabase
+                    .from('companies')
+                    .insert({
+                        name: companyName,
+                        industry,
+                        size: companySize,
+                        organization_id: organization.id,
+                        created_by: user.id
+                    })
+                    .select()
+                    .single();
+
+                // If RLS blocked it (because role missing), we might have issues.
+                // But generally users can insert companies if they don't have one and RLS allows it (see fix policies)
+                if (insertError) {
+                    // Emergency Fallback: If RLS blocked insert, maybe user has no role yet? 
+                    // The RLS policy "Companies: Insert" allows user to insert if authenticated.
+                    throw insertError;
+                }
+                companyId = newCompany.id;
             }
 
+
             // 4b. Sync user profile
-            // Use upsert to handle cases where the profile might or might not exist
             const { error: profileError } = await supabase
                 .from('profiles')
                 .upsert({
                     user_id: user.id,
                     full_name: fullName,
                     company_name: companyName,
-                    organization_id: organization.id // Link profile to current org
+                    organization_id: organization.id
                 }, { onConflict: 'user_id' });
 
-            if (profileError) {
-                console.error('Supabase Profile Error:', profileError);
-                throw new Error(`Profil konnte nicht synchronisiert werden: ${profileError.message}`);
+            if (profileError) console.error('Supabase Profile Error:', profileError);
+
+
+            // 4c. Set user role (Idempotent)
+            // First check if role exists to avoid PK violation if upsert logic is tricky
+            const { data: existingRole } = await supabase
+                .from('user_roles')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('organization_id', organization.id)
+                .maybeSingle();
+
+            if (!existingRole) {
+                const { error: roleError } = await supabase
+                    .from('user_roles')
+                    .insert({
+                        user_id: user.id,
+                        role: role,
+                        organization_id: organization.id,
+                        company_id: companyId,
+                    });
+                if (roleError) console.error('User Roles Insert Error:', roleError);
+            } else {
+                // Update role if needed
+                const { error: roleError } = await supabase
+                    .from('user_roles')
+                    .update({
+                        role: role,
+                        company_id: companyId
+                    })
+                    .eq('id', existingRole.id);
+                if (roleError) console.error('User Roles Update Error:', roleError);
             }
 
-            // 4c. Set user role 
-            const { error: roleError } = await supabase
-                .from('user_roles')
-                .upsert({
-                    user_id: user.id,
-                    role: role,
-                    organization_id: organization.id,
-                    company_id: company.id,
-                });
-
-            if (roleError) console.error('User Roles Error:', roleError);
 
             // 4d. Store onboarding preferences
             const { error: prefsError } = await supabase
                 .from('onboarding_data')
-                .insert({
+                .upsert({
                     user_id: user.id,
                     organization_id: organization.id,
-                    company_id: company.id,
+                    company_id: companyId,
                     company_size: companySize,
                     consulting_option: consultingOption,
                     completed_at: new Date().toISOString(),
-                });
+                }, { onConflict: 'user_id' }); // Assuming one per user
 
             if (prefsError) console.error('Onboarding Data Error:', prefsError);
 
@@ -163,9 +242,17 @@ export default function OnboardingPage() {
             setTimeout(() => router.push('/dashboard'), 500);
         } catch (error: any) {
             console.error('Onboarding error detailed:', error);
+
+            let errorMessage = error.message || 'Ein technisches Problem ist aufgetreten.';
+
+            // Helpful translation for common errors
+            if (errorMessage.includes('organization_limit_exceeded')) {
+                errorMessage = "Sie haben bereits zu viele Organisationen erstellt. Das System verwendet Ihre bestehende Organisation.";
+            }
+
             toast({
                 title: 'Fehler beim Abschluss',
-                description: error.message || 'Ein technisches Problem ist aufgetreten.',
+                description: errorMessage,
                 variant: 'destructive',
             });
         } finally {
@@ -173,13 +260,6 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleSkip = () => {
-        toast({
-            title: 'Onboarding übersprungen',
-            description: 'Sie können das Onboarding jederzeit in den Einstellungen nachholen.',
-        });
-        router.push('/dashboard');
-    };
 
     const renderStep = () => {
         switch (currentStep) {
@@ -551,14 +631,6 @@ export default function OnboardingPage() {
                             <div className="text-sm text-muted-foreground">
                                 Schritt {currentStep} von {totalSteps}
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleSkip}
-                                className="text-muted-foreground hover:text-foreground"
-                            >
-                                Überspringen
-                            </Button>
                         </div>
                     </div>
                     <Progress value={progress} className="mt-4" />
@@ -579,13 +651,6 @@ export default function OnboardingPage() {
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Zurück
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleSkip}
-                            className="text-muted-foreground"
-                        >
-                            Später fortfahren
                         </Button>
                     </div>
 

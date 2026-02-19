@@ -52,7 +52,7 @@ export function useEmployees() {
   };
 
   const fetchEmployees = async () => {
-    if (!isLoaded || !user || !orgId) {
+    if (!isLoaded || !user) {
       setEmployees([]);
       setLoading(false);
       return;
@@ -61,17 +61,22 @@ export function useEmployees() {
     setLoading(true);
     try {
       const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('organization_id', orgId)
-        .order('last_name');
+      let query = supabase.from('employees').select('*');
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      } else {
+        // Fallback: Demo-Daten (null) oder eigene Mitarbeiter
+        query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
+      }
+
+      const { data, error } = await query.order('last_name');
 
       if (error) throw error;
       setEmployees((data || []) as Employee[]);
     } catch (error: any) {
-      console.error('Error fetching employees:', error);
-      toast.error(`Fehler beim Laden der Mitarbeiter`);
+      console.error('Detailed error fetching employees:', error);
+      toast.error(`Fehler beim Laden der Mitarbeiter: ${error.message || 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }

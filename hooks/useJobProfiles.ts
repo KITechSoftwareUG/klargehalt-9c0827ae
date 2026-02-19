@@ -69,7 +69,7 @@ export function useJobProfiles() {
   };
 
   const fetchJobProfiles = async () => {
-    if (!isLoaded || !user || !orgId) {
+    if (!isLoaded || !user) {
       setJobProfiles([]);
       setLoading(false);
       return;
@@ -78,17 +78,22 @@ export function useJobProfiles() {
     setLoading(true);
     try {
       const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('job_profiles')
-        .select('*')
-        .eq('organization_id', orgId)
-        .order('title');
+      let query = supabase.from('job_profiles').select('*');
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      } else {
+        // Fallback: Suche nach Profilen ohne Org (Demo-Daten) oder dem User zugeordnet
+        query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
+      }
+
+      const { data, error } = await query.order('title');
 
       if (error) throw error;
       setJobProfiles(data || []);
     } catch (error: any) {
-      console.error('Error fetching job profiles:', error);
-      toast.error(`Fehler beim Laden der Job-Profile`);
+      console.error('Detailed error fetching job profiles:', error);
+      toast.error(`Fehler beim Laden der Job-Profile: ${error.message || 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }
