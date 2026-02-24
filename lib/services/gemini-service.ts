@@ -126,11 +126,7 @@ Beispiel-Tonalität:
 "Dein Gehalt liegt 6% unter dem Durchschnitt deiner Vergleichsgruppe. Die Vergleichsgruppe besteht aus 12 Personen mit gleicher Rolle, gleichem Level und Standort. Ein Teil der Abweichung könnte sich durch die kürzere Betriebszugehörigkeit erklären."
 `;
 
-        const result = await model.generateContent([
-            { role: 'user', parts: [{ text: EMPLOYEE_EXPLANATION_SYSTEM_PROMPT }] },
-            { role: 'model', parts: [{ text: 'Verstanden. Ich werde sachliche, neutrale Erklärungen für Mitarbeiter erstellen.' }] },
-            { role: 'user', parts: [{ text: prompt }] },
-        ]);
+        const result = await model.generateContent(`${EMPLOYEE_EXPLANATION_SYSTEM_PROMPT}\n\n${prompt}`);
 
         const response = await result.response;
         return response.text().trim();
@@ -169,11 +165,7 @@ Erkläre dem HR-Manager in 3-4 Sätzen:
 Sei sachlich und professionell.
 `;
 
-        const result = await model.generateContent([
-            { role: 'user', parts: [{ text: GENDER_GAP_EXPLANATION_SYSTEM_PROMPT }] },
-            { role: 'model', parts: [{ text: 'Verstanden. Ich werde sachliche HR-Analysen erstellen.' }] },
-            { role: 'user', parts: [{ text: prompt }] },
-        ]);
+        const result = await model.generateContent(`${GENDER_GAP_EXPLANATION_SYSTEM_PROMPT}\n\n${prompt}`);
 
         const response = await result.response;
         return response.text().trim();
@@ -206,12 +198,14 @@ ${JSON.stringify(context, null, 2)}
             parts: [{ text: msg.content }]
         }));
 
-        const result = await model.generateContent([
-            { role: 'user', parts: [{ text: CHAT_SYSTEM_PROMPT }] },
-            { role: 'model', parts: [{ text: 'Verstanden. Ich beantworte nur Fragen zu Gehaltstransparenz basierend auf vorhandenen Daten.' }] },
-            ...conversationHistory,
-            { role: 'user', parts: [{ text: `Kontext:\n${contextInfo}\n\nFrage: ${question}` }] },
-        ]);
+        const chat = model.startChat({
+            history: [
+                { role: 'user', parts: [{ text: CHAT_SYSTEM_PROMPT }] },
+                { role: 'model', parts: [{ text: 'Verstanden. Ich beantworte nur Fragen zu Gehaltstransparenz basierend auf vorhandenen Daten.' }] },
+                ...conversationHistory,
+            ],
+        });
+        const result = await chat.sendMessage(`Kontext:\n${contextInfo}\n\nFrage: ${question}`);
 
         const response = await result.response;
         return response.text().trim();

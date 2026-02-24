@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Sammle Kontext-Daten
-        let context: Record<string, any> = {
+        const context: Record<string, any> = {
             user_role: userRole.role,
             company_id: userRole.company_id,
         };
