@@ -64,7 +64,7 @@ export function useJobProfiles() {
   const { session } = useSession();
 
   const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
+    const token = await session?.getToken({ template: 'supabase', skipCache: true });
     return createClientWithToken(token || null);
   };
 
@@ -192,7 +192,7 @@ export function usePayBands(jobProfileId?: string) {
   const { session } = useSession();
 
   const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
+    const token = await session?.getToken({ template: 'supabase', skipCache: true });
     return createClientWithToken(token || null);
   };
 
