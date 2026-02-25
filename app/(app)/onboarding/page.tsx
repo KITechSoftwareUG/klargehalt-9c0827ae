@@ -262,9 +262,11 @@ export default function OnboardingPage() {
 
             toast({
                 title: 'Fehler beim Abschluss',
-                description: errorMessage.includes('role "org:admin"') || errorMessage.includes('role "null"')
-                    ? 'Datenbank-Konfigurationsfehler (Clerk Roles). Bitte führen Sie die COMPREHENSIVE Migration in Supabase aus.'
-                    : errorMessage,
+                description: errorMessage.includes('invalid input syntax for type uuid')
+                    ? 'Datenbank-Typfehler (UUID vs. TEXT). Bitte führen Sie die NUCLEAR_UUID_TO_TEXT_FIX Migration in Supabase aus.'
+                    : (errorMessage.includes('role "org:admin"') || errorMessage.includes('role "null"')
+                        ? 'Datenbank-Konfigurationsfehler (Clerk Roles). Bitte führen Sie die COMPREHENSIVE Migration in Supabase aus.'
+                        : errorMessage),
                 variant: 'destructive',
             });
         } finally {
@@ -530,7 +532,7 @@ export default function OnboardingPage() {
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
                             <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V3.0)</h2>
+                            <h2 className="text-3xl font-bold">Fast geschafft! (V3.1)</h2>
                             <p className="text-muted-foreground">
                                 Überprüfen Sie Ihre Angaben
                             </p>
@@ -637,7 +639,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Logo className="w-6 h-6 text-primary" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V3.0)</span>
+                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V3.1)</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-muted-foreground">
