@@ -36,7 +36,7 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(false);
 
     // Form data
-    const [role, setRole] = useState<UserRole>('admin');
+    const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
     const [companySize, setCompanySize] = useState<CompanySize>('1-50');
     const [consultingOption, setConsultingOption] = useState<ConsultingOption>('self-service');
     const [companyName, setCompanyName] = useState('');
@@ -190,6 +190,13 @@ export default function OnboardingPage() {
 
 
             // 4c. Set user role (Idempotent)
+            const roleToSet = selectedRole || 'admin';
+            console.log('Setting user role:', roleToSet, 'for company:', companyId);
+
+            if (!roleToSet) {
+                console.error("CRITICAL: selectedRole is empty!");
+            }
+
             // First check if role exists to avoid PK violation if upsert logic is tricky
             const { data: existingRole } = await supabase
                 .from('user_roles')
@@ -203,7 +210,7 @@ export default function OnboardingPage() {
                     .from('user_roles')
                     .insert({
                         user_id: user.id,
-                        role: role,
+                        role: roleToSet,
                         organization_id: organization.id,
                         company_id: companyId,
                     });
@@ -213,7 +220,7 @@ export default function OnboardingPage() {
                 const { error: roleError } = await supabase
                     .from('user_roles')
                     .update({
-                        role: role,
+                        role: roleToSet,
                         company_id: companyId
                     })
                     .eq('id', existingRole.id);
@@ -285,7 +292,7 @@ export default function OnboardingPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <RadioGroup value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                                <RadioGroup value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
                                     <div className="space-y-3">
                                         <Label
                                             htmlFor="admin"
@@ -521,7 +528,7 @@ export default function OnboardingPage() {
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
                             <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.6)</h2>
+                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.7)</h2>
                             <p className="text-muted-foreground">
                                 Überprüfen Sie Ihre Angaben
                             </p>
@@ -536,7 +543,7 @@ export default function OnboardingPage() {
                                     <div>
                                         <p className="text-sm text-muted-foreground">Rolle</p>
                                         <p className="font-medium">
-                                            {role === 'admin' ? 'Geschäftsführer' : 'HR-Manager'}
+                                            {selectedRole === 'admin' ? 'Geschäftsführer' : 'HR-Manager'}
                                         </p>
                                     </div>
                                     <div>
@@ -606,7 +613,7 @@ export default function OnboardingPage() {
     const canProceed = () => {
         switch (currentStep) {
             case 1:
-                return role !== null;
+                return selectedRole !== null;
             case 2:
                 return companySize !== null;
             case 3:
@@ -628,7 +635,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Logo className="w-6 h-6 text-primary" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.6)</span>
+                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.7)</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-muted-foreground">
