@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         let token: string | null = null;
         try {
-          token = await session?.getToken({ template: 'supabase' }) || null;
+          token = await session?.getToken({ template: 'supabase', skipCache: true }) || null;
         } catch (tokenError: any) {
           console.error('Clerk Token Error:', tokenError);
         }
