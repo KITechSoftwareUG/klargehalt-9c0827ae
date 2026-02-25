@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { User, Briefcase, MessageSquare, ChevronRight, TrendingUp, Award, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useInfoRequests } from '@/hooks/useInfoRequests';
 import { InfoRequestsView } from '@/components/dashboard/InfoRequestsView';
 
 type EmployeeSection = 'home' | 'my-profile' | 'my-level' | 'my-requests';
@@ -68,7 +67,7 @@ export default function EmployeeDashboard() {
             case 'my-profile':
                 return <MyProfileSection employee={employeeData} jobProfile={jobProfile} loading={loadingData} />;
             case 'my-level':
-                return <MyLevelSection employee={employeeData} jobProfile={jobProfile} loading={loadingData} />;
+                return <MyLevelSection employee={employeeData} jobProfile={jobProfile} loading={loadingData} onNavigate={setSection} />;
             case 'my-requests':
                 return <InfoRequestsView />;
             default:
@@ -102,8 +101,8 @@ export default function EmployeeDashboard() {
                         key={key}
                         onClick={() => setSection(key as EmployeeSection)}
                         className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${section === key
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }`}
                     >
                         <Icon className="h-4 w-4" />
@@ -229,7 +228,7 @@ function MyProfileSection({ employee, jobProfile, loading }: any) {
     );
 }
 
-function MyLevelSection({ employee, jobProfile, loading }: any) {
+function MyLevelSection({ employee, jobProfile, loading, onNavigate }: any) {
     if (loading) return <LoadingSkeleton />;
     if (!employee?.job_level) return (
         <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
@@ -300,7 +299,7 @@ function MyLevelSection({ employee, jobProfile, loading }: any) {
                     <Button
                         variant="outline"
                         className="gap-2"
-                        onClick={() => { }}
+                        onClick={() => onNavigate('my-requests')}
                     >
                         <MessageSquare className="h-4 w-4" />
                         Auskunft zur Bandposition anfordern

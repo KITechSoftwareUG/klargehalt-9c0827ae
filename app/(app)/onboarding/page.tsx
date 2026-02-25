@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileText } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
-import { createClientWithToken } from '@/utils/supabase/client';
+import { createSupabaseClient } from '@/utils/supabase/client';
 import { useSession, useOrganizationList } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
 
@@ -122,7 +122,11 @@ export default function OnboardingPage() {
 
             if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
 
-            const supabase = createClientWithToken(token);
+            // Use a scoped client that re-fetches a fresh token for each request.
+            // skipCache is critical here since the org was just activated — we need the latest JWT.
+            const supabase = createSupabaseClient(
+                () => session!.getToken({ template: 'supabase', skipCache: true }) as Promise<string | null>
+            );
 
             // STEP 4: Create Supabase records (IDEMPOTENT / SAFE)
 

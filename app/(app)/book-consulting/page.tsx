@@ -10,9 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useSession } from '@clerk/nextjs';
 import { Calendar as CalendarIcon, Clock, Video, Phone, MapPin, CheckCircle2, ArrowLeft, User, Mail, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -22,8 +20,7 @@ type TimeSlot = '09:00' | '10:00' | '11:00' | '13:00' | '14:00' | '15:00' | '16:
 
 export default function BookConsultingPage() {
     const router = useRouter();
-    const { user, profile } = useAuth();
-    const { session } = useSession();
+    const { user, profile, supabase } = useAuth();
     const { toast } = useToast();
 
     const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -77,15 +74,6 @@ export default function BookConsultingPage() {
         }
 
         setLoading(true);
-        // Get the Clerk Token for Supabase
-        let token = null;
-        try {
-            token = await session?.getToken({ template: 'supabase' });
-        } catch (e) {
-            console.error('Clerk Supabase Token Error:', e);
-        }
-        const supabase = createClientWithToken(token || null);
-
         try {
             // Create consultation booking
             const { error } = await supabase

@@ -3,4 +3,4 @@
  * Re-export from utils/supabase/client for consistency
  */
 
-export { createClient, createClientWithToken } from '@/utils/supabase/client';
+export { createClient, createSupabaseClient } from '@/utils/supabase/client';

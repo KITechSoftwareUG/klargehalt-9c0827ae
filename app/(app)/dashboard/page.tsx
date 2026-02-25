@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import {
-    Shield, Users, FileText, Settings, LogOut,
+    Shield, Users, Settings, LogOut,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
     LayoutDashboard, Target, Briefcase, User
 } from 'lucide-react';
@@ -126,8 +126,8 @@ export default function DashboardPage() {
                                     key={item.view}
                                     onClick={() => setActiveView(item.view)}
                                     className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeView === item.view
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
                                         }`}
                                 >
                                     <item.icon className="h-5 w-5" />
