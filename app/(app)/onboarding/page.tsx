@@ -115,8 +115,10 @@ export default function OnboardingPage() {
 
             // STEP 3: Get the NEW Clerk Token (which now contains the orgId claim)
             // We wait a bit to ensure the session update has propagated
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased wait time
+            // Increased wait time to 3 seconds to be absolutely sure Clerk session is updated
+            await new Promise(resolve => setTimeout(resolve, 3000));
             const token = await session?.getToken({ template: 'supabase' });
+            console.log('Clerk Token obtained:', token ? `Starts with ${token.substring(0, 15)}...` : 'NULL');
 
             if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
 
@@ -242,8 +244,9 @@ export default function OnboardingPage() {
             setTimeout(() => router.push('/dashboard'), 500);
         } catch (error: any) {
             console.error('Onboarding error detailed:', error);
-
+            const errorDetails = error.error_description || error.message || JSON.stringify(error);
             let errorMessage = error.message || 'Ein technisches Problem ist aufgetreten.';
+            console.log('Full Error JSON:', errorDetails);
 
             // Helpful translation for common errors
             if (errorMessage.includes('organization_limit_exceeded')) {
@@ -518,7 +521,7 @@ export default function OnboardingPage() {
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
                             <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.2)</h2>
+                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.3)</h2>
                             <p className="text-muted-foreground">
                                 Überprüfen Sie Ihre Angaben
                             </p>
@@ -625,7 +628,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Logo className="w-6 h-6 text-primary" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.2)</span>
+                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.3)</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-muted-foreground">
