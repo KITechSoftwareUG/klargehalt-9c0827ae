@@ -262,7 +262,9 @@ export default function OnboardingPage() {
 
             toast({
                 title: 'Fehler beim Abschluss',
-                description: errorMessage,
+                description: errorMessage.includes('role "null"')
+                    ? 'Datenbank-Konfigurationsfehler (role "null"). Bitte führen Sie die neueste Migration in Supabase aus.'
+                    : errorMessage,
                 variant: 'destructive',
             });
         } finally {
@@ -528,7 +530,7 @@ export default function OnboardingPage() {
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
                             <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.8)</h2>
+                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.9)</h2>
                             <p className="text-muted-foreground">
                                 Überprüfen Sie Ihre Angaben
                             </p>
@@ -635,7 +637,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Logo className="w-6 h-6 text-primary" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.8)</span>
+                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.9)</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-muted-foreground">
