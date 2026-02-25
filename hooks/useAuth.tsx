@@ -107,6 +107,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (roleData) {
           setRole(roleData.role as AppRole);
+        } else {
+          // No role assigned yet — default to 'employee'.
+          // The first user who onboards (completes org setup) gets 'admin' via the onboarding page.
+          // Everyone else who signs up into an existing org defaults to 'employee'.
+          console.log('[Auth] No role found for user, defaulting to employee');
+          setRole('employee');
+          // Persist the default so subsequent loads are fast
+          await supabase
+            .from('user_roles')
+            .upsert({ user_id: user.id, role: 'employee' }, { onConflict: 'user_id' })
+            .select();
         }
       } catch (error) {
         console.error('Error fetching global auth data:', error);
