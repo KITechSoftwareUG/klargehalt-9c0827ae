@@ -29,6 +29,7 @@ export const createClientWithToken = (clerkToken: string | null) => {
                 headers: {
                     // Supabase-ssr's createBrowserClient handles the apikey header automatically
                     // based on the second argument. We only need the Authorization header.
+                    apikey: supabaseKey,
                     ...(clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {}),
                 },
             },
