@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
-import { useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface AuditLog {
@@ -33,13 +31,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
-    return createClientWithToken(token || null);
-  };
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchAuditLogs = async (page = 0, pageSize = 50) => {
     if (!isLoaded || !user || !orgId) {
@@ -52,7 +44,6 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     setLoading(true);
 
     try {
-      const supabase = await getSupabase();
       let query = supabase
         .from('audit_logs')
         .select('*', { count: 'exact' })
@@ -93,7 +84,6 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     if (!user || !orgId) return null;
 
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('audit_logs')
         .select('*')

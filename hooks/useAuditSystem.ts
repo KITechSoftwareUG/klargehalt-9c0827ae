@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useSession } from '@clerk/nextjs';
 
 export interface AuditLog {
   id: string;
@@ -55,24 +53,17 @@ export interface AuditExport {
 }
 
 export function useAuditSystem() {
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
+  const { user, orgId, isLoaded, supabase } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
-    return createClientWithToken(token || null);
-  };
 
   const getStatistics = useCallback(async (days: number = 30): Promise<AuditStatistics | null> => {
     if (!isLoaded || !user || !orgId) return null;
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('get_audit_statistics', {
-        _organization_id: orgId, // Changed from _company_id
+        _organization_id: orgId,
         _days: days
       });
 
@@ -93,7 +84,7 @@ export function useAuditSystem() {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, session]);
+  }, [isLoaded, user, orgId, supabase]);
 
   const verifyChain = useCallback(async (
     fromSequence?: number,
@@ -103,9 +94,8 @@ export function useAuditSystem() {
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('verify_audit_chain', {
-        _organization_id: orgId, // Changed from _company_id
+        _organization_id: orgId,
         _from_sequence: fromSequence || null,
         _to_sequence: toSequence || null
       });
@@ -114,29 +104,18 @@ export function useAuditSystem() {
       const result = (data as any[])?.[0];
 
       if (result?.is_valid) {
-        toast({
-          title: 'Integrität bestätigt',
-          description: `${result.checked_records} Einträge erfolgreich verifiziert.`,
-        });
+        toast({ title: 'Integrität bestätigt', description: `${result.checked_records} Einträge erfolgreich verifiziert.` });
       } else if (result) {
-        toast({
-          title: 'Integritätsfehler',
-          description: result.error_message || 'Hash-Kette ist inkonsistent.',
-          variant: 'destructive'
-        });
+        toast({ title: 'Integritätsfehler', description: result.error_message || 'Hash-Kette ist inkonsistent.', variant: 'destructive' });
       }
       return result as ChainVerification;
     } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Verifizierung fehlgeschlagen',
-        variant: 'destructive'
-      });
+      toast({ title: 'Fehler', description: error.message || 'Verifizierung fehlgeschlagen', variant: 'destructive' });
       return null;
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, session]);
+  }, [isLoaded, user, orgId, supabase, toast]);
 
   const createExport = useCallback(async (
     exportType: 'full' | 'date_range' | 'entity_type',
@@ -150,9 +129,7 @@ export function useAuditSystem() {
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('create_audit_export', {
-        // RPCS should be updated to use organization_id context automatically or explicitly
         _export_type: exportType,
         _format: format,
         _date_from: dateFrom || null,
@@ -163,25 +140,16 @@ export function useAuditSystem() {
 
       if (error) throw error;
       const result = (data as any[])?.[0] as AuditExport;
-
-      toast({
-        title: 'Export erstellt',
-        description: `${result.record_count} Einträge exportiert.`,
-      });
+      toast({ title: 'Export erstellt', description: `${result.record_count} Einträge exportiert.` });
       return result;
     } catch (error: any) {
-      toast({
-        title: 'Export fehlgeschlagen',
-        description: error.message || 'Export konnte nicht erstellt werden',
-        variant: 'destructive'
-      });
+      toast({ title: 'Export fehlgeschlagen', description: error.message || 'Export konnte nicht erstellt werden', variant: 'destructive' });
       return null;
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, session]);
+  }, [isLoaded, user, orgId, supabase, toast]);
 
-  // downloadExport remains the same... (Skipping implementation details for brevity in this tool call)
   const downloadExport = useCallback((exportData: AuditExport, format: 'json' | 'csv') => {
     let content: string;
     let mimeType: string;
@@ -198,13 +166,8 @@ export function useAuditSystem() {
       } else {
         const headers = ['Zeitstempel', 'Benutzer', 'Rolle', 'Aktion', 'Entität', 'Name', 'Hash'];
         const rows = records.map(r => [
-          r.created_at,
-          r.user_email,
-          r.user_role,
-          r.action,
-          r.entity_type,
-          r.entity_name || '',
-          r.record_hash?.substring(0, 16) + '...'
+          r.created_at, r.user_email, r.user_role, r.action, r.entity_type,
+          r.entity_name || '', r.record_hash?.substring(0, 16) + '...'
         ]);
         content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
       }
@@ -223,11 +186,5 @@ export function useAuditSystem() {
     URL.revokeObjectURL(url);
   }, []);
 
-  return {
-    loading,
-    getStatistics,
-    verifyChain,
-    createExport,
-    downloadExport
-  };
+  return { loading, getStatistics, verifyChain, createExport, downloadExport };
 }

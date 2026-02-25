@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
-import { useSession } from '@clerk/nextjs';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -43,13 +41,7 @@ export interface EmployeeFormData {
 export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase', skipCache: true });
-    return createClientWithToken(token || null);
-  };
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchEmployees = async () => {
     if (!isLoaded || !user) {
@@ -60,7 +52,6 @@ export function useEmployees() {
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       let query = supabase.from('employees').select('*');
 
       if (orgId) {
@@ -89,7 +80,6 @@ export function useEmployees() {
     }
 
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('employees')
         .insert({
@@ -114,7 +104,6 @@ export function useEmployees() {
 
   const updateEmployee = async (id: string, formData: Partial<EmployeeFormData>): Promise<boolean> => {
     try {
-      const supabase = await getSupabase();
       const { error } = await supabase
         .from('employees')
         .update(formData)
@@ -134,7 +123,6 @@ export function useEmployees() {
 
   const deleteEmployee = async (id: string): Promise<boolean> => {
     try {
-      const supabase = await getSupabase();
       const { error } = await supabase
         .from('employees')
         .delete()

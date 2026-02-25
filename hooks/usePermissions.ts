@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
-import { useSession } from '@clerk/nextjs';
 
 export interface Permission {
   code: string;
@@ -70,8 +68,7 @@ export function usePermissions() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionCodes, setPermissionCodes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchPermissions = useCallback(async () => {
     if (!isLoaded || !user || !orgId) {
@@ -84,10 +81,6 @@ export function usePermissions() {
     setLoading(true);
 
     try {
-      const token = await session?.getToken({ template: 'supabase' });
-      const supabase = createClientWithToken(token || null);
-
-      // Call the database function to get user's permissions
       const { data, error } = await supabase.rpc('get_user_permissions');
 
       if (error) throw error;
@@ -107,7 +100,7 @@ export function usePermissions() {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, session]);
+  }, [isLoaded, user, orgId, supabase]);
 
   useEffect(() => {
     fetchPermissions();

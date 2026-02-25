@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from './useAuth';
-import { useSession } from '@clerk/nextjs';
 import { toast } from 'sonner';
 
 export interface Company {
@@ -40,13 +38,7 @@ export interface CompanyFormData {
 export function useCompany() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
-    return createClientWithToken(token || null);
-  };
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchCompany = async () => {
     if (!isLoaded || !user) {
@@ -57,7 +49,6 @@ export function useCompany() {
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       let query = supabase.from('companies').select('*');
 
       if (orgId) {
@@ -86,7 +77,6 @@ export function useCompany() {
     }
 
     try {
-      const supabase = await getSupabase();
 
       const companyData = {
         ...formData,
@@ -126,10 +116,9 @@ export function useCompany() {
     }
 
     try {
-      const supabase = await getSupabase();
       const { error } = await supabase
         .from('companies')
-        .update(formData)
+        .update({ ...formData, updated_at: new Date().toISOString() })
         .eq('id', company.id);
 
       if (error) throw error;

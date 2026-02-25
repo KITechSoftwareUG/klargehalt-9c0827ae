@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useSession } from '@clerk/nextjs';
 
-// Vordefinierte Anfrage-Typen (keine Freitextfelder)
 export const REQUEST_TYPES = {
   salary_band_position: {
     label: 'Position im Entgeltband',
@@ -65,52 +62,31 @@ export interface InfoRequestResponse {
 }
 
 export function useInfoRequests() {
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
+  const { user, orgId, isLoaded, supabase } = useAuth();
   const { toast } = useToast();
   const [requests, setRequests] = useState<InfoRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [rateLimits, setRateLimits] = useState<Record<InfoRequestType, RateLimitInfo>>({} as any);
 
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase' });
-    return createClientWithToken(token || null);
-  };
-
-  // Anfragen laden
   const fetchRequests = useCallback(async () => {
     if (!isLoaded || !user || !orgId) return;
-
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase.rpc('get_my_info_requests');
-
       if (error) throw error;
       setRequests((data || []) as InfoRequest[]);
     } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Anfragen konnten nicht geladen werden',
-        variant: 'destructive'
-      });
+      toast({ title: 'Fehler', description: error.message || 'Anfragen konnten nicht geladen werden', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, session]);
+  }, [isLoaded, user, orgId, toast, supabase]);
 
-  // Rate-Limit für einen Typ prüfen
   const checkRateLimit = useCallback(async (requestType: InfoRequestType): Promise<RateLimitInfo | null> => {
     if (!isLoaded || !user || !orgId) return null;
-
     try {
-      const supabase = await getSupabase();
-      const { data, error } = await supabase.rpc('check_request_rate_limit', {
-        _request_type: requestType
-      });
-
+      const { data, error } = await supabase.rpc('check_request_rate_limit', { _request_type: requestType });
       if (error) throw error;
-
       const limitInfo = (data as any[])?.[0] as RateLimitInfo;
       setRateLimits(prev => ({ ...prev, [requestType]: limitInfo }));
       return limitInfo;
@@ -118,92 +94,50 @@ export function useInfoRequests() {
       console.error('Rate limit check failed:', error);
       return null;
     }
-  }, [isLoaded, user, orgId, session]);
+  }, [isLoaded, user, orgId, supabase]);
 
-  // Alle Rate-Limits laden
   const fetchAllRateLimits = useCallback(async () => {
     if (!isLoaded || !user || !orgId) return;
-
     const types = Object.keys(REQUEST_TYPES) as InfoRequestType[];
     await Promise.all(types.map(type => checkRateLimit(type)));
   }, [isLoaded, user, orgId, checkRateLimit]);
 
-  // Anfrage einreichen
   const submitRequest = useCallback(async (requestType: InfoRequestType): Promise<boolean> => {
     if (!isLoaded || !user || !orgId) return false;
-
     setLoading(true);
     try {
-      const supabase = await getSupabase();
-      const { data, error } = await supabase.rpc('submit_info_request', {
-        _request_type: requestType
-      });
-
+      const { data, error } = await supabase.rpc('submit_info_request', { _request_type: requestType });
       if (error) throw error;
-
       const result = (data as any[])?.[0];
-
       if (!result?.success) {
-        toast({
-          title: 'Anfrage nicht möglich',
-          description: result?.error_message || 'Unbekannter Fehler',
-          variant: 'destructive'
-        });
+        toast({ title: 'Anfrage nicht möglich', description: result?.error_message || 'Unbekannter Fehler', variant: 'destructive' });
         return false;
       }
-
-      toast({
-        title: 'Anfrage eingereicht',
-        description: 'Ihre Auskunftsanfrage wird bearbeitet. Sie erhalten die Antwort in Kürze.',
-      });
-
-      // Aktualisiere Listen
+      toast({ title: 'Anfrage eingereicht', description: 'Ihre Auskunftsanfrage wird bearbeitet. Sie erhalten die Antwort in Kürze.' });
       await Promise.all([fetchRequests(), checkRateLimit(requestType)]);
-
       return true;
     } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Anfrage konnte nicht eingereicht werden',
-        variant: 'destructive'
-      });
+      toast({ title: 'Fehler', description: error.message || 'Anfrage konnte nicht eingereicht werden', variant: 'destructive' });
       return false;
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, fetchRequests, checkRateLimit, session]);
+  }, [isLoaded, user, orgId, toast, supabase, fetchRequests, checkRateLimit]);
 
-  // Antwort abrufen
   const getResponse = useCallback(async (requestId: string): Promise<InfoRequestResponse | null> => {
     if (!isLoaded || !user || !orgId) return null;
-
     try {
-      const supabase = await getSupabase();
-      const { data, error } = await supabase.rpc('get_info_request_response', {
-        _request_id: requestId
-      });
-
+      const { data, error } = await supabase.rpc('get_info_request_response', { _request_id: requestId });
       if (error) throw error;
-
       const response = (data as any[])?.[0] as InfoRequestResponse;
-
-      // Aktualisiere lokalen Status
-      setRequests(prev => prev.map(req =>
-        req.id === requestId ? { ...req, status: 'viewed', status_label: 'Eingesehen' } : req
-      ));
-
+      setRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'viewed', status_label: 'Eingesehen' } : req));
       return response;
     } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Antwort konnte nicht geladen werden',
-        variant: 'destructive'
-      });
+      toast({ title: 'Fehler', description: error.message || 'Antwort konnte nicht geladen werden', variant: 'destructive' });
       return null;
     }
-  }, [isLoaded, user, orgId, toast, session]);
+  }, [isLoaded, user, orgId, toast, supabase]);
 
-  // Initial laden
   useEffect(() => {
     if (isLoaded && user && orgId) {
       fetchRequests();
@@ -211,13 +145,5 @@ export function useInfoRequests() {
     }
   }, [isLoaded, user, orgId, fetchRequests, fetchAllRateLimits]);
 
-  return {
-    requests,
-    loading,
-    rateLimits,
-    submitRequest,
-    getResponse,
-    fetchRequests,
-    checkRateLimit
-  };
+  return { requests, loading, rateLimits, submitRequest, getResponse, fetchRequests, checkRateLimit };
 }

@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createClientWithToken } from '@/utils/supabase/client';
-import { useSession } from '@clerk/nextjs';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -60,13 +58,7 @@ export interface PayBandFormData {
 export function useJobProfiles() {
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase', skipCache: true });
-    return createClientWithToken(token || null);
-  };
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchJobProfiles = async () => {
     if (!isLoaded || !user) {
@@ -77,13 +69,11 @@ export function useJobProfiles() {
 
     setLoading(true);
     try {
-      const supabase = await getSupabase();
       let query = supabase.from('job_profiles').select('*');
 
       if (orgId) {
         query = query.eq('organization_id', orgId);
       } else {
-        // Fallback: Suche nach Profilen ohne Org (Demo-Daten) oder dem User zugeordnet
         query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
       }
 
@@ -106,7 +96,6 @@ export function useJobProfiles() {
     }
 
     try {
-      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('job_profiles')
         .insert({
@@ -131,7 +120,6 @@ export function useJobProfiles() {
 
   const updateJobProfile = async (id: string, formData: Partial<JobProfileFormData>): Promise<boolean> => {
     try {
-      const supabase = await getSupabase();
       const { error } = await supabase
         .from('job_profiles')
         .update(formData)
@@ -151,7 +139,6 @@ export function useJobProfiles() {
 
   const deleteJobProfile = async (id: string): Promise<boolean> => {
     try {
-      const supabase = await getSupabase();
       const { error } = await supabase
         .from('job_profiles')
         .delete()
@@ -188,19 +175,12 @@ export function useJobProfiles() {
 export function usePayBands(jobProfileId?: string) {
   const [payBands, setPayBands] = useState<PayBand[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded } = useAuth();
-  const { session } = useSession();
-
-  const getSupabase = async () => {
-    const token = await session?.getToken({ template: 'supabase', skipCache: true });
-    return createClientWithToken(token || null);
-  };
+  const { user, isLoaded, supabase } = useAuth();
 
   const fetchPayBands = async () => {
     if (!isLoaded || !user) return;
 
     setLoading(true);
-    const supabase = await getSupabase();
     let query = supabase.from('pay_bands').select('*');
 
     if (jobProfileId) {
@@ -221,7 +201,6 @@ export function usePayBands(jobProfileId?: string) {
   const createPayBand = async (formData: PayBandFormData): Promise<PayBand | null> => {
     if (!user) return null;
 
-    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('pay_bands')
       .insert({
@@ -243,7 +222,6 @@ export function usePayBands(jobProfileId?: string) {
   };
 
   const updatePayBand = async (id: string, formData: Partial<PayBandFormData>): Promise<boolean> => {
-    const supabase = await getSupabase();
     const { error } = await supabase
       .from('pay_bands')
       .update(formData)
@@ -261,7 +239,6 @@ export function usePayBands(jobProfileId?: string) {
   };
 
   const deletePayBand = async (id: string): Promise<boolean> => {
-    const supabase = await getSupabase();
     const { error } = await supabase
       .from('pay_bands')
       .delete()

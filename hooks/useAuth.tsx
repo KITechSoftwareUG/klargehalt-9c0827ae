@@ -1,5 +1,6 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { createClient, createClientWithToken } from '@/utils/supabase/client';
+import { useState, useEffect, useMemo, createContext, useContext, ReactNode } from 'react';
+import { createClient, createSupabaseClient } from '@/utils/supabase/client';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { useUser, useClerk, useSession, useOrganization } from '@clerk/nextjs';
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
@@ -24,6 +25,7 @@ interface AuthContextType {
   organization: any;
   orgId: string | null;
   loading: boolean;
+  supabase: SupabaseClient; // ← The single, smart, token-aware client
   signOut: () => Promise<void>;
 }
 
@@ -39,6 +41,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const { session } = useSession();
 
+  /**
+   * The single Supabase client for the entire app.
+   * Uses the fetch interceptor pattern: a fresh Clerk JWT is injected
+   * at network-request time, not at render time.
+   * Recreated only when the session changes.
+   */
+  const supabase = useMemo<SupabaseClient>(() => {
+    if (!session) {
+      // No session yet — return anon client (will fail RLS, but avoids null)
+      return createClient() as unknown as SupabaseClient;
+    }
+    return createSupabaseClient(
+      () => session.getToken({ template: 'supabase' }) as Promise<string | null>
+    ) as unknown as SupabaseClient;
+  }, [session]);
+
   useEffect(() => {
     if (!isLoaded || !isOrgLoaded) return;
     if (!isSignedIn || !user) {
@@ -51,16 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fetchData = async () => {
       setDataLoading(true);
       try {
-        let token: string | null = null;
-        try {
-          token = await session?.getToken({ template: 'supabase', skipCache: true }) || null;
-        } catch (tokenError: any) {
-          console.error('Clerk Token Error:', tokenError);
-        }
-
-        const supabase = createClientWithToken(token);
-
-        // Fetch profile - Filtered by user_id (global/security)
+        // Fetch profile
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
@@ -70,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (profileData) {
           setProfile(profileData as Profile);
         } else {
-          // Create profile if not exists (Client-side sync)
+          // Create profile if not exists
           const newProfile = {
             user_id: user.id,
             email: user.primaryEmailAddress?.emailAddress || '',
@@ -89,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // Fetch role from DB (custom roles) or fallback to Clerk role
+        // Fetch role
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
@@ -107,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchData();
-  }, [isLoaded, isOrgLoaded, isSignedIn, user, session, organization?.id]);
+  }, [isLoaded, isOrgLoaded, isSignedIn, user, supabase, organization?.id]);
 
   return (
     <AuthContext.Provider
@@ -120,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         organization,
         orgId: organization?.id || null,
         loading: !isLoaded || !isOrgLoaded || dataLoading,
+        supabase,
         signOut: async () => await signOut()
       }}
     >
