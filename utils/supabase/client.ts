@@ -5,6 +5,8 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Validation for development help
 if (typeof window !== 'undefined') {
+    console.log("Supabase Client Init - URL:", supabaseUrl ? "Present" : "MISSING");
+    console.log("Supabase Client Init - Key:", supabaseKey ? "Present" : "MISSING");
     if (!supabaseUrl) console.error("Supabase URL is missing!");
     if (!supabaseKey) console.error("Supabase Anon Key is missing!");
 }
@@ -26,7 +28,7 @@ export const createClientWithToken = (clerkToken: string | null) => {
         supabaseKey,
         {
             global: {
-                headers: {
+                headers: { // klargehalt (V2.2)
                     // Supabase-ssr's createBrowserClient handles the apikey header automatically
                     // based on the second argument. We only need the Authorization header.
                     apikey: supabaseKey,
