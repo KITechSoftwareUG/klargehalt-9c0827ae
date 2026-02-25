@@ -521,7 +521,7 @@ export default function OnboardingPage() {
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
                             <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.5)</h2>
+                            <h2 className="text-3xl font-bold">Fast geschafft! (V2.6)</h2>
                             <p className="text-muted-foreground">
                                 Überprüfen Sie Ihre Angaben
                             </p>
@@ -628,7 +628,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Logo className="w-6 h-6 text-primary" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.5)</span>
+                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V2.6)</span>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-muted-foreground">
@@ -639,6 +639,16 @@ export default function OnboardingPage() {
                     <Progress value={progress} className="mt-4" />
                 </div>
             </div>
+
+            {/* Environment Check Warning */}
+            {(!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 50) && (
+                <div className="bg-destructive/10 border-b border-destructive/20 py-2">
+                    <div className="container mx-auto px-4 text-xs text-destructive font-mono flex items-center gap-2">
+                        <span className="font-bold">⚠️ CONFIG ERROR:</span>
+                        Supabase Key is invalid or truncated in Vercel settings.
+                    </div>
+                </div>
+            )}
 
             {/* Content */}
             <div className="container mx-auto px-4 py-12 max-w-3xl">
