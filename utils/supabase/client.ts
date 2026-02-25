@@ -5,12 +5,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Validation for development help
 if (typeof window !== 'undefined') {
-    const keyStart = supabaseKey ? supabaseKey.substring(0, 5) : "NONE";
-    const keyEnd = supabaseKey ? supabaseKey.substring(supabaseKey.length - 5) : "NONE";
-    console.log("DEBUG - Supabase URL:", supabaseUrl);
-    console.log(`DEBUG - Supabase Key Check: ${keyStart}...${keyEnd}`);
-    if (!supabaseUrl) console.error("Supabase URL is missing!");
-    if (!supabaseKey) console.error("Supabase Anon Key is missing!");
+    const cleanKey = supabaseKey?.trim();
+    const keyStart = cleanKey ? cleanKey.substring(0, 10) : "NONE";
+    const keyEnd = cleanKey ? cleanKey.substring(cleanKey.length - 10) : "NONE";
+    console.log("[V2.5] Supabase URL:", supabaseUrl);
+    console.log(`[V2.5] Key Check: ${keyStart}...${keyEnd} (Length: ${cleanKey?.length})`);
+    if (!supabaseUrl) console.error("[V2.5] Supabase URL is missing!");
+    if (!cleanKey) console.error("[V2.5] Supabase Anon Key is missing!");
 }
 
 export const createClient = () => {
@@ -31,10 +32,9 @@ export const createClientWithToken = (clerkToken: string | null) => {
         {
             global: {
                 headers: {
+                    apikey: supabaseKey?.trim() || '',
                     ...(clerkToken ? { Authorization: `Bearer ${clerkToken}` } : {}),
-                    // Key-Check and V2.4 update as per instruction
-                    'X-App-Version': 'klargehalt (V2.4)',
-                    'X-Key-Check': supabaseKey ? 'present' : 'missing',
+                    'X-App-Version': 'klargehalt (V2.5)',
                 },
             },
             auth: {
