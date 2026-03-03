@@ -29,8 +29,6 @@ No automated test suite — validation is done via `tsc --noEmit` + `npm run lin
 
 ### Route Groups
 
-The app uses two Next.js route groups in `app/`:
-
 | Group | Purpose | Layout |
 |---|---|---|
 | `(marketing)` | Public landing page (`/`) | Marketing layout |
@@ -42,40 +40,12 @@ The app uses two Next.js route groups in `app/`:
 - Unauthenticated users on the `app.` subdomain are redirected to sign-in
 - Authenticated users without an org are redirected to `/onboarding`
 
-**Supabase RLS** is the actual security boundary — all tenant isolation is enforced at the DB level via `organization_id` columns and the `auth.get_user_org_id()` helper function. Never rely on frontend filtering alone.
-
-### Supabase Client Pattern (Critical)
-
-There are two separate Supabase client factories:
-
-| Location | Use in |
-|---|---|
-| `utils/supabase/client.ts` | Client components / hooks |
-| `lib/supabase/server.ts` | Server components / Server Actions |
-
-**Client-side**: Always consume `supabase` from `useAuth()` — never create your own client in a component. The `AuthProvider` (`hooks/useAuth.tsx`) creates a single `SupabaseClient` that injects a fresh Clerk JWT into every HTTP request via a fetch interceptor. `createSupabaseClient()` takes a `getToken` callback; `createClient()` returns an anonymous client used only during loading.
-
-**Server-side**: `lib/supabase/server.ts` exports `createClient()` (async, no args — cookies are handled internally).
+**Supabase RLS** is the actual security boundary — all tenant isolation is enforced at the DB level via `organization_id` columns and the `auth.get_user_org_id()` helper function.
 
 ### RBAC
 
 Three roles: `admin` | `hr_manager` | `employee`, stored in the `user_roles` table.
-
-- Use `<RoleGuard roles={['admin', 'hr_manager']}>` for UI-level gating
-- Use `useRoleAccess(...roles)` for imperative checks in component logic
-- Both are in `components/RoleGuard.tsx`
-- Real enforcement is always in Supabase RLS, not the UI
-
-### Key Hooks (`hooks/`)
-
-| Hook | Purpose |
-|---|---|
-| `useAuth` | Auth context: `user`, `role`, `orgId`, `supabase`, `loading` |
-| `useCompany` | Company CRUD |
-| `useEmployees` | Employee management |
-| `usePayEquity` | Pay group / gap analytics |
-| `usePermissions` | Fine-grained permission checks |
-| `useAuditSystem` | Audit log writes |
+See `.claude/rules/code-style.md` for usage patterns.
 
 ### Database Schema (key tables)
 
@@ -83,26 +53,24 @@ Three roles: `admin` | `hr_manager` | `employee`, stored in the `user_roles` tab
 
 Every tenant-scoped table has an `organization_id TEXT NOT NULL` column. Migrations live in `supabase/migrations/`.
 
-## Key Conventions
+## Claude Code Structure
 
-- **Loading states**: Always show a skeleton, never render `null` while loading
-- **User-facing errors**: Always surface via `toast()` (sonner)
-- **Forms**: React Hook Form + Zod validation
-- **`any` types**: Replace with specific types — do not leave `any` in new code
-- **Commit message format**: `Deployment V[version]: [description]` or `Kaizen: [what improved]`
-
-## Agent Workflows (`.agent/workflows/`)
-
-- `lint-and-validate.md` — TypeScript + ESLint check sequence
-- `kaizen.md` — Incremental code quality improvement checklist
-- `systematic-debugging.md` — Step-by-step debugging protocol with common failure patterns
-- `git-pushing.md` — Staging, committing, and pushing convention
-
-## Environment Variables
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
-
-Clerk keys are configured separately (see `docs/CLERK_SETUP.md`).
+.claude/
+├── settings.json          # Team permissions & hooks (committed)
+├── settings.local.json    # Personal overrides (gitignored)
+├── agents/                # Project subagents
+│   ├── rls-auditor.md
+│   └── pay-gap-analyst.md
+├── skills/                # Slash commands (/commit, /lint, /kaizen, /debug)
+│   ├── commit.md
+│   ├── lint.md
+│   ├── kaizen.md
+│   └── debug.md
+└── rules/                 # Auto-loaded modular instructions
+    ├── code-style.md
+    └── frontend/react.md
+CLAUDE.md                  # This file (committed)
+CLAUDE.local.md            # Personal notes (gitignored)
+.mcp.json                  # MCP server config (committed)
+```
