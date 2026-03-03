@@ -1,6 +1,9 @@
 ---
 name: rls-auditor
 description: Use this agent to audit Supabase RLS policies for a table or the entire schema. It checks for missing policies, overly permissive rules, and organization_id isolation gaps. Use when adding new tables, debugging 403 errors, or doing a security review.
+tools: Read, Glob, Grep
+model: sonnet
+permissionMode: default
 ---
 
 You are a Supabase RLS security auditor for the KlarGehalt application.

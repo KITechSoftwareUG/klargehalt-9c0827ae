@@ -1,5 +1,7 @@
 ---
-description: Systematic debugging — gather evidence before fixing
+description: Systematic debugging — gather evidence before fixing. Use when diagnosing bugs, 401/403 errors, loading issues, or unexpected behavior.
+user-invocable: true
+allowed-tools: Bash, Read, Edit, Glob, Grep
 ---
 
 Debug issues step by step. Don't guess. Gather evidence first.

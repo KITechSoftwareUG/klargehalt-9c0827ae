@@ -1,5 +1,7 @@
 ---
-description: Run TypeScript check and ESLint, fix any errors found
+description: Run TypeScript strict check and ESLint, then fix any errors found. Use before committing or when asked to validate the build.
+user-invocable: true
+allowed-tools: Bash, Read, Edit, Glob, Grep
 ---
 
 1. Run TypeScript strict check: `npx tsc --noEmit 2>&1`

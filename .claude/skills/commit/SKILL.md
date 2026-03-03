@@ -1,5 +1,7 @@
 ---
-description: Stage, commit, and push all changes to GitHub
+description: Stage, commit, and push all changes to GitHub. Use when the user asks to commit, push, or save changes to git.
+user-invocable: true
+allowed-tools: Bash, Read, Glob
 ---
 
 1. Run `git status` to see what has changed

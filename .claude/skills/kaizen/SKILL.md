@@ -1,5 +1,7 @@
 ---
-description: Kaizen — systematic incremental code quality improvement
+description: Kaizen — systematic incremental code quality improvement. Use when asked to clean up, improve quality, or apply the kaizen workflow.
+user-invocable: true
+allowed-tools: Bash, Read, Edit, Glob, Grep
 ---
 
 Apply the Kaizen (continuous improvement) mindset to recently changed files.
