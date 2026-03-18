@@ -53,6 +53,38 @@ See `.claude/rules/code-style.md` for usage patterns.
 
 Every tenant-scoped table has an `organization_id TEXT NOT NULL` column. Migrations live in `supabase/migrations/`.
 
+## Pending Work (as of 2026-03-18)
+
+### Uncommitted Changes — Landing Page Redesign
+
+The marketing landing page was redesigned using the [taste-skill](https://github.com/Leonxlnx/taste-skill) design system. These changes are staged but **not yet committed or pushed**.
+
+**Modified files:**
+- `components/HeroSection.tsx` — Complete rewrite:
+  - Centered layout (was 2-column split)
+  - `balken.mp4` video as fullscreen background with `mask-image` radial gradient for inward fade
+  - `min-h-[100dvh]` instead of `min-h-screen`
+  - Badge, headline, benefits, CTAs, trust indicators all centered
+- `app/(marketing)/globals.css` — Added:
+  - Concrete wall texture via two `body::before`/`body::after` SVG noise pseudo-elements (`mix-blend-mode: multiply/overlay`, `pointer-events: none`, `position: fixed`)
+  - Background color adjusted to `220 10% 95%` (warm neutral grey)
+- `app/(marketing)/page.tsx` — Wrapper changed to `relative z-10 bg-transparent` so content sits above the fixed concrete texture
+
+**New files:**
+- `public/balken.mp4` — Video asset for hero background (copied from `app/(marketing)/balken.mp4`)
+- `app/(marketing)/balken.mp4` — Original video file (can be removed after commit, only `public/` copy is used)
+
+### taste-skill Design Parameters Applied
+- `DESIGN_VARIANCE: 8` — Asymmetric layouts, centered hero as exception for clean video showcase
+- `MOTION_INTENSITY: 6` — CSS animations (fade-in, slide-up, pulse)
+- `VISUAL_DENSITY: 4` — Generous whitespace, clean hierarchy
+
+### Deployment
+- Project was copied from `/root/app` to `/home/deploy/app` with `deploy:deploy` ownership
+- Old version backed up at `/home/deploy/app.bak`
+- **Coolify needs to be installed and configured** on this server to publish the site
+- GitHub remote: `https://github.com/KITechSoftwareUG/klargehalt-9c0827ae.git`
+
 ## Claude Code Structure
 
 ```
