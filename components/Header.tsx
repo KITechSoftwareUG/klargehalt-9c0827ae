@@ -5,13 +5,15 @@ import { Menu, X } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useState } from 'react';
 import Link from 'next/link';
-import { UserButton, useUser, SignInButton } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/useAuth';
 import { getAppUrl, getMarketingUrl, isAppSubdomain } from '@/utils/url';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user, signOut } = useAuth();
   const isApp = isAppSubdomain();
+  const userLabel = user?.firstName || user?.email || 'Konto';
+  const userInitial = (user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'K').toUpperCase();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -42,14 +44,14 @@ export default function Header() {
                 <Link href={getAppUrl('/dashboard')}>
                   <Button variant="ghost">Dashboard</Button>
                 </Link>
-                <UserButton
-                  afterSignOutUrl={getMarketingUrl('/')}
-                  appearance={{
-                    elements: {
-                      avatarBox: 'w-10 h-10',
-                    },
-                  }}
-                />
+                <Button
+                  variant="ghost"
+                  className="h-10 w-10 rounded-full border p-0 text-sm font-semibold"
+                  onClick={() => void signOut()}
+                  title="Abmelden"
+                >
+                  {userInitial}
+                </Button>
               </>
             ) : (
               <>
@@ -105,8 +107,13 @@ export default function Header() {
                       <Button variant="ghost" className="w-full">Dashboard</Button>
                     </Link>
                     <div className="flex items-center gap-2 p-2">
-                      <UserButton afterSignOutUrl={getMarketingUrl('/')} />
-                      <span className="text-sm">{user?.firstName || user?.emailAddresses[0].emailAddress}</span>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold">
+                        {userInitial}
+                      </div>
+                      <span className="text-sm">{userLabel}</span>
+                      <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+                        Abmelden
+                      </Button>
                     </div>
                   </>
                 ) : (

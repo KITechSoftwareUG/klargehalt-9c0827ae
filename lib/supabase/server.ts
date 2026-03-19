@@ -5,12 +5,18 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getOrganizationToken } from '@logto/next/server-actions';
+import { getLogtoConfig } from '@/lib/logto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export async function createClient() {
+export async function createClient(organizationId?: string | null) {
     const cookieStore = await cookies();
+    const activeOrganizationId = organizationId ?? cookieStore.get('kg_active_org')?.value ?? null;
+    const organizationToken = activeOrganizationId
+        ? await getOrganizationToken(getLogtoConfig(), activeOrganizationId).catch(() => null)
+        : null;
 
     return createServerClient(
         supabaseUrl!,
@@ -31,6 +37,11 @@ export async function createClient() {
                         // user sessions.
                     }
                 },
+            },
+            global: {
+                headers: organizationToken
+                    ? { Authorization: `Bearer ${organizationToken}` }
+                    : {},
             },
         },
     );

@@ -9,8 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/localizations": "^3.34.0",
-    "@clerk/nextjs": "^6.36.7",
     "@fontsource/dm-sans": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",

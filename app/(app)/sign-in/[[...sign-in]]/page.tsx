@@ -1,8 +1,9 @@
 'use client';
 
-import { SignIn } from '@clerk/nextjs';
 import { ArrowLeft, Clock, AlertCircle, Scale } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -153,7 +154,7 @@ export default function SignInPage() {
         `}</style>
             </div>
 
-            {/* Right Side - Clerk Default */}
+            {/* Right Side - Logto Sign-In */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
                 <div className="w-full max-w-md">
                     {/* Back Button */}
@@ -173,8 +174,27 @@ export default function SignInPage() {
                         <span className="text-2xl font-bold text-foreground lowercase tracking-tight">klargehalt</span>
                     </div>
 
-                    {/* Clerk Sign-In - Completely Default */}
-                    <SignIn />
+                    <Card className="border-slate-200 shadow-xl">
+                        <CardHeader className="space-y-3">
+                            <CardTitle className="text-2xl">Im Workspace anmelden</CardTitle>
+                            <CardDescription>
+                                Sie werden sicher zu Logto weitergeleitet und danach zurück in Ihre KlarGehalt-App geführt.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Link href="/auth/sign-in" className="block">
+                                <Button className="w-full" size="lg">
+                                    Mit Logto anmelden
+                                </Button>
+                            </Link>
+                            <p className="text-sm text-muted-foreground">
+                                Noch kein Konto?{' '}
+                                <Link href="/sign-up" className="text-primary hover:underline">
+                                    Jetzt registrieren
+                                </Link>
+                            </p>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

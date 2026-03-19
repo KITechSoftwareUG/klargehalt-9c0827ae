@@ -13,7 +13,6 @@ import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileTe
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { createSupabaseClient } from '@/utils/supabase/client';
-import { useSession, useOrganizationList } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
@@ -23,14 +22,7 @@ type ConsultingOption = 'self-service' | 'guided' | 'full-service';
 
 export default function OnboardingPage() {
     const router = useRouter();
-    const { user } = useAuth();
-    const { session } = useSession();
-    // Fetch existing memberships to avoid "limit exceeded" error
-    const { createOrganization, setActive, userMemberships, isLoaded: isOrgListLoaded } = useOrganizationList({
-        userMemberships: {
-            infinite: true,
-        },
-    });
+    const { user, organizations, setActiveOrganization } = useAuth();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -59,7 +51,7 @@ export default function OnboardingPage() {
     };
 
     const handleComplete = async () => {
-        if (!user || !createOrganization || !setActive) {
+        if (!user) {
             toast({
                 title: 'Initialisierung...',
                 description: 'Bitte warten Sie kurz, bis das System bereit ist.',
@@ -67,65 +59,50 @@ export default function OnboardingPage() {
             return;
         }
 
-        if (!isOrgListLoaded) {
-            toast({
-                title: 'Laden...',
-                description: 'Organisationsdaten werden noch geladen.',
-            });
-            return;
-        }
-
         setLoading(true);
 
         try {
-            // STEP 1: Check/Create Organization in Clerk
-            // This is the source of truth for our Tenant-Model
-            let organization;
-            let existingOrgId = null;
+            let organization = organizations[0] ?? null;
 
-            // Check if user is already in an organization
-            if (userMemberships.data && userMemberships.data.length > 0) {
-                console.log('Using existing organization:', userMemberships.data[0].organization.id);
-                organization = userMemberships.data[0].organization;
-                existingOrgId = organization.id;
-            } else {
-                console.log('Creating Clerk Organization...');
-                try {
-                    organization = await createOrganization({
-                        name: companyName || `${fullName}'s Firma`
-                    });
-                } catch (orgError: any) {
-                    console.error("Clerk Create Error:", orgError);
-                    // Fallback: Check again if maybe it was created in race condition
-                    if (orgError?.errors?.[0]?.code === 'organization_limit_exceeded') {
-                        throw new Error("Sie haben bereits die maximale Anzahl an Organisationen erstellt. Bitte kontaktieren Sie den Support.");
-                    }
-                    throw orgError;
+            if (!organization) {
+                const organizationResponse = await fetch('/api/auth/organizations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: companyName || `${fullName}'s Firma`,
+                    }),
+                });
+
+                if (!organizationResponse.ok) {
+                    throw new Error('Organisation konnte in Logto nicht erstellt werden.');
                 }
+
+                const organizationData = await organizationResponse.json();
+                organization = organizationData.organization;
             }
 
-            if (!organization) throw new Error("Organisation konnte in Clerk nicht erstellt/gefunden werden.");
-
-            // STEP 2: Set the new organization as active
-            // This updates the local session
-            if (existingOrgId !== organization.id || !session?.lastActiveOrganizationId) {
-                await setActive({ organization: organization.id });
-                console.log('Clerk Org activated');
+            if (!organization) {
+                throw new Error('Organisation konnte nicht erstellt oder gefunden werden.');
             }
 
-            // STEP 3: Get the NEW Clerk Token (which now contains the orgId claim)
-            // We wait a bit to ensure the session update has propagated
-            // Increased wait time to 3 seconds to be absolutely sure Clerk session is updated
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            const token = await session?.getToken({ template: 'supabase', skipCache: true });
-            console.log('Clerk Token obtained:', token ? `Starts with ${token.substring(0, 15)}...` : 'NULL');
-
-            if (!token) throw new Error("Kein Auth-Token für Datenbank verfügbar.");
+            await setActiveOrganization(organization.id);
 
             // Use a scoped client that re-fetches a fresh token for each request.
-            // skipCache is critical here since the org was just activated — we need the latest JWT.
             const supabase = createSupabaseClient(
-                () => session!.getToken({ template: 'supabase', skipCache: true }) as Promise<string | null>
+                async () => {
+                    const tokenResponse = await fetch('/api/auth/organization-token', {
+                        cache: 'no-store',
+                    });
+
+                    if (!tokenResponse.ok) {
+                        return null;
+                    }
+
+                    const data = await tokenResponse.json();
+                    return data.token as string | null;
+                }
             );
 
             // STEP 4: Create Supabase records (IDEMPOTENT / SAFE)
@@ -256,20 +233,15 @@ export default function OnboardingPage() {
         } catch (error: any) {
             console.error('Onboarding error detailed:', error);
             const errorDetails = error.error_description || error.message || JSON.stringify(error);
-            let errorMessage = error.message || 'Ein technisches Problem ist aufgetreten.';
+            const errorMessage = error.message || 'Ein technisches Problem ist aufgetreten.';
             console.log('Full Error JSON:', errorDetails);
-
-            // Helpful translation for common errors
-            if (errorMessage.includes('organization_limit_exceeded')) {
-                errorMessage = "Sie haben bereits zu viele Organisationen erstellt. Das System verwendet Ihre bestehende Organisation.";
-            }
 
             toast({
                 title: 'Fehler beim Abschluss',
                 description: errorMessage.includes('invalid input syntax for type uuid')
                     ? 'Datenbank-Typfehler (UUID vs. TEXT). Bitte führen Sie die NUCLEAR_UUID_TO_TEXT_FIX Migration in Supabase aus.'
                     : (errorMessage.includes('role "org:admin"') || errorMessage.includes('role "null"')
-                        ? 'Datenbank-Konfigurationsfehler (Clerk Roles). Bitte führen Sie die COMPREHENSIVE Migration in Supabase aus.'
+                        ? 'Datenbank-Konfigurationsfehler bei Rollen. Bitte prüfen Sie die Supabase-Rollenmigration.'
                         : errorMessage),
                 variant: 'destructive',
             });

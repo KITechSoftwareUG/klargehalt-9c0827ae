@@ -1,8 +1,9 @@
 'use client';
 
-import { SignUp } from '@clerk/nextjs';
 import { ArrowLeft, Clock, AlertCircle, Scale } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -153,7 +154,7 @@ export default function SignUpPage() {
         `}</style>
             </div>
 
-            {/* Right Side - Clerk Default */}
+            {/* Right Side - Logto Sign-Up */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
                 <div className="w-full max-w-md">
                     {/* Back Button */}
@@ -173,8 +174,27 @@ export default function SignUpPage() {
                         <span className="text-2xl font-bold text-foreground lowercase tracking-tight">klargehalt</span>
                     </div>
 
-                    {/* Clerk Sign-Up - Completely Default */}
-                    <SignUp />
+                    <Card className="border-slate-200 shadow-xl">
+                        <CardHeader className="space-y-3">
+                            <CardTitle className="text-2xl">Konto erstellen</CardTitle>
+                            <CardDescription>
+                                Die Registrierung läuft über Logto. Nach der ersten Anmeldung führen wir Sie direkt ins Unternehmens-Onboarding.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Link href="/auth/sign-up" className="block">
+                                <Button className="w-full" size="lg">
+                                    Mit Logto registrieren
+                                </Button>
+                            </Link>
+                            <p className="text-sm text-muted-foreground">
+                                Bereits registriert?{' '}
+                                <Link href="/sign-in" className="text-primary hover:underline">
+                                    Zur Anmeldung
+                                </Link>
+                            </p>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

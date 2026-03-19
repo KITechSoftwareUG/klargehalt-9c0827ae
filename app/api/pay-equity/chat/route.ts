@@ -5,12 +5,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { getServerAuthContext } from '@/lib/auth/server';
 import { chatWithAI } from '@/lib/services/gemini-service';
 
 export async function POST(request: NextRequest) {
     try {
-        const user = await currentUser();
+        const { user } = await getServerAuthContext();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

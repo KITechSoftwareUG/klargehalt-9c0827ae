@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";

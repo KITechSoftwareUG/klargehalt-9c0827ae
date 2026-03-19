@@ -1,5 +1,3 @@
-import { ClerkProvider } from '@clerk/nextjs';
-import { deDE } from '@clerk/localizations';
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import '../(marketing)/globals.css';
@@ -22,23 +20,10 @@ export default function AppLayout({
     children: React.ReactNode;
 }) {
     return (
-        <ClerkProvider
-            localization={deDE}
-            appearance={{
-                variables: {
-                    colorPrimary: '#0F172A',
-                    colorBackground: '#FFFFFF',
-                    colorInputBackground: '#FFFFFF',
-                    colorInputText: '#0F172A',
-                    fontFamily: 'inherit',
-                },
-            }}
-        >
-            <html lang="de" suppressHydrationWarning>
-                <body className={outfit.className}>
-                    <Providers>{children}</Providers>
-                </body>
-            </html>
-        </ClerkProvider>
+        <html lang="de" suppressHydrationWarning>
+            <body className={outfit.className}>
+                <Providers>{children}</Providers>
+            </body>
+        </html>
     );
 }

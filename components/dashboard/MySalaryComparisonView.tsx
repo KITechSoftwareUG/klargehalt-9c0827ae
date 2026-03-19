@@ -5,9 +5,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
 import { useEmployeeComparison, useGenerateExplanation } from '@/hooks/usePayEquity';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -16,10 +15,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Sparkles, Users, TrendingUp, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-const supabase = createClient();
-
 export default function MySalaryComparisonView() {
-    const { user } = useUser();
+    const { user, supabase } = useAuth();
     const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 

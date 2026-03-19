@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useClerk } from '@clerk/nextjs';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -56,8 +55,7 @@ const HR_ADMIN_NAV = [
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { signOut } = useClerk();
-    const { user, role, loading, isLoaded } = useAuth();
+    const { user, role, loading, isLoaded, signOut } = useAuth();
     const [activeView, setActiveView] = useState<HRView>('overview');
 
     const handleSignOut = async () => {
@@ -152,14 +150,14 @@ export default function DashboardPage() {
                     <div className="border-t border-white/10 p-4 m-4 rounded-2xl bg-white/5 backdrop-blur-sm mt-auto">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-semibold shadow-inner">
-                                {user?.firstName?.charAt(0) || user?.emailAddresses[0]?.emailAddress?.charAt(0)?.toUpperCase()}
+                                {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="truncate text-sm font-medium text-white">
-                                    {user?.firstName || 'User'}
+                                    {user?.firstName || user?.fullName || 'User'}
                                 </p>
                                 <p className="truncate text-xs text-slate-400">
-                                    {user?.emailAddresses[0]?.emailAddress}
+                                    {user?.email}
                                 </p>
                             </div>
                         </div>

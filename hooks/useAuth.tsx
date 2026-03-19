@@ -1,9 +1,29 @@
+'use client';
+
 import { useState, useEffect, useMemo, createContext, useContext, ReactNode } from 'react';
 import { createClient, createSupabaseClient } from '@/utils/supabase/client';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { useUser, useClerk, useSession, useOrganization } from '@clerk/nextjs';
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
+
+type AuthUser = {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  fullName: string | null;
+  imageUrl: string | null;
+  primaryEmailAddress: {
+    emailAddress: string;
+  } | null;
+  emailAddresses: Array<{
+    emailAddress: string;
+  }>;
+};
+
+type Organization = {
+  id: string;
+  name: string | null;
+};
 
 interface Profile {
   id: string;
@@ -17,49 +37,103 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: any;
+  user: AuthUser | null;
   isLoaded: boolean;
   isSignedIn: boolean;
   profile: Profile | null;
   role: AppRole | null;
-  organization: any;
+  organization: Organization | null;
+  organizations: Organization[];
   orgId: string | null;
   loading: boolean;
-  supabase: SupabaseClient; // ← The single, smart, token-aware client
+  supabase: SupabaseClient;
   signOut: () => Promise<void>;
+  setActiveOrganization: (organizationId: string) => Promise<void>;
+  refreshAuth: () => Promise<void>;
 }
+
+type MeResponse = {
+  isAuthenticated: boolean;
+  user: AuthUser | null;
+  organizations: Organization[];
+  activeOrganizationId: string | null;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getOrganizationToken = async () => {
+  const response = await fetch('/api/auth/organization-token', {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  return (data.token as string | null) ?? null;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const { organization, isLoaded: isOrgLoaded } = useOrganization();
-  const { signOut } = useClerk();
+  const [authState, setAuthState] = useState<MeResponse>({
+    isAuthenticated: false,
+    user: null,
+    organizations: [],
+    activeOrganizationId: null,
+  });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
 
-  const { session } = useSession();
+  const refreshAuth = async () => {
+    setAuthLoading(true);
 
-  /**
-   * The single Supabase client for the entire app.
-   * Uses the fetch interceptor pattern: a fresh Clerk JWT is injected
-   * at network-request time, not at render time.
-   * Recreated only when the session changes.
-   */
-  const supabase = useMemo<SupabaseClient>(() => {
-    if (!session) {
-      // No session yet — return anon client (will fail RLS, but avoids null)
-      return createClient() as unknown as SupabaseClient;
+    try {
+      const response = await fetch('/api/auth/me', {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load auth state');
+      }
+
+      const data = (await response.json()) as MeResponse;
+      setAuthState(data);
+    } catch (error) {
+      console.error('Error loading auth state:', error);
+      setAuthState({
+        isAuthenticated: false,
+        user: null,
+        organizations: [],
+        activeOrganizationId: null,
+      });
+    } finally {
+      setAuthLoading(false);
     }
-    return createSupabaseClient(
-      () => session.getToken({ template: 'supabase' }) as Promise<string | null>
-    ) as unknown as SupabaseClient;
-  }, [session]);
+  };
 
   useEffect(() => {
-    if (!isLoaded || !isOrgLoaded) return;
-    if (!isSignedIn || !user) {
+    void refreshAuth();
+  }, []);
+
+  const activeOrganization =
+    authState.organizations.find(({ id }) => id === authState.activeOrganizationId) ?? null;
+
+  const supabase = useMemo<SupabaseClient>(() => {
+    if (!authState.isAuthenticated || !activeOrganization?.id) {
+      return createClient() as unknown as SupabaseClient;
+    }
+
+    return createSupabaseClient(getOrganizationToken) as unknown as SupabaseClient;
+  }, [authState.isAuthenticated, activeOrganization?.id]);
+
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!authState.isAuthenticated || !authState.user) {
       setProfile(null);
       setRole(null);
       setDataLoading(false);
@@ -68,23 +142,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchData = async () => {
       setDataLoading(true);
+
       try {
-        // Fetch profile
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', authState.user.id)
           .maybeSingle();
 
         if (profileData) {
           setProfile(profileData as Profile);
         } else {
-          // Create profile if not exists
           const newProfile = {
-            user_id: user.id,
-            email: user.primaryEmailAddress?.emailAddress || '',
-            full_name: user.fullName || '',
-            organization_id: organization?.id || null
+            user_id: authState.user.id,
+            email: authState.user.primaryEmailAddress?.emailAddress || authState.user.email || '',
+            full_name: authState.user.fullName || '',
+            organization_id: activeOrganization?.id || null,
           };
 
           const { data: createdProfile, error: createError } = await supabase
@@ -98,26 +171,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // Fetch role
-        const { data: roleData } = await supabase
+        const roleQuery = supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .eq('user_id', authState.user.id);
+
+        const scopedRoleQuery = activeOrganization?.id
+          ? roleQuery.eq('organization_id', activeOrganization.id)
+          : roleQuery;
+
+        const { data: roleData } = await scopedRoleQuery.maybeSingle();
 
         if (roleData) {
           setRole(roleData.role as AppRole);
         } else {
-          // No role assigned yet — default to 'employee'.
-          // The first user who onboards (completes org setup) gets 'admin' via the onboarding page.
-          // Everyone else who signs up into an existing org defaults to 'employee'.
-          console.log('[Auth] No role found for user, defaulting to employee');
           setRole('employee');
-          // Persist the default so subsequent loads are fast
-          await supabase
-            .from('user_roles')
-            .upsert({ user_id: user.id, role: 'employee' }, { onConflict: 'user_id' })
-            .select();
+
+          if (activeOrganization?.id) {
+            await supabase
+              .from('user_roles')
+              .upsert(
+                {
+                  user_id: authState.user.id,
+                  role: 'employee',
+                  organization_id: activeOrganization.id,
+                },
+                { onConflict: 'user_id' }
+              )
+              .select();
+          }
         }
       } catch (error) {
         console.error('Error fetching global auth data:', error);
@@ -126,22 +208,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    fetchData();
-  }, [isLoaded, isOrgLoaded, isSignedIn, user, supabase, organization?.id]);
+    void fetchData();
+  }, [authLoading, authState.isAuthenticated, authState.user, activeOrganization?.id, supabase]);
+
+  const setActiveOrganization = async (organizationId: string) => {
+    const response = await fetch('/api/auth/active-org', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ organizationId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to set active organization');
+    }
+
+    await refreshAuth();
+  };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isLoaded: isLoaded && isOrgLoaded,
-        isSignedIn: !!isSignedIn,
+        user: authState.user,
+        isLoaded: !authLoading,
+        isSignedIn: authState.isAuthenticated,
         profile,
         role,
-        organization,
-        orgId: organization?.id || null,
-        loading: !isLoaded || !isOrgLoaded || dataLoading,
+        organization: activeOrganization,
+        organizations: authState.organizations,
+        orgId: activeOrganization?.id || null,
+        loading: authLoading || dataLoading,
         supabase,
-        signOut: async () => await signOut()
+        signOut: async () => {
+          window.location.assign('/auth/sign-out');
+        },
+        setActiveOrganization,
+        refreshAuth,
       }}
     >
       {children}
@@ -151,8 +255,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+
   return context;
 };

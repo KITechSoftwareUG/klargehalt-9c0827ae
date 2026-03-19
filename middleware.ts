@@ -1,44 +1,58 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { NextResponse } from "next/server";
+import LogtoClient from '@logto/next/edge';
+import { NextResponse } from 'next/server';
+import { ACTIVE_ORG_COOKIE, getLogtoConfig } from '@/lib/logto';
 
-const isPublicRoute = createRouteMatcher([
-    '/',
-    '/sign-in(.*)',
-    '/sign-up(.*)',
-    '/api/webhooks(.*)',
-]);
+const isPublicRoute = (pathname: string) =>
+  pathname === '/' ||
+  pathname.startsWith('/sign-in') ||
+  pathname.startsWith('/sign-up') ||
+  pathname.startsWith('/auth/') ||
+  pathname.startsWith('/callback') ||
+  pathname.startsWith('/api/auth/');
 
-export default clerkMiddleware(async (auth, request) => {
-    const url = request.nextUrl;
-    const hostname = request.headers.get("host") || "";
-    const pathname = url.pathname;
+export default async function middleware(request: Request) {
+  const client = new LogtoClient(getLogtoConfig());
+  const nextRequest = request as Parameters<typeof client.getLogtoContext>[0];
+  const url = nextRequest.nextUrl;
+  const hostname = nextRequest.headers.get('host') || '';
+  const pathname = url.pathname;
 
-    // 1. App Subdomain Logic (app.klargehalt.de)
-    if (hostname.startsWith("app.") || hostname.includes("-app-")) {
-
-        // Redirect: app.klargehalt.de/ -> /dashboard
-        if (pathname === "/") {
-            return NextResponse.redirect(new URL("/dashboard", request.url));
-        }
-
-        // Auth-Check for App-Subdomain
-        if (!isPublicRoute(request)) {
-            const authObj = await auth();
-            if (!authObj.userId) {
-                return authObj.redirectToSignIn();
-            }
-            if (!authObj.orgId && !pathname.startsWith('/onboarding')) {
-                return NextResponse.redirect(new URL('/onboarding', request.url));
-            }
-        }
-
-        return NextResponse.next();
+  if (hostname.startsWith('app.') || hostname.includes('-app-')) {
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/dashboard', nextRequest.url));
     }
 
-    // 2. Marketing Domain / Localhost Logic
-    // Next.js automatically finds files in (marketing) or (app) if they are uniquely defined
+    if (!isPublicRoute(pathname)) {
+      const context = await client.getLogtoContext(nextRequest);
+
+      if (!context.isAuthenticated) {
+        return NextResponse.redirect(new URL('/sign-in', nextRequest.url));
+      }
+
+      const organizations = context.claims?.organizations ?? [];
+      const activeOrganizationId = nextRequest.cookies.get(ACTIVE_ORG_COOKIE)?.value;
+
+      if (!activeOrganizationId && organizations.length > 0) {
+        const response = NextResponse.next();
+        response.cookies.set(ACTIVE_ORG_COOKIE, organizations[0], {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+        });
+        return response;
+      }
+
+      if (!activeOrganizationId && !pathname.startsWith('/onboarding')) {
+        return NextResponse.redirect(new URL('/onboarding', nextRequest.url));
+      }
+    }
+
     return NextResponse.next();
-});
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
     matcher: [

@@ -5,12 +5,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { getServerAuthContext } from '@/lib/auth/server';
 
 export async function POST(request: NextRequest) {
     try {
         // Auth-Check
-        const user = await currentUser();
+        const { user } = await getServerAuthContext();
         if (!user) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
