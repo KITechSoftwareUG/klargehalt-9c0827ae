@@ -3,138 +3,166 @@ import { Mail, Phone, MapPin, ArrowRight } from "lucide-react";
 
 const ContactSection = () => {
   return (
-    <section id="contact" className="py-24 lg:py-32 bg-background relative">
+    <section id="contact" className="py-24 lg:py-36 bg-background relative">
+      {/* Subtle top divider */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto">
-          {/* Left Content */}
-          <div className="space-y-8">
+        <div className="grid lg:grid-cols-5 gap-16 lg:gap-20 items-start max-w-6xl mx-auto">
+          {/* Left Content — 2 cols */}
+          <div className="lg:col-span-2 space-y-10">
             <div>
-              <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-4">
+              <p className="text-accent text-sm font-semibold tracking-widest uppercase mb-4">
                 Kontakt
-              </span>
-              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-6 tracking-tight">
-                Lassen Sie uns sprechen
+              </p>
+              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-6 tracking-tight leading-tight">
+                Lassen Sie
+                <br />
+                uns sprechen
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Haben Sie Fragen zur Umsetzung der EU-Entgelttransparenzrichtlinie? 
-                Unsere Compliance-Experten beraten Sie gerne.
+              <p className="text-base lg:text-lg text-muted-foreground leading-relaxed">
+                Haben Sie Fragen zur Umsetzung der
+                EU-Entgelttransparenzrichtlinie? Unsere Compliance-Experten
+                beraten Sie gerne.
               </p>
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-accent" />
+            <div className="space-y-3">
+              {[
+                {
+                  icon: Mail,
+                  label: "E-Mail",
+                  value: "kontakt@klargehalt.de",
+                },
+                {
+                  icon: Phone,
+                  label: "Telefon",
+                  value: "+49 (0) 30 123 456 789",
+                },
+                {
+                  icon: MapPin,
+                  label: "Standort",
+                  value: "Berlin, Deutschland",
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border/40 hover:border-border/80 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-accent/8 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-4 h-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {item.value}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">E-Mail</p>
-                  <p className="font-medium text-foreground">kontakt@entgeltguard.de</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Telefon</p>
-                  <p className="font-medium text-foreground">+49 (0) 30 123 456 789</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-secondary/50 rounded-xl">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Standort</p>
-                  <p className="font-medium text-foreground">Berlin, Deutschland (EU-Hosting)</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Right - Contact Form */}
-          <div className="bg-card p-8 rounded-2xl border border-border shadow-elegant">
-            <h3 className="text-xl font-bold text-foreground mb-6">
+          {/* Right - Contact Form — 3 cols */}
+          <div className="lg:col-span-3 bg-card p-8 lg:p-10 rounded-2xl border border-border/60">
+            <h3 className="text-lg font-bold text-foreground mb-8">
               Demo anfragen
             </h3>
             <form className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
+                  <label
+                    htmlFor="firstName"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
                     Vorname
                   </label>
                   <input
                     type="text"
                     id="firstName"
-                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all text-sm"
                     placeholder="Max"
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
+                  <label
+                    htmlFor="lastName"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
                     Nachname
                   </label>
                   <input
                     type="text"
                     id="lastName"
-                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all text-sm"
                     placeholder="Mustermann"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                  Geschäftliche E-Mail
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-foreground mb-2"
+                >
+                  Geschaeftliche E-Mail
                 </label>
                 <input
                   type="email"
                   id="email"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all text-sm"
                   placeholder="max.mustermann@unternehmen.de"
                 />
               </div>
 
-              <div>
-                <label htmlFor="company" className="block text-sm font-medium text-foreground mb-2">
-                  Unternehmen
-                </label>
-                <input
-                  type="text"
-                  id="company"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
-                  placeholder="Unternehmen GmbH"
-                />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="company"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
+                    Unternehmen
+                  </label>
+                  <input
+                    type="text"
+                    id="company"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all text-sm"
+                    placeholder="Unternehmen GmbH"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="employees"
+                    className="block text-sm font-medium text-foreground mb-2"
+                  >
+                    Mitarbeiteranzahl
+                  </label>
+                  <select
+                    id="employees"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all text-sm"
+                  >
+                    <option value="">Bitte waehlen</option>
+                    <option value="1-50">1–50</option>
+                    <option value="51-250">51–250</option>
+                    <option value="251-1000">251–1.000</option>
+                    <option value="1000+">1.000+</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label htmlFor="employees" className="block text-sm font-medium text-foreground mb-2">
-                  Mitarbeiteranzahl
-                </label>
-                <select
-                  id="employees"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                <label
+                  htmlFor="message"
+                  className="block text-sm font-medium text-foreground mb-2"
                 >
-                  <option value="">Bitte wählen</option>
-                  <option value="1-50">1-50 Mitarbeiter</option>
-                  <option value="51-250">51-250 Mitarbeiter</option>
-                  <option value="251-1000">251-1.000 Mitarbeiter</option>
-                  <option value="1000+">Mehr als 1.000</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
                   Nachricht (optional)
                 </label>
                 <textarea
                   id="message"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all resize-none"
-                  placeholder="Wie können wir Ihnen helfen?"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all resize-none text-sm"
+                  placeholder="Wie koennen wir Ihnen helfen?"
                 />
               </div>
 
@@ -143,9 +171,11 @@ const ContactSection = () => {
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Button>
 
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="text-xs text-muted-foreground/60 text-center">
                 Mit dem Absenden stimmen Sie unserer{" "}
-                <a href="#" className="text-accent hover:underline">Datenschutzerklärung</a>{" "}
+                <a href="#" className="text-accent hover:underline">
+                  Datenschutzerklaerung
+                </a>{" "}
                 zu.
               </p>
             </form>

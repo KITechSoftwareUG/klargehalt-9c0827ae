@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { BrandName } from "@/components/BrandName";
 import Link from "next/link";
 import { getAppUrl } from "@/utils/url";
 
@@ -50,33 +51,37 @@ const HeroSection = () => {
       {/* Content — Centered */}
       <div className="relative z-20 container mx-auto px-4 lg:px-8 py-24 lg:py-32 flex flex-col items-center text-center">
         {/* Badge */}
-        <div className="animate-fade-in mb-8">
+        <div className="animate-fade-in mb-10">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-status-warning-bg text-status-warning text-sm font-semibold backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-status-warning animate-pulse-gentle" />
             Pflicht ab Juni 2026
           </span>
         </div>
 
+        {/* Brandname — Large wordmark */}
+        <div className="animate-fade-in animation-delay-100 mb-8">
+          <BrandName className="h-10 md:h-14 lg:h-[72px] xl:h-20" color="hsl(var(--foreground))" />
+        </div>
+
         {/* Headline */}
-        <div className="space-y-5 animate-fade-in animation-delay-100 max-w-3xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-[1.08] tracking-tight text-balance">
+        <div className="space-y-5 animate-fade-in animation-delay-200 max-w-3xl">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-medium text-foreground leading-relaxed tracking-tight text-balance">
             Entgelttransparenz{" "}
-            <span className="text-accent">rechtssicher</span>{" "}
+            <span className="text-accent font-semibold">rechtssicher</span>{" "}
             umsetzen
           </h1>
-          <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Schuetzen Sie Ihr Unternehmen vor Klagen, Bussgeldern und Chaos.
-            Unsere B2B-Loesung sichert Sie bei der Umsetzung der
-            EU-Entgelttransparenzrichtlinie ab.
+            Die B2B-Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie.
           </p>
         </div>
 
         {/* Benefits */}
-        <div className="flex flex-wrap justify-center gap-5 mt-8 animate-fade-in animation-delay-200">
+        <div className="flex flex-wrap justify-center gap-6 mt-8 animate-fade-in animation-delay-300">
           {benefits.map((benefit) => (
             <div
               key={benefit}
-              className="flex items-center gap-2 text-sm font-medium text-foreground"
+              className="flex items-center gap-2 text-sm font-medium text-foreground/80"
             >
               <CheckCircle2 className="w-4 h-4 text-status-success" />
               {benefit}
@@ -85,7 +90,7 @@ const HeroSection = () => {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-10 animate-fade-in animation-delay-300">
+        <div className="flex flex-col sm:flex-row gap-4 mt-10 animate-fade-in animation-delay-400">
           <Link href={getAppUrl("/sign-up")}>
             <Button
               variant="hero"
@@ -105,19 +110,6 @@ const HeroSection = () => {
               Mehr erfahren
             </Button>
           </Link>
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="pt-10 animate-fade-in animation-delay-400">
-          <p className="text-sm text-muted-foreground mb-3">
-            Vertraut von fuehrenden Unternehmen
-          </p>
-          <div className="flex items-center justify-center gap-6 opacity-50">
-            <div className="h-6 w-20 bg-foreground/20 rounded" />
-            <div className="h-6 w-24 bg-foreground/20 rounded" />
-            <div className="h-6 w-16 bg-foreground/20 rounded" />
-            <div className="hidden sm:block h-6 w-20 bg-foreground/20 rounded" />
-          </div>
         </div>
       </div>
     </section>

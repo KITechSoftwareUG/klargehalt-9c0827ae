@@ -3,31 +3,47 @@
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { useState } from 'react';
+import { BrandName } from '@/components/BrandName';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getAppUrl, getMarketingUrl, isAppSubdomain } from '@/utils/url';
+import { getAppUrl, getMarketingUrl } from '@/utils/url';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { isSignedIn, user, signOut } = useAuth();
-  const isApp = isAppSubdomain();
   const userLabel = user?.firstName || user?.email || 'Konto';
   const userInitial = (user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'K').toUpperCase();
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link href={getMarketingUrl('/')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm'
+          : 'bg-transparent border-b border-transparent'
+      }`}
+    >
+      <div className="container mx-auto px-4 lg:px-8">
+        <div className="flex items-center justify-between h-16 lg:h-20">
+          <Link href={getMarketingUrl('/')} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground lowercase tracking-tight">klargehalt</span>
+            <BrandName className="h-4 lg:h-[18px]" color="hsl(var(--foreground))" />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-10">
             <Link href={getMarketingUrl('/#features')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Features
+            </Link>
+            <Link href={getMarketingUrl('/#security')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Sicherheit
             </Link>
             <Link href={getMarketingUrl('/#pricing')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Preise
@@ -38,15 +54,15 @@ export default function Header() {
           </nav>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             {isSignedIn ? (
               <>
                 <Link href={getAppUrl('/dashboard')}>
-                  <Button variant="ghost">Dashboard</Button>
+                  <Button variant="ghost" size="sm">Dashboard</Button>
                 </Link>
                 <Button
                   variant="ghost"
-                  className="h-10 w-10 rounded-full border p-0 text-sm font-semibold"
+                  className="h-9 w-9 rounded-full border border-border p-0 text-sm font-semibold"
                   onClick={() => void signOut()}
                   title="Abmelden"
                 >
@@ -56,19 +72,20 @@ export default function Header() {
             ) : (
               <>
                 <Link href={getAppUrl('/sign-in')}>
-                  <Button variant="ghost">Anmelden</Button>
+                  <Button variant="ghost" size="sm">Anmelden</Button>
                 </Link>
                 <Link href={getAppUrl('/sign-up')}>
-                  <Button variant="hero">Kostenlos starten</Button>
+                  <Button variant="hero" size="sm">Kostenlos starten</Button>
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button — 3 bars */}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -76,7 +93,7 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
+          <div className="md:hidden py-6 border-t border-border/50 animate-fade-in">
             <nav className="flex flex-col gap-4">
               <Link
                 href={getMarketingUrl('/#features')}
@@ -84,6 +101,13 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Features
+              </Link>
+              <Link
+                href={getMarketingUrl('/#security')}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sicherheit
               </Link>
               <Link
                 href={getMarketingUrl('/#pricing')}
@@ -100,7 +124,7 @@ export default function Header() {
                 Kontakt
               </Link>
 
-              <div className="pt-4 border-t border-border flex flex-col gap-2">
+              <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
                 {isSignedIn ? (
                   <>
                     <Link href={getAppUrl('/dashboard')} onClick={() => setMobileMenuOpen(false)}>
