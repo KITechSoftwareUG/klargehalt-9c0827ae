@@ -1,45 +1,36 @@
-import { Shield, Lock, Server, Key, FileCheck, Globe } from "lucide-react";
-
 const layers = [
-  { icon: Lock, value: "AES-256", label: "Verschluesselung at rest und in transit" },
-  { icon: Server, value: "Frankfurt", label: "EU-only Hosting, kein US Cloud Act" },
-  { icon: Key, value: "2FA + SSO", label: "Verpflichtende Multi-Faktor-Authentifizierung" },
-  { icon: Shield, value: "RLS", label: "Mandantentrennung auf Datenbankebene" },
-  { icon: FileCheck, value: "Art. 15/17", label: "Automatisierte Auskunft und Loeschung" },
-  { icon: Globe, value: "SOC 2", label: "Jaehrlich geprueft, Berichte auf Anfrage" },
+  { value: "AES-256", label: "Verschluesselung at rest und in transit" },
+  { value: "Frankfurt", label: "EU-only Hosting, kein Transfer in Drittlaender" },
+  { value: "2FA + SSO", label: "Multi-Faktor-Authentifizierung" },
+  { value: "RLS", label: "Mandantentrennung auf Datenbankebene" },
+  { value: "Art. 15/17", label: "DSGVO-Auskunft und Loeschung" },
+  { value: "Audit-Trail", label: "Jede Aenderung protokolliert und exportierbar" },
 ];
 
 const SecuritySection = () => {
   return (
     <section id="security" className="py-24 lg:py-32 bg-[#1E293B]">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
-        {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 mb-16 lg:mb-20">
           <div>
-            <p className="text-xs font-semibold text-[#2563EB] uppercase tracking-[0.2em] mb-3">
-              Sicherheit
-            </p>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Ihre Gehaltsdaten verdienen den hoechsten Schutz.
+              Gehaltsdaten sind sensibel. Wir behandeln sie auch so.
             </h2>
           </div>
           <div className="flex items-end">
             <p className="text-sm text-slate-400 leading-relaxed max-w-[46ch]">
-              Jede Schicht unserer Infrastruktur ist auf den Schutz
-              sensibler Verguetungsdaten ausgelegt. Zertifiziert nach
-              ISO 27001, SOC 2 Type II und vollstaendig DSGVO-konform.
+              Verschluesselung, Mandantentrennung, EU-Hosting.
+              Kein Marketing-Sprech — das ist die technische Realitaet.
             </p>
           </div>
         </div>
 
-        {/* Security grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[0.06] rounded-xl overflow-hidden">
           {layers.map((l) => (
             <div
               key={l.value}
               className="bg-[#1E293B] p-7 lg:p-9 hover:bg-white/[0.03] transition-colors duration-300"
             >
-              <l.icon className="w-5 h-5 text-[#2563EB] mb-5" />
               <p className="text-xl font-bold text-white tracking-tight mb-1">
                 {l.value}
               </p>
@@ -50,9 +41,8 @@ const SecuritySection = () => {
           ))}
         </div>
 
-        {/* Certifications */}
         <div className="mt-10 flex flex-wrap gap-3">
-          {["ISO 27001", "SOC 2 Type II", "DSGVO", "TLS 1.3", "Mandantentrennung", "Audit-Logs"].map((c) => (
+          {["DSGVO", "TLS 1.3", "Mandantentrennung", "Audit-Logs", "EU-Hosting"].map((c) => (
             <span
               key={c}
               className="px-3 py-1.5 border border-white/[0.08] rounded-lg text-[11px] font-medium text-slate-500"

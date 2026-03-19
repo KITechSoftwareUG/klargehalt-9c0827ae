@@ -6,21 +6,12 @@ const links = {
     { label: "Funktionen", href: "/#features" },
     { label: "Sicherheit", href: "/#security" },
     { label: "Preise", href: "/#pricing" },
-  ],
-  Unternehmen: [
-    { label: "Ueber uns", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Karriere", href: "#" },
+    { label: "Kontakt", href: "/#contact" },
   ],
   Rechtliches: [
     { label: "Datenschutz", href: "#" },
     { label: "Impressum", href: "#" },
     { label: "AGB", href: "#" },
-  ],
-  Support: [
-    { label: "Dokumentation", href: "#" },
-    { label: "Status", href: "#" },
-    { label: "Kontakt", href: "/#contact" },
   ],
 };
 
@@ -38,7 +29,7 @@ const Footer = () => {
             </p>
           </div>
 
-          <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8">
+          <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-2 gap-8 lg:justify-end">
             {Object.entries(links).map(([title, items]) => (
               <div key={title}>
                 <p className="text-[10px] font-semibold text-slate-500 mb-3 uppercase tracking-[0.15em]">{title}</p>
@@ -61,11 +52,7 @@ const Footer = () => {
 
         <div className="pt-6 border-t border-white/[0.05] flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-[10px] text-slate-600">2026 KlarGehalt GmbH. Alle Rechte vorbehalten.</p>
-          <div className="flex gap-5">
-            {["LinkedIn", "GitHub"].map((s) => (
-              <a key={s} href="#" className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors cursor-pointer">{s}</a>
-            ))}
-          </div>
+          <p className="text-[10px] text-slate-600">Frankfurt, Deutschland</p>
         </div>
       </div>
     </footer>

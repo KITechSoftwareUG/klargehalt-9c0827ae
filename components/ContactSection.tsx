@@ -9,12 +9,11 @@ const ContactSection = () => {
           {/* Left */}
           <div className="lg:col-span-5 space-y-8">
             <div>
-              <p className="text-xs font-semibold text-[#2563EB] uppercase tracking-[0.2em] mb-3">Kontakt</p>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight mb-4">
-                Bereit fuer konforme Gehaltstransparenz?
+                Sprechen wir drueber.
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed max-w-[40ch]">
-                Unsere Compliance-Experten beraten Sie unverbindlich zur EU-Entgelttransparenzrichtlinie.
+                Wir zeigen Ihnen in 20 Minuten, wie KlarGehalt fuer Ihr Unternehmen funktioniert.
               </p>
             </div>
 
