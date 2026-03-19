@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileText } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { createSupabaseClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
                 });
 
                 if (!organizationResponse.ok) {
-                    throw new Error('Organisation konnte in Logto nicht erstellt werden.');
+                    throw new Error('Organisation konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
                 }
 
                 const organizationData = await organizationResponse.json();
@@ -257,7 +257,7 @@ export default function OnboardingPage() {
                 return (
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
-                            <Logo className="w-16 h-16 mx-auto text-primary" />
+                            <Image src="/brandname.svg" alt="KlarGehalt" width={200} height={30} className="h-8 w-auto mx-auto" />
                             <h2 className="text-3xl font-bold">Willkommen bei KlarGehalt</h2>
                             <p className="text-muted-foreground">
                                 Lassen Sie uns Ihr Konto einrichten
@@ -614,7 +614,7 @@ export default function OnboardingPage() {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Logo className="w-6 h-6 text-primary" />
+                            <Image src="/brandname.svg" alt="KlarGehalt" width={100} height={16} className="h-4 w-auto" />
                             <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V3.1)</span>
                         </div>
                         <div className="flex items-center gap-4">

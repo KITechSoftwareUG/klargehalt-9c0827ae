@@ -2,8 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
-import { Logo } from '@/components/Logo';
-import { BrandName } from '@/components/BrandName';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,9 +31,8 @@ export default function Header() {
     >
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
-          <Link href={getMarketingUrl('/')} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <Logo className="h-8 w-8 text-primary" />
-            <BrandName className="h-4 lg:h-[18px]" color="hsl(var(--foreground))" />
+          <Link href={getMarketingUrl('/')} className="flex items-center hover:opacity-80 transition-opacity">
+            <Image src="/brandname.svg" alt="KlarGehalt" width={140} height={20} className="h-5 lg:h-6 w-auto" priority />
           </Link>
 
           {/* Desktop Navigation */}

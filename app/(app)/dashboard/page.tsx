@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/Logo';
+import Image from 'next/image';
 import {
     Shield, Users, Settings, LogOut,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 <div className="flex h-full flex-col">
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-8 py-8">
-                        <Logo className="h-8 w-8 text-white" />
+                        <Image src="/brandname.svg" alt="KlarGehalt" width={120} height={18} className="h-5 w-auto invert" />
                         <span className="text-2xl font-bold tracking-tight lowercase">klargehalt</span>
                     </div>
 

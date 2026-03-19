@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, Clock, AlertCircle, Scale } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -56,10 +56,7 @@ export default function SignInPage() {
                 <div className="relative z-10">
                     {/* Logo */}
                     <div className="flex items-center gap-3 mb-12">
-                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-xl border border-primary/30 shadow-lg">
-                            <Logo className="w-8 h-8 text-white" />
-                        </div>
-                        <span className="text-3xl font-bold text-white lowercase tracking-tight">klargehalt</span>
+                        <Image src="/brandname.svg" alt="KlarGehalt" width={200} height={30} className="h-8 w-auto invert" />
                     </div>
 
                     {/* Alert Badge */}
@@ -132,7 +129,7 @@ export default function SignInPage() {
                         <span>DSGVO-konform • EU-Server • Verschlüsselt</span>
                     </div>
                     <p className="text-slate-500 text-xs">
-                        © 2024 KlarGehalt. Alle Rechte vorbehalten.
+                        © 2025 KlarGehalt. Alle Rechte vorbehalten.
                     </p>
                 </div>
 
@@ -168,23 +165,20 @@ export default function SignInPage() {
 
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center gap-3 mb-8">
-                        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20">
-                            <Logo className="w-6 h-6 text-primary" />
-                        </div>
-                        <span className="text-2xl font-bold text-foreground lowercase tracking-tight">klargehalt</span>
+                        <Image src="/brandname.svg" alt="KlarGehalt" width={160} height={24} className="h-6 w-auto" />
                     </div>
 
                     <Card className="border-slate-200 shadow-xl">
                         <CardHeader className="space-y-3">
-                            <CardTitle className="text-2xl">Im Workspace anmelden</CardTitle>
+                            <CardTitle className="text-2xl">Anmelden</CardTitle>
                             <CardDescription>
-                                Sie werden sicher zu Logto weitergeleitet und danach zurück in Ihre KlarGehalt-App geführt.
+                                Melden Sie sich sicher in Ihrem KlarGehalt-Workspace an. Ihre Gehaltsdaten sind Ende-zu-Ende verschlüsselt.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <Link href="/auth/sign-in" className="block">
                                 <Button className="w-full" size="lg">
-                                    Mit Logto anmelden
+                                    Sicher anmelden
                                 </Button>
                             </Link>
                             <p className="text-sm text-muted-foreground">

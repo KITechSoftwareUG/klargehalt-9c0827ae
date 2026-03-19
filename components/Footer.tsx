@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BrandName } from "@/components/BrandName";
+
 import { getMarketingUrl } from "@/utils/url";
 
 const links = {
@@ -33,8 +33,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-4 space-y-5">
             <a href={getMarketingUrl("/")} className="inline-flex items-center gap-2.5">
-              <Image src="/logo_hell.png" alt="KlarGehalt" width={28} height={28} className="w-7 h-7" />
-              <BrandName className="h-3.5" color="hsl(var(--background))" />
+              <Image src="/brandname.svg" alt="KlarGehalt" width={120} height={18} className="h-4 w-auto invert" />
             </a>
             <p className="text-background/30 text-sm leading-relaxed max-w-[36ch]">
               B2B-Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie.
