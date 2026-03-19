@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Roadmap created, STATE.md initialized — ready to plan Phase 1
-last_updated: "2026-03-19T14:38:51.062Z"
+stopped_at: Completed 01-01-PLAN.md (canonical schema migration + RLS)
+last_updated: "2026-03-19T14:50:14Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -24,25 +24,25 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 ## Current Position
 
 Phase: 01 (schema-and-security-foundation) — EXECUTING
-Plan: 1 of 2
+Plan: 2 of 2 (plan 01 complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 9 min
+- Total execution time: 0.15 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-schema-and-security-foundation | 1/2 | 9 min | 9 min |
 
 **Recent Trend:**
 
-- Last 5 plans: —
+- Last 5 plans: 01-01 (9 min)
 - Trend: —
 
 *Updated after each plan completion*
@@ -58,6 +58,11 @@ Recent decisions affecting current work:
 - [Pre-roadmap]: Rework entire data model — current schema not fit for compliance
 - [Pre-roadmap]: Auth (Logto) is out of scope — assumes authenticated user with orgId/role via useAuth()
 - [Pre-roadmap]: Single authoritative migration — replace 17+ ad-hoc patch files
+- [01-01]: Used auth.jwt() ->> 'org_id' for tenant isolation (confirmed from MASTER_RLS_FIX.sql precedent)
+- [01-01]: Idempotent migration (CREATE IF NOT EXISTS + ADD COLUMN IF NOT EXISTS) — safe on live and fresh DB
+- [01-01]: FORCE ROW LEVEL SECURITY on all tenant tables — prevents table-owner bypass
+- [01-01]: audit_logs is append-only (INSERT + SELECT policies only — no UPDATE or DELETE)
+- [01-01]: employees table uses split SELECT policies (hr_select + self_select) for salary data isolation
 
 ### Pending Todos
 
@@ -71,5 +76,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Roadmap created, STATE.md initialized — ready to plan Phase 1
+Stopped at: Completed 01-01-PLAN.md — canonical schema migration + 17 migrations archived
 Resume file: None

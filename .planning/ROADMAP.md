@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Canonical schema migration with RLS policies and archived patches
+- [x] 01-01-PLAN.md — Canonical schema migration with RLS policies and archived patches
 - [ ] 01-02-PLAN.md — Remove dead dependencies and AI routes/services
 
 ### Phase 2: Data Management

@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Foundation
 
-- [ ] **FOUN-01**: Single authoritative database migration replaces all 17 ad-hoc patch files with a clean, deterministic schema
-- [ ] **FOUN-02**: All tenant-scoped tables enforce `organization_id TEXT NOT NULL`
-- [ ] **FOUN-03**: RLS policies use Logto JWT claims (`auth.jwt() ->> 'org_id'`) for tenant isolation — no USING(true) policies remain
-- [ ] **FOUN-04**: `user_roles` table has UNIQUE constraint on `(user_id, organization_id)` to support multi-org users
+- [x] **FOUN-01**: Single authoritative database migration replaces all 17 ad-hoc patch files with a clean, deterministic schema
+- [x] **FOUN-02**: All tenant-scoped tables enforce `organization_id TEXT NOT NULL`
+- [x] **FOUN-03**: RLS policies use Logto JWT claims (`auth.jwt() ->> 'org_id'`) for tenant isolation — no USING(true) policies remain
+- [x] **FOUN-04**: `user_roles` table has UNIQUE constraint on `(user_id, organization_id)` to support multi-org users
 - [ ] **FOUN-05**: Dead dependencies removed (`@google/generative-ai`, `svix`)
 - [ ] **FOUN-06**: AI-related API routes and services removed (`/api/pay-equity/chat`, `/api/pay-equity/generate-explanation`, `lib/services/gemini-service.ts`)
 
@@ -110,10 +110,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | Phase 1 | Pending |
-| FOUN-02 | Phase 1 | Pending |
-| FOUN-03 | Phase 1 | Pending |
-| FOUN-04 | Phase 1 | Pending |
+| FOUN-01 | Phase 1 | Complete (01-01) |
+| FOUN-02 | Phase 1 | Complete (01-01) |
+| FOUN-03 | Phase 1 | Complete (01-01) |
+| FOUN-04 | Phase 1 | Complete (01-01) |
 | FOUN-05 | Phase 1 | Pending |
 | FOUN-06 | Phase 1 | Pending |
 | EMPL-01 | Phase 2 | Pending |
