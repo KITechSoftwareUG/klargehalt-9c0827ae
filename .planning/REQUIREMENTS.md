@@ -110,13 +110,50 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| FOUN-01 | Phase 1 | Pending |
+| FOUN-02 | Phase 1 | Pending |
+| FOUN-03 | Phase 1 | Pending |
+| FOUN-04 | Phase 1 | Pending |
+| FOUN-05 | Phase 1 | Pending |
+| FOUN-06 | Phase 1 | Pending |
+| EMPL-01 | Phase 2 | Pending |
+| EMPL-02 | Phase 2 | Pending |
+| EMPL-03 | Phase 2 | Pending |
+| EMPL-04 | Phase 2 | Pending |
+| EMPL-05 | Phase 2 | Pending |
+| EMPL-06 | Phase 2 | Pending |
+| JOBA-01 | Phase 2 | Pending |
+| JOBA-02 | Phase 2 | Pending |
+| JOBA-03 | Phase 2 | Pending |
+| JOBA-04 | Phase 2 | Pending |
+| PGAP-01 | Phase 3 | Pending |
+| PGAP-02 | Phase 3 | Pending |
+| PGAP-03 | Phase 3 | Pending |
+| PGAP-04 | Phase 3 | Pending |
+| PGAP-05 | Phase 3 | Pending |
+| PGAP-06 | Phase 3 | Pending |
+| PGAP-07 | Phase 3 | Pending |
+| PGAP-08 | Phase 3 | Pending |
+| PGAP-09 | Phase 3 | Pending |
+| PGAP-10 | Phase 3 | Pending |
+| PGAP-11 | Phase 3 | Pending |
+| ROLE-01 | Phase 3 | Pending |
+| ROLE-02 | Phase 3 | Pending |
+| ROLE-03 | Phase 3 | Pending |
+| ROLE-04 | Phase 3 | Pending |
+| REPT-01 | Phase 4 | Pending |
+| REPT-02 | Phase 4 | Pending |
+| REPT-03 | Phase 4 | Pending |
+| AUDT-01 | Phase 4 | Pending |
+| AUDT-02 | Phase 4 | Pending |
+| AUDT-03 | Phase 4 | Pending |
+| AUDT-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30
+- v1 requirements: 38 total
+- Mapped to phases: 38
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-19*
-*Last updated: 2026-03-19 after initial definition*
+*Last updated: 2026-03-19 after roadmap creation*
