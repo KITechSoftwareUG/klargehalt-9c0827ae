@@ -28,11 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Any authenticated Logto user querying any tenant-scoped table receives only their organization's rows — cross-tenant reads return empty, not an error and not another org's data
   3. An employee-role user cannot read another employee's salary row, even with direct SQL via Supabase client
   4. Dead dependencies (`@google/generative-ai`, `svix`) and AI API routes are absent from the codebase and `package.json`
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Consolidate all migrations into one authoritative schema file
-- [ ] 01-02: Implement Logto JWT RLS policies and validate against real token
+- [ ] 01-01-PLAN.md — Canonical schema migration with RLS policies and archived patches
+- [ ] 01-02-PLAN.md — Remove dead dependencies and AI routes/services
 
 ### Phase 2: Data Management
 **Goal**: HR managers can enter and maintain the structured data that feeds compliance calculations
@@ -91,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema and Security Foundation | 0/2 | Not started | - |
+| 1. Schema and Security Foundation | 0/2 | Planning complete | - |
 | 2. Data Management | 0/3 | Not started | - |
 | 3. Analytics and Role Views | 0/3 | Not started | - |
 | 4. Compliance Reports and Audit | 0/2 | Not started | - |
