@@ -32,7 +32,7 @@ export default function Header() {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           <Link href={getMarketingUrl('/')} className="flex items-center hover:opacity-80 transition-opacity">
-            <Image src="/brandname.svg" alt="KlarGehalt" width={140} height={20} className="h-5 lg:h-6 w-auto" priority />
+            <Image src="/brandname.svg" alt="KlarGehalt" width={180} height={26} className="h-6 lg:h-7 w-auto" priority />
           </Link>
 
           {/* Desktop Navigation */}

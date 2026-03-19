@@ -8,72 +8,79 @@ import { getAppUrl } from "@/utils/url";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
-      {/* Video Background — fullscreen behind everything */}
-      <div className="absolute inset-0">
+    <section className="relative">
+      {/* ── Screen 1: Video fills the entire viewport ── */}
+      <div className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           style={{
             maskImage:
-              "radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%)",
+              "radial-gradient(ellipse 75% 65% at 50% 50%, black 15%, transparent 68%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 70% 55% at 50% 45%, black 20%, transparent 70%)",
+              "radial-gradient(ellipse 75% 65% at 50% 50%, black 15%, transparent 68%)",
           }}
         >
           <source src="/balken.mp4" type="video/mp4" />
         </video>
+
+        {/* Radial fade */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 85% 75% at 50% 50%, transparent 20%, hsl(var(--background)) 68%)",
+          }}
+        />
+
+        {/* Top + bottom fades */}
+        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-pulse-gentle">
+          <div className="w-5 h-8 rounded-full border-2 border-foreground/15 flex items-start justify-center pt-1.5">
+            <div className="w-1 h-1.5 rounded-full bg-foreground/25" />
+          </div>
+        </div>
       </div>
 
-      {/* Radial fade overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 70% at 50% 45%, transparent 25%, hsl(var(--background)) 70%)",
-        }}
-      />
-
-      {/* Edge fades */}
-      <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-background to-transparent pointer-events-none z-[1]" />
-      <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-background to-transparent pointer-events-none z-[1]" />
-
-      {/* Content — centered over the video with enough contrast */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 lg:px-8 max-w-4xl mx-auto">
+      {/* ── Screen 2: Content appears on scroll ── */}
+      <div className="relative z-10 flex flex-col items-center text-center px-4 lg:px-8 py-24 lg:py-32 -mt-24">
         {/* Badge */}
-        <div className="animate-fade-in opacity-0 mb-8">
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-status-warning/20 bg-background/60 backdrop-blur-md text-status-warning text-sm font-semibold">
+        <div className="mb-10">
+          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-status-warning/20 bg-background/80 backdrop-blur-md text-status-warning text-sm font-semibold">
             <span className="w-2 h-2 rounded-full bg-status-warning animate-pulse-gentle" />
             Pflicht ab Juni 2026
           </span>
         </div>
 
-        {/* Brand wordmark */}
-        <div className="animate-fade-in opacity-0 animation-delay-100 mb-6">
+        {/* Brand wordmark — GROSS */}
+        <div className="mb-10">
           <Image
             src="/brandname.svg"
             alt="KlarGehalt"
-            width={520}
-            height={70}
+            width={900}
+            height={120}
             priority
-            className="h-10 md:h-14 lg:h-[68px] w-auto"
+            className="h-16 sm:h-20 md:h-28 lg:h-36 xl:h-44 w-auto max-w-[90vw]"
           />
         </div>
 
         {/* Subheadline */}
-        <div className="animate-fade-in opacity-0 animation-delay-200 mb-8">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-normal text-foreground/80 tracking-tight leading-snug">
+        <div className="mb-10 max-w-3xl">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-normal text-foreground/70 tracking-tight leading-snug">
             Entgelttransparenz{" "}
             <span className="font-semibold text-foreground">rechtssicher</span>{" "}
             umsetzen
           </h1>
         </div>
 
-        {/* Benefits — horizontal */}
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 animate-fade-in opacity-0 animation-delay-300 mb-10">
+        {/* Benefits */}
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-12">
           {["DSGVO-konform", "EU-Richtlinie 2023/970", "Revisionssicher"].map(
             (b) => (
               <span
@@ -88,7 +95,7 @@ const HeroSection = () => {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 animate-fade-in opacity-0 animation-delay-400">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Link href={getAppUrl("/sign-up")}>
             <Button variant="hero" size="xl" className="group w-full sm:w-auto">
               Kostenlose Demo
@@ -99,7 +106,7 @@ const HeroSection = () => {
             <Button
               variant="hero-outline"
               size="xl"
-              className="w-full sm:w-auto backdrop-blur-sm"
+              className="w-full sm:w-auto"
             >
               Mehr erfahren
             </Button>
