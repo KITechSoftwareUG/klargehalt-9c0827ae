@@ -5,7 +5,7 @@ import { ACTIVE_ORG_COOKIE, getLogtoConfig } from '@/lib/logto';
 
 export async function GET(request: NextRequest) {
   const config = getLogtoConfig();
-  await handleSignIn(config, request.nextUrl);
+  await handleSignIn(config, request.nextUrl.searchParams);
 
   const context = await getLogtoContext(config, { fetchUserInfo: true });
   const organizations = context.claims?.organizations ?? [];
