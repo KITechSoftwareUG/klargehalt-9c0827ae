@@ -4,14 +4,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
- * Creates a Supabase client that injects a fresh Clerk JWT
+ * Creates a Supabase client that injects a fresh Logto organization token
  * at the NETWORK LAYER before every HTTP request.
  *
  * - No per-hook token management needed
  * - Token is always fresh (fetched at request time, not render time)
  * - Single client shared via AuthContext
  *
- * @param getToken - Async function returning a fresh Clerk JWT
+ * @param getToken - Async function returning a fresh Logto organization token
  */
 export const createSupabaseClient = (getToken: () => Promise<string | null>) => {
     if (!supabaseUrl || !supabaseKey) {
@@ -21,7 +21,7 @@ export const createSupabaseClient = (getToken: () => Promise<string | null>) => 
     return createBrowserClient(supabaseUrl, supabaseKey, {
         global: {
             fetch: async (input: RequestInfo | URL, init: RequestInit = {}) => {
-                // Fetch a fresh token at request time — never stale
+                // Fetch a fresh Logto org token at request time — never stale
                 const token = await getToken().catch(() => null);
 
                 const headers = new Headers(init.headers);
