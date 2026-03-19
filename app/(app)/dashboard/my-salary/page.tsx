@@ -6,22 +6,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useEmployeeComparison, useGenerateExplanation } from '@/hooks/usePayEquity';
+import { useEmployeeComparison } from '@/hooks/usePayEquity';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { Sparkles, Users, TrendingUp, Info } from 'lucide-react';
+import { Users, TrendingUp, Info } from 'lucide-react';
 
 export default function MySalaryPage() {
     const { user, supabase } = useAuth();
     const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const { data: comparison, isLoading: comparisonLoading, refetch } = useEmployeeComparison(employeeId || '');
-    const generateExplanation = useGenerateExplanation();
+    const { data: comparison, isLoading: comparisonLoading } = useEmployeeComparison(employeeId || '');
 
     // Hole Employee-ID für aktuellen User
     useEffect(() => {
@@ -42,15 +40,6 @@ export default function MySalaryPage() {
 
         fetchEmployeeId();
     }, [user]);
-
-    // Auto-generiere Erklärung wenn noch nicht vorhanden
-    useEffect(() => {
-        if (comparison && !comparison.ai_explanation && employeeId) {
-            generateExplanation.mutate(employeeId, {
-                onSuccess: () => refetch(),
-            });
-        }
-    }, [comparison, employeeId]);
 
     if (loading || comparisonLoading) {
         return <LoadingSkeleton />;
@@ -189,42 +178,6 @@ export default function MySalaryPage() {
                             </p>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
-
-            {/* KI-Erklärung */}
-            <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                        <Sparkles className="h-5 w-5" />
-                        KI-Erklärung
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {generateExplanation.isPending ? (
-                        <div className="space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-5/6" />
-                            <Skeleton className="h-4 w-4/6" />
-                        </div>
-                    ) : comparison.ai_explanation ? (
-                        <p className="text-base leading-relaxed text-blue-900/90 dark:text-blue-100/90">
-                            {comparison.ai_explanation}
-                        </p>
-                    ) : (
-                        <div className="flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground">
-                                Noch keine KI-Erklärung verfügbar
-                            </p>
-                            <Button
-                                onClick={() => employeeId && generateExplanation.mutate(employeeId)}
-                                disabled={generateExplanation.isPending}
-                            >
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Erklärung generieren
-                            </Button>
-                        </div>
-                    )}
                 </CardContent>
             </Card>
 

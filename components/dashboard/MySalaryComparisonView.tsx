@@ -5,14 +5,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useEmployeeComparison, useGenerateExplanation } from '@/hooks/usePayEquity';
+import { useEmployeeComparison } from '@/hooks/usePayEquity';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
-import { Sparkles, Users, TrendingUp, Info } from 'lucide-react';
+import { Users, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function MySalaryComparisonView() {
@@ -20,8 +19,7 @@ export default function MySalaryComparisonView() {
     const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const { data: comparison, isLoading: comparisonLoading, refetch } = useEmployeeComparison(employeeId || '');
-    const generateExplanation = useGenerateExplanation();
+    const { data: comparison, isLoading: comparisonLoading } = useEmployeeComparison(employeeId || '');
 
     // Hole Employee-ID für aktuellen User
     useEffect(() => {
@@ -42,15 +40,6 @@ export default function MySalaryComparisonView() {
 
         fetchEmployeeId();
     }, [user]);
-
-    // Auto-generiere Erklärung wenn noch nicht vorhanden
-    useEffect(() => {
-        if (comparison && !comparison.ai_explanation && employeeId) {
-            generateExplanation.mutate(employeeId, {
-                onSuccess: () => refetch(),
-            });
-        }
-    }, [comparison, employeeId]);
 
     if (loading || comparisonLoading) {
         return <LoadingSkeleton />;
@@ -173,39 +162,8 @@ export default function MySalaryComparisonView() {
                     </CardContent>
                 </Card>
 
-                {/* KI Erklärung & Info */}
+                {/* Group Info */}
                 <div className="space-y-6">
-                    <Card className="border-blue-200 bg-blue-50/30 overflow-hidden relative">
-                        <div className="absolute -top-6 -right-6 h-24 w-24 bg-blue-500/10 rounded-full blur-2xl" />
-                        <CardHeader>
-                            <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-                                <Sparkles className="h-4 w-4 text-blue-600" />
-                                KI-Analyse & Einordnung
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="min-h-[200px]">
-                            {generateExplanation.isPending ? (
-                                <div className="space-y-3">
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-4 w-2/3" />
-                                </div>
-                            ) : comparison.ai_explanation ? (
-                                <p className="text-sm leading-relaxed text-blue-900/80 italic">
-                                    "{comparison.ai_explanation}"
-                                </p>
-                            ) : (
-                                <Button
-                                    size="sm"
-                                    className="w-full bg-blue-600 hover:bg-blue-700"
-                                    onClick={() => employeeId && generateExplanation.mutate(employeeId)}
-                                >
-                                    Analyse anfordern
-                                </Button>
-                            )}
-                        </CardContent>
-                    </Card>
-
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-sm font-semibold uppercase text-slate-500">Ihre Vergleichsgruppe</CardTitle>

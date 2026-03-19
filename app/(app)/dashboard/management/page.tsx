@@ -5,11 +5,9 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useManagementKPIs, useSalarySimulation } from '@/hooks/usePayEquity';
+import { useManagementKPIs } from '@/hooks/usePayEquity';
 import { useCompany } from '@/hooks/useCompany';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -17,45 +15,12 @@ import {
     AlertTriangle,
     TrendingDown,
     DollarSign,
-    Calculator,
-    CheckCircle2,
     Users
 } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
 export default function ManagementDashboardPage() {
     const { currentCompany, isLoading: companyLoading } = useCompany();
     const { data: kpis, isLoading: kpisLoading } = useManagementKPIs(currentCompany?.id || '');
-    const simulation = useSalarySimulation();
-    const [simulationResult, setSimulationResult] = useState<any>(null);
-    const [showSimulation, setShowSimulation] = useState(false);
-
-    const handleRunSimulation = async () => {
-        if (!currentCompany?.id) return;
-
-        const result = await simulation.mutateAsync({
-            company_id: currentCompany.id,
-            simulation_type: 'raise_to_median',
-        });
-
-        setSimulationResult(result);
-        setShowSimulation(true);
-    };
 
     if (companyLoading || kpisLoading) {
         return <LoadingSkeleton />;
@@ -192,140 +157,6 @@ export default function ManagementDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Simulation Tool */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Calculator className="h-5 w-5" />
-                        What-If Simulation
-                    </CardTitle>
-                    <CardDescription>
-                        Berechnen Sie die Kosten und Auswirkungen von Gehaltsanpassungen
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <Dialog open={showSimulation} onOpenChange={setShowSimulation}>
-                                <DialogTrigger asChild>
-                                    <Button
-                                        onClick={handleRunSimulation}
-                                        disabled={simulation.isPending || !isCritical}
-                                        size="lg"
-                                    >
-                                        <Calculator className="h-4 w-4 mr-2" />
-                                        {simulation.isPending ? 'Berechne...' : 'Simulation starten'}
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                                    <DialogHeader>
-                                        <DialogTitle>Simulations-Ergebnis</DialogTitle>
-                                        <DialogDescription>
-                                            Anhebung aller betroffenen Frauen auf Gruppen-Median
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    {simulationResult && (
-                                        <div className="space-y-6">
-                                            {/* Zusammenfassung */}
-                                            <div className="grid grid-cols-3 gap-4">
-                                                <Card>
-                                                    <CardContent className="pt-6">
-                                                        <p className="text-sm text-muted-foreground mb-1">Betroffene</p>
-                                                        <p className="text-3xl font-bold">{simulationResult.summary.affected_employees}</p>
-                                                        <p className="text-xs text-muted-foreground mt-1">Mitarbeiter</p>
-                                                    </CardContent>
-                                                </Card>
-                                                <Card>
-                                                    <CardContent className="pt-6">
-                                                        <p className="text-sm text-muted-foreground mb-1">Kosten/Jahr</p>
-                                                        <p className="text-2xl font-bold text-blue-600">
-                                                            {new Intl.NumberFormat('de-DE', {
-                                                                style: 'currency',
-                                                                currency: 'EUR',
-                                                                minimumFractionDigits: 0,
-                                                            }).format(simulationResult.summary.total_cost)}
-                                                        </p>
-                                                    </CardContent>
-                                                </Card>
-                                                <Card>
-                                                    <CardContent className="pt-6">
-                                                        <p className="text-sm text-muted-foreground mb-1">Gap Reduktion</p>
-                                                        <p className="text-3xl font-bold text-green-600">
-                                                            {simulationResult.summary.current_gap.toFixed(1)}% → 0%
-                                                        </p>
-                                                    </CardContent>
-                                                </Card>
-                                            </div>
-
-                                            {/* Detail-Tabelle */}
-                                            {simulationResult.breakdown && simulationResult.breakdown.length > 0 && (
-                                                <div>
-                                                    <h4 className="font-semibold mb-3">Details der Anpassungen</h4>
-                                                    <div className="rounded-md border max-h-96 overflow-y-auto">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead>Mitarbeiter</TableHead>
-                                                                    <TableHead>Gruppe</TableHead>
-                                                                    <TableHead className="text-right">Aktuell</TableHead>
-                                                                    <TableHead className="text-right">Ziel</TableHead>
-                                                                    <TableHead className="text-right">Erhöhung</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {simulationResult.breakdown.slice(0, 50).map((item: any, idx: number) => (
-                                                                    <TableRow key={idx}>
-                                                                        <TableCell className="font-medium">
-                                                                            {item.employee_name || 'N/A'}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-sm text-muted-foreground">
-                                                                            {item.pay_group}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-right font-mono">
-                                                                            €{item.current_salary.toLocaleString('de-DE')}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-right font-mono text-green-600">
-                                                                            €{item.proposed_salary.toLocaleString('de-DE')}
-                                                                        </TableCell>
-                                                                        <TableCell className="text-right font-mono font-bold">
-                                                                            +€{item.increase.toLocaleString('de-DE')}
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </div>
-                                                    {simulationResult.breakdown.length > 50 && (
-                                                        <p className="text-sm text-muted-foreground mt-2">
-                                                            ... und {simulationResult.breakdown.length - 50} weitere
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </DialogContent>
-                            </Dialog>
-
-                            <p className="text-sm text-muted-foreground">
-                                Simuliert die Anhebung aller betroffenen Gehälter auf den Gruppen-Median
-                            </p>
-                        </div>
-
-                        {!isCritical && (
-                            <Alert>
-                                <CheckCircle2 className="h-4 w-4" />
-                                <AlertDescription>
-                                    Aktuell gibt es keine kritischen Gaps (&gt;5%) in Ihrem Unternehmen.
-                                    Eine Simulation ist daher nicht erforderlich.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
 
             {/* Zusatz-Info */}
             <Card>

@@ -3,7 +3,7 @@
  * Zentrale Logik für Pay-Equity-Analysen
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type {
     PayGroup,
@@ -177,85 +177,3 @@ export function useGenderGapHistory(companyId: string, payGroupId?: string) {
 // MUTATIONS
 // ============================================================================
 
-/**
- * Aktualisiere PayGroup-Statistiken
- */
-export function useUpdatePayGroupStats() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (companyId: string) => {
-            const response = await fetch('/api/pay-equity/update-stats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ company_id: companyId }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to update stats');
-            }
-
-            return response.json();
-        },
-        onSuccess: (_, companyId) => {
-            // Invalidate alle relevanten Queries
-            queryClient.invalidateQueries({ queryKey: ['pay-groups', companyId] });
-            queryClient.invalidateQueries({ queryKey: ['management-kpis', companyId] });
-        },
-    });
-}
-
-/**
- * Generiere AI-Erklärung für Mitarbeiter
- */
-export function useGenerateExplanation() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (employeeId: string) => {
-            const response = await fetch('/api/pay-equity/generate-explanation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employee_id: employeeId }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to generate explanation');
-            }
-
-            return response.json();
-        },
-        onSuccess: (_, employeeId) => {
-            queryClient.invalidateQueries({ queryKey: ['employee-comparison', employeeId] });
-        },
-    });
-}
-
-/**
- * Führe Gehalts-Simulation durch
- */
-export function useSalarySimulation() {
-    return useMutation({
-        mutationFn: async (params: {
-            company_id: string;
-            pay_group_id?: string;
-            simulation_type: 'raise_to_median' | 'close_gap' | 'custom';
-            target_gap_percent?: number;
-        }) => {
-            const response = await fetch('/api/pay-equity/simulate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(params),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Simulation failed');
-            }
-
-            return response.json();
-        },
-    });
-}

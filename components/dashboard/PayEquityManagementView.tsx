@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useManagementKPIs, useSalarySimulation } from '@/hooks/usePayEquity';
+import { useManagementKPIs } from '@/hooks/usePayEquity';
 import { useCompany } from '@/hooks/useCompany';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,35 +18,16 @@ import {
     ShieldCheck,
     AlertTriangle,
     ArrowRight,
-    Calculator,
-    Info,
     Lock,
-    RefreshCw
+    Info
 } from 'lucide-react';
-import { useState } from 'react';
 
 export default function PayEquityManagementView() {
     const { currentCompany } = useCompany();
     const { data: kpis, isLoading: kpisLoading } = useManagementKPIs(currentCompany?.id || '');
-    const simulation = useSalarySimulation();
-    const [simResult, setSimResult] = useState<any>(null);
 
     // Feature Restriction Logic
     const isRestricted = !currentCompany?.subscription_tier || currentCompany.subscription_tier === 'basis';
-
-    const runSimulation = () => {
-        if (!currentCompany?.id) return;
-
-        simulation.mutate({
-            company_id: currentCompany.id,
-            simulation_type: 'close_gap',
-            target_gap_percent: 3
-        }, {
-            onSuccess: (data) => {
-                setSimResult(data);
-            }
-        });
-    };
 
     if (kpisLoading) {
         return <LoadingSkeleton />;
@@ -204,89 +185,6 @@ export default function PayEquityManagementView() {
                 </Card>
             </div>
 
-            {/* What-If Simulation Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-dashed">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Calculator className="h-5 w-5 text-blue-600" />
-                            Simulation: Gap Reduzierung
-                        </CardTitle>
-                        <CardDescription>
-                            Berechnen Sie die Kosten für eine Reduzierung aller Gaps auf unter 3%.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="rounded-xl bg-slate-50 p-6 border">
-                            <h4 className="font-semibold mb-4 flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                Betroffene Mitarbeiter
-                            </h4>
-                            <div className="flex items-end gap-2">
-                                <span className="text-4xl font-bold text-slate-900">
-                                    {simResult?.affected_employees || '—'}
-                                </span>
-                                <span className="text-slate-500 mb-1.5">Personen</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Mitarbeiter in Gruppen mit &gt;3% Gap, die eine Anpassung erhalten würden.
-                            </p>
-                        </div>
-
-                        <Button
-                            className="w-full h-12 text-lg shadow-lg shadow-primary/20"
-                            onClick={runSimulation}
-                            disabled={simulation.isPending}
-                        >
-                            {simulation.isPending ? (
-                                <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                            ) : (
-                                <Calculator className="h-5 w-5 mr-2" />
-                            )}
-                            Simulation jetzt starten
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card className={simResult ? 'border-primary shadow-xl shadow-primary/5' : 'opacity-50'}>
-                    <CardHeader>
-                        <CardTitle>Ergebnis der Simulation</CardTitle>
-                        <CardDescription>Prognostizierte Werte nach Anpassung</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {!simResult ? (
-                            <div className="h-48 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl">
-                                <Calculator className="h-10 w-10 mb-2 opacity-20" />
-                                <p className="text-sm">Starten Sie links die Simulation</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                                    <span className="text-sm font-medium text-emerald-900">Neuer max. Gap</span>
-                                    <span className="text-xl font-bold text-emerald-700">
-                                        {simResult.simulated_gap_percent.toFixed(1)}%
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center p-3 rounded-lg bg-slate-900 text-white">
-                                    <span className="text-sm font-medium text-slate-300">Jährliche Mehrkosten</span>
-                                    <span className="text-xl font-bold">
-                                        €{Math.round(simResult.estimated_annual_cost).toLocaleString('de-DE')}
-                                    </span>
-                                </div>
-
-                                <Alert className="bg-blue-50 border-blue-100">
-                                    <Info className="h-4 w-4 text-blue-600" />
-                                    <AlertTitle className="text-sm font-bold text-blue-900">Empfehlung</AlertTitle>
-                                    <AlertDescription className="text-xs text-blue-800">
-                                        Die Schließung der Gaps auf 3% ist strategisch sinnvoll, um die geplante EU-Auskunftspflicht
-                                        und mögliche Pönalen proaktiv zu vermeiden.
-                                    </AlertDescription>
-                                </Alert>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
         </div>
     );
 }

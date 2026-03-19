@@ -5,7 +5,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePayGroups, useUpdatePayGroupStats } from '@/hooks/usePayEquity';
+import { usePayGroups } from '@/hooks/usePayEquity';
 import { useCompany } from '@/hooks/useCompany';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,18 +43,6 @@ export default function PayEquityHRView() {
         refetch
     } = usePayGroups(currentCompany?.id || '', filters);
 
-    const updateStats = useUpdatePayGroupStats();
-
-    const handleUpdateStats = () => {
-        if (currentCompany?.id) {
-            updateStats.mutate(currentCompany.id, {
-                onSuccess: () => {
-                    refetch();
-                },
-            });
-        }
-    };
-
     if (companyLoading || groupsLoading) {
         return <LoadingSkeleton />;
     }
@@ -68,13 +56,6 @@ export default function PayEquityHRView() {
                         Noch keine Vergleichsgruppen vorhanden. Legen Sie zunächst Mitarbeiter mit Job-Profilen an.
                     </AlertDescription>
                 </Alert>
-                <Button
-                    onClick={handleUpdateStats}
-                    disabled={updateStats.isPending}
-                >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${updateStats.isPending ? 'animate-spin' : ''}`} />
-                    Statistiken berechnen
-                </Button>
             </div>
         );
     }
@@ -99,12 +80,11 @@ export default function PayEquityHRView() {
                     </p>
                 </div>
                 <Button
-                    onClick={handleUpdateStats}
-                    disabled={updateStats.isPending}
+                    onClick={() => refetch()}
                     variant="outline"
                     size="sm"
                 >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${updateStats.isPending ? 'animate-spin' : ''}`} />
+                    <RefreshCw className="h-4 w-4 mr-2" />
                     Aktualisieren
                 </Button>
             </div>
