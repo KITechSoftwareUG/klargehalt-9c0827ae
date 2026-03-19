@@ -25,34 +25,36 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm'
+          ? 'bg-white/80 backdrop-blur-xl border-b border-border/50 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
           : 'bg-transparent border-b border-transparent'
       }`}
     >
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+        <div className="flex items-center justify-between h-18 lg:h-20">
           <Link href={getMarketingUrl('/')} className="flex items-center hover:opacity-80 transition-opacity">
-            <Image src="/brandname.svg" alt="KlarGehalt" width={180} height={26} className="h-6 lg:h-7 w-auto" priority />
+            <Image src="/brandname.svg" alt="KlarGehalt" width={220} height={32} className="h-7 lg:h-8 w-auto" priority />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-10">
-            <Link href={getMarketingUrl('/#features')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Features
-            </Link>
-            <Link href={getMarketingUrl('/#security')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Sicherheit
-            </Link>
-            <Link href={getMarketingUrl('/#pricing')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Preise
-            </Link>
-            <Link href={getMarketingUrl('/#contact')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Kontakt
-            </Link>
+          <nav className="hidden lg:flex items-center gap-8">
+            {[
+              { label: 'Funktionen', href: '/#features' },
+              { label: 'Sicherheit', href: '/#security' },
+              { label: 'Preise', href: '/#pricing' },
+              { label: 'Kontakt', href: '/#contact' },
+            ].map((link) => (
+              <Link
+                key={link.label}
+                href={getMarketingUrl(link.href)}
+                className="text-[13px] font-medium text-foreground/50 hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop Auth */}
+          <div className="hidden lg:flex items-center gap-3">
             {isSignedIn ? (
               <>
                 <Link href={getAppUrl('/dashboard')}>
@@ -70,57 +72,46 @@ export default function Header() {
             ) : (
               <>
                 <Link href={getAppUrl('/sign-in')}>
-                  <Button variant="ghost" size="sm">Anmelden</Button>
+                  <Button variant="ghost" size="sm" className="text-[13px] text-foreground/50">Anmelden</Button>
                 </Link>
                 <Link href={getAppUrl('/sign-up')}>
-                  <Button variant="hero" size="sm">Kostenlos starten</Button>
+                  <Button size="sm" className="text-[13px] bg-foreground text-background hover:bg-foreground/90 rounded-lg px-5">
+                    Demo anfragen
+                  </Button>
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button — 3 bars */}
+          {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-label={mobileMenuOpen ? 'Menu schliessen' : 'Menu oeffnen'}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-6 border-t border-border/50 animate-fade-in">
+          <div className="lg:hidden py-6 border-t border-border/50 animate-fade-in">
             <nav className="flex flex-col gap-4">
-              <Link
-                href={getMarketingUrl('/#features')}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </Link>
-              <Link
-                href={getMarketingUrl('/#security')}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sicherheit
-              </Link>
-              <Link
-                href={getMarketingUrl('/#pricing')}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Preise
-              </Link>
-              <Link
-                href={getMarketingUrl('/#contact')}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Kontakt
-              </Link>
+              {[
+                { label: 'Funktionen', href: '/#features' },
+                { label: 'Sicherheit', href: '/#security' },
+                { label: 'Preise', href: '/#pricing' },
+                { label: 'Kontakt', href: '/#contact' },
+              ].map((link) => (
+                <Link
+                  key={link.label}
+                  href={getMarketingUrl(link.href)}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
 
               <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
                 {isSignedIn ? (
@@ -144,7 +135,7 @@ export default function Header() {
                       <Button variant="ghost" className="w-full">Anmelden</Button>
                     </Link>
                     <Link href={getAppUrl('/sign-up')} onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="hero" className="w-full">Kostenlos starten</Button>
+                      <Button className="w-full bg-foreground text-background hover:bg-foreground/90">Demo anfragen</Button>
                     </Link>
                   </>
                 )}

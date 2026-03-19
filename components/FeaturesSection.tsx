@@ -1,108 +1,69 @@
-"use client";
-
 import { BarChart3, Users, Lock, FileCheck, Eye, Shield } from "lucide-react";
 
 const features = [
   {
     icon: BarChart3,
-    title: "Gender-Pay-Gap Analyse",
+    title: "Pay-Gap Analyse",
     description:
-      "Median-Berechnung, Abweichungsmarker und EU-konforme Auswertungen — vollautomatisch, ohne Spreadsheets.",
-    stat: "2023/970",
-    statLabel: "EU-Richtlinie",
+      "Automatische Median-Berechnung, Abweichungsmarker und EU-konforme Auswertungen. Kein manuelles Rechnen.",
   },
   {
     icon: Users,
     title: "Rollenbasierte Zugriffe",
     description:
       "Admin, HR-Manager, Mitarbeiter — jede Rolle sieht exakt das, was sie sehen darf. Row Level Security auf Datenbankebene.",
-    stat: "RLS",
-    statLabel: "Zugriffskontrolle",
   },
   {
     icon: Lock,
     title: "AES-256 Verschluesselung",
     description:
-      "Gehaltsdaten werden feldweise verschluesselt. Selbst bei einem Breach bleiben Daten unlesbar. TLS 1.3 in transit.",
-    stat: "256-bit",
-    statLabel: "Verschluesselung",
+      "Gehaltsdaten werden feldweise verschluesselt gespeichert. Selbst bei einem Breach bleiben Daten unlesbar.",
   },
   {
     icon: FileCheck,
     title: "Immutable Audit-Logs",
     description:
-      "Wer hat wann was geaendert — lueckenlos protokolliert, hash-signiert und beweissicher fuer Behoerden exportierbar.",
-    stat: "100%",
-    statLabel: "Nachvollziehbar",
+      "Wer hat wann was geaendert — lueckenlos protokolliert, hash-signiert und beweissicher exportierbar.",
   },
   {
     icon: Eye,
     title: "Datenschutz-konforme Auskunft",
     description:
-      "Mitarbeiter sehen nur Gruppenstatistiken. Keine Einzelgehaelter, keine direkten Vergleiche. Art. 15/17 DSGVO abgedeckt.",
-    stat: "DSGVO",
-    statLabel: "Konform",
+      "Mitarbeiter sehen nur Gruppenstatistiken. Keine Einzelgehaelter, keine direkten Vergleiche.",
   },
   {
     icon: Shield,
-    title: "EU-only Hosting",
+    title: "EU-only Infrastruktur",
     description:
-      "Frankfurt-basiert, ISO 27001 zertifiziert. Ihre Daten verlassen nie die EU. Kein US Cloud Act Risiko.",
-    stat: "DE",
-    statLabel: "Standort",
+      "Frankfurt-basiertes Hosting. ISO 27001 zertifiziert. Ihre Daten verlassen nie die EU.",
   },
 ];
 
 const FeaturesSection = () => {
   return (
-    <section id="features" className="py-32 lg:py-40 relative">
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-
-      <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
-        {/* Header — left-aligned per taste-skill ANTI-CENTER */}
-        <div className="max-w-2xl mb-20 lg:mb-28">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-accent mb-4">
+    <section id="features" className="py-28 lg:py-36 bg-muted/30">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+        {/* Header */}
+        <div className="max-w-xl mb-16 lg:mb-20">
+          <p className="text-xs font-medium tracking-[0.2em] uppercase text-accent mb-3">
             Plattform
           </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tighter leading-none mb-5">
-            Sechs Module.
-            <br />
-            Null Luecken.
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground tracking-tight leading-tight">
+            Alles, was Sie fuer die Entgelttransparenz brauchen.
           </h2>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-[52ch]">
-            Jedes Modul loest ein konkretes Compliance-Problem.
-            Zusammen decken sie die komplette EU-Entgelttransparenzrichtlinie ab.
-          </p>
         </div>
 
-        {/* Feature grid — 2-col asymmetric, NOT 3-col cards (taste-skill) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border/50 rounded-2xl overflow-hidden">
-          {features.map((f, i) => (
-            <div
-              key={f.title}
-              className="bg-background p-8 lg:p-12 group hover:bg-card transition-colors duration-500 relative"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              {/* Top row: icon + stat */}
-              <div className="flex items-start justify-between mb-8">
-                <div className="w-10 h-10 rounded-xl bg-accent/[0.08] flex items-center justify-center">
-                  <f.icon className="w-5 h-5 text-accent" />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground/10 tracking-tighter font-mono leading-none">
-                    {f.stat}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 mt-1">
-                    {f.statLabel}
-                  </p>
-                </div>
+        {/* 2x3 Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 lg:gap-y-16">
+          {features.map((f) => (
+            <div key={f.title} className="group">
+              <div className="w-9 h-9 rounded-lg bg-foreground/[0.04] flex items-center justify-center mb-4 group-hover:bg-accent/[0.08] transition-colors">
+                <f.icon className="w-[18px] h-[18px] text-foreground/40 group-hover:text-accent transition-colors" />
               </div>
-
-              {/* Content */}
-              <h3 className="text-lg font-semibold text-foreground tracking-tight mb-3">
+              <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">
                 {f.title}
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-[42ch]">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-[38ch]">
                 {f.description}
               </p>
             </div>

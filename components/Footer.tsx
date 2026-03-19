@@ -1,5 +1,4 @@
 import Image from "next/image";
-
 import { getMarketingUrl } from "@/utils/url";
 
 const links = {
@@ -28,41 +27,27 @@ const links = {
 const Footer = () => {
   return (
     <footer className="bg-foreground text-background">
-      <div className="max-w-[1400px] mx-auto px-4 lg:px-8 py-16 lg:py-20">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-16 lg:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-12">
-          {/* Brand */}
-          <div className="lg:col-span-4 space-y-5">
-            <a href={getMarketingUrl("/")} className="inline-flex items-center gap-2.5">
-              <Image src="/brandname.svg" alt="KlarGehalt" width={120} height={18} className="h-4 w-auto invert" />
+          <div className="lg:col-span-4 space-y-4">
+            <a href={getMarketingUrl("/")}>
+              <Image src="/brandname.svg" alt="KlarGehalt" width={140} height={20} className="h-5 w-auto invert opacity-60" />
             </a>
-            <p className="text-background/30 text-sm leading-relaxed max-w-[36ch]">
-              B2B-Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie.
+            <p className="text-xs text-background/20 leading-relaxed max-w-[32ch]">
+              Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie.
             </p>
-            <div className="flex gap-2">
-              {["ISO 27001", "DSGVO", "Made in EU"].map((c) => (
-                <span
-                  key={c}
-                  className="px-2 py-1 border border-background/[0.06] rounded text-[10px] text-background/25 tracking-wider"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
           </div>
 
-          {/* Links */}
           <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8">
             {Object.entries(links).map(([title, items]) => (
               <div key={title}>
-                <p className="text-xs font-semibold text-background/50 mb-4 tracking-wide uppercase">
-                  {title}
-                </p>
-                <ul className="space-y-2.5">
+                <p className="text-[10px] font-medium text-background/30 mb-3 uppercase tracking-[0.15em]">{title}</p>
+                <ul className="space-y-2">
                   {items.map((l) => (
                     <li key={l.label}>
                       <a
                         href={l.href.startsWith("/") ? getMarketingUrl(l.href) : l.href}
-                        className="text-sm text-background/25 hover:text-background/50 transition-colors"
+                        className="text-xs text-background/20 hover:text-background/40 transition-colors"
                       >
                         {l.label}
                       </a>
@@ -74,15 +59,11 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="pt-6 border-t border-background/[0.06] flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-[11px] text-background/15">
-            2026 KlarGehalt GmbH
-          </p>
-          <div className="flex gap-5">
+        <div className="pt-6 border-t border-background/[0.05] flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-[10px] text-background/10">2026 KlarGehalt GmbH</p>
+          <div className="flex gap-4">
             {["LinkedIn", "GitHub"].map((s) => (
-              <a key={s} href="#" className="text-[11px] text-background/15 hover:text-background/30 transition-colors">
-                {s}
-              </a>
+              <a key={s} href="#" className="text-[10px] text-background/10 hover:text-background/25 transition-colors">{s}</a>
             ))}
           </div>
         </div>

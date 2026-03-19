@@ -35,7 +35,7 @@ export default function HomePage() {
 
     // Show landing page only for non-authenticated users
     return (
-        <div className="relative z-10 min-h-screen bg-transparent">
+        <div className="min-h-screen">
             <Header />
             <main>
                 <HeroSection />

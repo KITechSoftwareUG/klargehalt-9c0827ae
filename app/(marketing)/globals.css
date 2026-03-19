@@ -4,8 +4,7 @@
 
 @layer base {
     :root {
-        /* Light concrete wall base — neutral warm grey */
-        --background: 220 10% 95%;
+        --background: 0 0% 100%;
         --foreground: 222 47% 11%;
 
         --card: 0 0% 100%;
@@ -14,18 +13,15 @@
         --popover: 0 0% 100%;
         --popover-foreground: 222 47% 11%;
 
-        /* Deep Navy Primary */
-        --primary: 222 47% 20%;
-        --primary-foreground: 210 40% 98%;
+        --primary: 222 47% 11%;
+        --primary-foreground: 0 0% 100%;
 
-        /* Cool Gray Secondary */
         --secondary: 220 14% 96%;
         --secondary-foreground: 222 47% 11%;
 
         --muted: 220 14% 96%;
         --muted-foreground: 220 9% 46%;
 
-        /* Accent - Professional Blue */
         --accent: 217 91% 60%;
         --accent-foreground: 0 0% 100%;
 
@@ -38,7 +34,6 @@
 
         --radius: 0.625rem;
 
-        /* Traffic Light System - Ampellogik */
         --status-success: 142 71% 45%;
         --status-success-bg: 142 76% 95%;
         --status-warning: 38 92% 50%;
@@ -46,23 +41,19 @@
         --status-danger: 0 72% 51%;
         --status-danger-bg: 0 84% 95%;
 
-        /* Legacy aliases for backwards compatibility */
         --status-ok: 142 71% 45%;
         --status-action: 217 91% 60%;
 
-        /* Professional Gradients */
         --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 11%) 0%, hsl(222, 47%, 20%) 50%, hsl(217, 33%, 30%) 100%);
         --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(220, 20%, 98%) 100%);
         --gradient-accent: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(222, 47%, 40%) 100%);
 
-        /* Shadows */
         --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
         --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.05);
         --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.08), 0 4px 6px -4px hsl(222 47% 11% / 0.05);
         --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.08), 0 8px 10px -6px hsl(222 47% 11% / 0.05);
         --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.15);
 
-        /* Sidebar */
         --sidebar-background: 222 47% 11%;
         --sidebar-foreground: 210 40% 98%;
         --sidebar-primary: 217 91% 60%;
@@ -125,35 +116,6 @@
     body {
         @apply bg-background text-foreground antialiased;
     }
-
-    /* Concrete wall texture — subtle mineral grain over the base background */
-    body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        opacity: 0.35;
-        background-image:
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='concrete'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23concrete)'/%3E%3C/svg%3E");
-        background-size: 256px 256px;
-        background-repeat: repeat;
-        mix-blend-mode: multiply;
-    }
-
-    body::after {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        opacity: 0.12;
-        background-image:
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fine'%3E%3CfeTurbulence type='turbulence' baseFrequency='1.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fine)'/%3E%3C/svg%3E");
-        background-size: 128px 128px;
-        background-repeat: repeat;
-        mix-blend-mode: overlay;
-    }
 }
 
 @layer utilities {
@@ -181,7 +143,6 @@
         box-shadow: var(--shadow-glow);
     }
 
-    /* Status Colors */
     .status-success {
         @apply bg-[hsl(var(--status-success-bg))] text-[hsl(var(--status-success))];
     }
@@ -194,76 +155,37 @@
         @apply bg-[hsl(var(--status-danger-bg))] text-[hsl(var(--status-danger))];
     }
 
-    /* Animations */
     @keyframes fade-in {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes slide-up {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes pulse-gentle {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.7;
-        }
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
     }
 
     .animate-fade-in {
-        animation: fade-in 0.6s ease-out forwards;
+        animation: fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .animate-slide-up {
-        animation: slide-up 0.8s ease-out forwards;
+        animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .animate-pulse-gentle {
         animation: pulse-gentle 2s ease-in-out infinite;
     }
 
-    .animation-delay-100 {
-        animation-delay: 100ms;
-    }
-
-    .animation-delay-200 {
-        animation-delay: 200ms;
-    }
-
-    .animation-delay-300 {
-        animation-delay: 300ms;
-    }
-
-    .animation-delay-400 {
-        animation-delay: 400ms;
-    }
-
-    .animation-delay-500 {
-        animation-delay: 500ms;
-    }
-
-    .animation-delay-600 {
-        animation-delay: 600ms;
-    }
+    .animation-delay-100 { animation-delay: 100ms; }
+    .animation-delay-200 { animation-delay: 200ms; }
+    .animation-delay-300 { animation-delay: 300ms; }
+    .animation-delay-400 { animation-delay: 400ms; }
+    .animation-delay-500 { animation-delay: 500ms; }
+    .animation-delay-600 { animation-delay: 600ms; }
 }

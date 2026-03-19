@@ -6,7 +6,7 @@ import { getAppUrl } from "@/utils/url";
 const plans = [
   {
     name: "Starter",
-    for: "Bis 50 Mitarbeiter",
+    description: "Fuer kleine Unternehmen bis 50 Mitarbeiter",
     price: "199",
     period: "/mo",
     features: [
@@ -18,11 +18,11 @@ const plans = [
     ],
     cta: "Jetzt starten",
     href: "#contact",
-    highlighted: false,
+    featured: false,
   },
   {
     name: "Business",
-    for: "Bis 250 Mitarbeiter",
+    description: "Fuer wachsende Unternehmen bis 250 Mitarbeiter",
     price: "499",
     period: "/mo",
     features: [
@@ -36,11 +36,11 @@ const plans = [
     ],
     cta: "Demo anfragen",
     href: "/sign-up",
-    highlighted: true,
+    featured: true,
   },
   {
     name: "Enterprise",
-    for: "Unbegrenzt",
+    description: "Fuer Konzerne mit individuellen Anforderungen",
     price: "Individuell",
     period: "",
     features: [
@@ -55,139 +55,90 @@ const plans = [
     ],
     cta: "Kontakt aufnehmen",
     href: "#contact",
-    highlighted: false,
+    featured: false,
   },
 ];
 
 const PricingSection = () => {
   return (
-    <section id="pricing" className="py-32 lg:py-40 relative">
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-
-      <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
+    <section id="pricing" className="py-28 lg:py-36">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
         {/* Header */}
-        <div className="max-w-2xl mb-20 lg:mb-24">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-accent mb-4">
+        <div className="max-w-xl mb-16 lg:mb-20">
+          <p className="text-xs font-medium tracking-[0.2em] uppercase text-accent mb-3">
             Preise
           </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tighter leading-none mb-5">
-            Faire Preise fuer
-            <br />
-            sensible Software.
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-foreground tracking-tight leading-tight">
+            Transparente Preise fuer transparente Software.
           </h2>
-          <p className="text-base text-muted-foreground leading-relaxed max-w-[48ch]">
-            Keine versteckten Kosten. Compliance-Software verdient
-            nachvollziehbare Preise.
-          </p>
         </div>
 
-        {/* Plans — 3 cols but center one is elevated */}
+        {/* Plans */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {plans.map((plan) => (
             <div
               key={plan.name}
               className={`rounded-2xl p-8 lg:p-10 flex flex-col ${
-                plan.highlighted
-                  ? "bg-foreground text-background ring-1 ring-foreground shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] lg:-my-4"
-                  : "bg-card border border-border/50"
+                plan.featured
+                  ? "bg-foreground text-background ring-1 ring-foreground lg:-my-3"
+                  : "bg-white border border-border/60"
               }`}
             >
-              {plan.highlighted && (
-                <span className="inline-block self-start px-3 py-1 bg-accent text-accent-foreground text-xs font-semibold rounded-full mb-6 tracking-wide">
+              {plan.featured && (
+                <span className="self-start px-2.5 py-1 bg-accent text-white text-[10px] font-semibold rounded-md mb-6 uppercase tracking-wider">
                   Empfohlen
                 </span>
               )}
 
-              <h3
-                className={`text-xl font-bold tracking-tight mb-1 ${
-                  plan.highlighted ? "text-background" : "text-foreground"
-                }`}
-              >
+              <h3 className={`text-lg font-semibold tracking-tight mb-1 ${plan.featured ? "text-background" : "text-foreground"}`}>
                 {plan.name}
               </h3>
-              <p
-                className={`text-sm mb-6 ${
-                  plan.highlighted ? "text-background/40" : "text-muted-foreground"
-                }`}
-              >
-                {plan.for}
+              <p className={`text-xs mb-6 ${plan.featured ? "text-background/35" : "text-muted-foreground"}`}>
+                {plan.description}
               </p>
 
-              {/* Price */}
               <div className="flex items-baseline gap-1 mb-8">
                 {plan.price !== "Individuell" && (
-                  <span
-                    className={`text-sm ${
-                      plan.highlighted ? "text-background/40" : "text-muted-foreground"
-                    }`}
-                  >
-                    EUR
-                  </span>
+                  <span className={`text-xs ${plan.featured ? "text-background/35" : "text-muted-foreground"}`}>EUR</span>
                 )}
-                <span
-                  className={`text-4xl font-bold tracking-tighter ${
-                    plan.highlighted ? "text-background" : "text-foreground"
-                  }`}
-                >
+                <span className={`text-3xl font-semibold tracking-tighter ${plan.featured ? "text-background" : "text-foreground"}`}>
                   {plan.price}
                 </span>
                 {plan.period && (
-                  <span
-                    className={`text-sm ${
-                      plan.highlighted ? "text-background/30" : "text-muted-foreground/50"
-                    }`}
-                  >
-                    {plan.period}
-                  </span>
+                  <span className={`text-xs ${plan.featured ? "text-background/25" : "text-muted-foreground/50"}`}>{plan.period}</span>
                 )}
               </div>
 
-              <div
-                className={`h-px mb-8 ${
-                  plan.highlighted ? "bg-background/10" : "bg-border/50"
-                }`}
-              />
+              <div className={`h-px mb-8 ${plan.featured ? "bg-background/8" : "bg-border/50"}`} />
 
-              {/* Features */}
-              <ul className="space-y-3 mb-10 flex-1">
+              <ul className="space-y-2.5 mb-10 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-3">
-                    <Check
-                      className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
-                        plan.highlighted ? "text-accent" : "text-status-success"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm ${
-                        plan.highlighted ? "text-background/70" : "text-foreground/60"
-                      }`}
-                    >
-                      {f}
-                    </span>
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${plan.featured ? "text-accent" : "text-foreground/25"}`} />
+                    <span className={`text-sm ${plan.featured ? "text-background/60" : "text-foreground/50"}`}>{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link
-                href={
-                  plan.highlighted ? getAppUrl(plan.href) : plan.href
-                }
-              >
+              <Link href={plan.featured ? getAppUrl(plan.href) : plan.href}>
                 <Button
-                  variant={plan.highlighted ? "hero" : "outline"}
-                  size="lg"
-                  className="w-full group"
+                  className={`w-full h-11 rounded-lg text-sm font-medium group ${
+                    plan.featured
+                      ? "bg-white text-foreground hover:bg-white/90"
+                      : "bg-foreground/[0.04] text-foreground hover:bg-foreground/[0.08] border-0"
+                  }`}
+                  variant={plan.featured ? "default" : "ghost"}
                 >
                   {plan.cta}
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Button>
               </Link>
             </div>
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground/40 text-center mt-10">
-          Alle Preise zzgl. MwSt. Jaehrliche Abrechnung moeglich (2 Monate gratis).
+        <p className="text-[11px] text-muted-foreground/30 text-center mt-8">
+          Alle Preise zzgl. MwSt. Jaehrliche Abrechnung moeglich.
         </p>
       </div>
     </section>
