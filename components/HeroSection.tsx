@@ -8,71 +8,70 @@ import { getAppUrl } from "@/utils/url";
 
 const HeroSection = () => {
   return (
-    <section className="relative">
-      {/* ── Screen 1: Video fills the entire viewport ── */}
-      <div className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{
-            maskImage:
-              "radial-gradient(ellipse 75% 65% at 50% 50%, black 15%, transparent 68%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 75% 65% at 50% 50%, black 15%, transparent 68%)",
-          }}
-        >
-          <source src="/balken.mp4" type="video/mp4" />
-        </video>
-
-        {/* Radial fade */}
+    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden">
+      {/* Animated background — subtle moving gradient mesh */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Slow drifting orbs */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute w-[800px] h-[800px] rounded-full opacity-[0.04]"
           style={{
-            background:
-              "radial-gradient(ellipse 85% 75% at 50% 50%, transparent 20%, hsl(var(--background)) 68%)",
+            background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%)",
+            top: "-20%",
+            right: "-10%",
+            animation: "drift-1 25s ease-in-out infinite",
           }}
         />
-
-        {/* Top + bottom fades */}
-        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-pulse-gentle">
-          <div className="w-5 h-8 rounded-full border-2 border-foreground/15 flex items-start justify-center pt-1.5">
-            <div className="w-1 h-1.5 rounded-full bg-foreground/25" />
-          </div>
-        </div>
+        <div
+          className="absolute w-[600px] h-[600px] rounded-full opacity-[0.03]"
+          style={{
+            background: "radial-gradient(circle, hsl(var(--foreground)) 0%, transparent 70%)",
+            bottom: "-15%",
+            left: "-5%",
+            animation: "drift-2 30s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full opacity-[0.025]"
+          style={{
+            background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%)",
+            top: "40%",
+            left: "30%",
+            animation: "drift-3 20s ease-in-out infinite",
+          }}
+        />
       </div>
 
-      {/* ── Screen 2: Content appears on scroll ── */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 lg:px-8 py-24 lg:py-32 -mt-24">
+      {/* Horizontal accent lines — architectural, minimal */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[18%] left-0 right-[60%] h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+        <div className="absolute top-[82%] left-[50%] right-0 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 max-w-[1400px] mx-auto w-full px-4 lg:px-8 pt-32 pb-20 flex flex-col items-center text-center">
         {/* Badge */}
-        <div className="mb-10">
-          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-status-warning/20 bg-background/80 backdrop-blur-md text-status-warning text-sm font-semibold">
+        <div className="mb-14 animate-fade-in opacity-0">
+          <span className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-status-warning/15 bg-background/70 backdrop-blur-md text-status-warning text-sm font-semibold tracking-wide">
             <span className="w-2 h-2 rounded-full bg-status-warning animate-pulse-gentle" />
             Pflicht ab Juni 2026
           </span>
         </div>
 
-        {/* Brand wordmark — GROSS */}
-        <div className="mb-10">
+        {/* Brand wordmark — MASSIVE */}
+        <div className="mb-14 animate-fade-in opacity-0 animation-delay-100 w-full flex justify-center">
           <Image
             src="/brandname.svg"
             alt="KlarGehalt"
-            width={900}
-            height={120}
+            width={1200}
+            height={160}
             priority
-            className="h-16 sm:h-20 md:h-28 lg:h-36 xl:h-44 w-auto max-w-[90vw]"
+            className="w-[85vw] sm:w-[75vw] md:w-[65vw] lg:w-[55vw] xl:w-[50vw] h-auto"
           />
         </div>
 
         {/* Subheadline */}
-        <div className="mb-10 max-w-3xl">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-normal text-foreground/70 tracking-tight leading-snug">
+        <div className="mb-10 max-w-2xl animate-fade-in opacity-0 animation-delay-200">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-light text-muted-foreground tracking-tight leading-relaxed">
             Entgelttransparenz{" "}
             <span className="font-semibold text-foreground">rechtssicher</span>{" "}
             umsetzen
@@ -80,14 +79,14 @@ const HeroSection = () => {
         </div>
 
         {/* Benefits */}
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-12">
+        <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 mb-14 animate-fade-in opacity-0 animation-delay-300">
           {["DSGVO-konform", "EU-Richtlinie 2023/970", "Revisionssicher"].map(
             (b) => (
               <span
                 key={b}
-                className="flex items-center gap-2 text-sm text-muted-foreground"
+                className="flex items-center gap-2 text-sm text-muted-foreground/70"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-status-success/70" />
                 {b}
               </span>
             )
@@ -95,7 +94,7 @@ const HeroSection = () => {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 animate-fade-in opacity-0 animation-delay-400">
           <Link href={getAppUrl("/sign-up")}>
             <Button variant="hero" size="xl" className="group w-full sm:w-auto">
               Kostenlose Demo
@@ -113,6 +112,27 @@ const HeroSection = () => {
           </Link>
         </div>
       </div>
+
+      {/* Bottom fade into next section */}
+      <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+
+      {/* Inline keyframes for drift animations */}
+      <style jsx>{`
+        @keyframes drift-1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-40px, 30px) scale(1.05); }
+          66% { transform: translate(20px, -20px) scale(0.95); }
+        }
+        @keyframes drift-2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -40px) scale(1.03); }
+          66% { transform: translate(-20px, 20px) scale(0.97); }
+        }
+        @keyframes drift-3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(50px, -30px) scale(1.08); }
+        }
+      `}</style>
     </section>
   );
 };
