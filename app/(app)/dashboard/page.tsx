@@ -8,7 +8,7 @@ import Image from 'next/image';
 import {
     Shield, Users, Settings, LogOut,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
-    LayoutDashboard, Target, Briefcase, User
+    LayoutDashboard, Target, Briefcase, User, Building, Layers
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -24,11 +24,13 @@ import PayEquityHRView from '@/components/dashboard/PayEquityHRView';
 import PayEquityManagementView from '@/components/dashboard/PayEquityManagementView';
 import MySalaryComparisonView from '@/components/dashboard/MySalaryComparisonView';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
+import DepartmentsView from '@/components/dashboard/DepartmentsView';
+import JobLevelsView from '@/components/dashboard/JobLevelsView';
 
 // ── Role definitions ──────────────────────────────────────────────────────────
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
-type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary';
+type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels';
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     admin: { label: 'Administrator', color: 'bg-red-50 border-red-200 text-red-700' },
@@ -43,6 +45,8 @@ const HR_ADMIN_NAV = [
     { label: 'Gehaltscheck', icon: Target, view: 'my-salary' as HRView },
     { label: 'Analyse', icon: LayoutDashboard, view: 'pay-equity-hr' as HRView },
     { label: 'Strategie', icon: Briefcase, view: 'pay-equity-mgmt' as HRView },
+    { label: 'Abteilungen', icon: Building, view: 'departments' as HRView },
+    { label: 'Karrierestufen', icon: Layers, view: 'job-levels' as HRView },
     { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as HRView },
     { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as HRView },
     { label: 'Berichte', icon: TrendingUp, view: 'reports' as HRView },
@@ -94,6 +98,8 @@ export default function DashboardPage() {
             case 'my-salary': return <MySalaryComparisonView />;
             case 'pay-equity-hr': return <PayEquityHRView />;
             case 'pay-equity-mgmt': return <PayEquityManagementView />;
+            case 'departments': return <DepartmentsView />;
+            case 'job-levels': return <JobLevelsView />;
             case 'job-profiles': return <JobProfilesView />;
             case 'pay-bands': return <PayBandsView />;
             case 'reports': return <PayGapReportView />;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useJobProfiles, usePayBands, PayBand, PayBandFormData } from '@/hooks/useJobProfiles';
+import { useJobLevels } from '@/hooks/useJobLevels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,15 +39,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Scale, Euro } from 'lucide-react';
 
-const jobLevelLabels: Record<string, string> = {
-  junior: 'Junior',
-  mid: 'Mid-Level',
-  senior: 'Senior',
-  lead: 'Lead',
-  principal: 'Principal',
-  director: 'Director',
-};
-
 const formatCurrency = (value: number, currency: string = 'EUR') => {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
@@ -58,6 +50,7 @@ const formatCurrency = (value: number, currency: string = 'EUR') => {
 
 const PayBandsView = () => {
   const { jobProfiles, loading: profilesLoading } = useJobProfiles();
+  const { jobLevels, loading: levelsLoading } = useJobLevels();
   const { payBands, loading: bandsLoading, createPayBand, updatePayBand, deletePayBand } = usePayBands();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -65,25 +58,23 @@ const PayBandsView = () => {
   const [selectedBand, setSelectedBand] = useState<PayBand | null>(null);
   const [formData, setFormData] = useState<PayBandFormData>({
     job_profile_id: '',
-    job_level: 'junior',
+    job_level_id: '',
     min_salary: 0,
     max_salary: 0,
-    median_salary: undefined,
     currency: 'EUR',
-    valid_from: new Date().toISOString().split('T')[0],
-    valid_until: undefined,
+    effective_from: new Date().toISOString().split('T')[0],
+    effective_to: null,
   });
 
   const resetForm = () => {
     setFormData({
       job_profile_id: '',
-      job_level: 'junior',
+      job_level_id: '',
       min_salary: 0,
       max_salary: 0,
-      median_salary: undefined,
       currency: 'EUR',
-      valid_from: new Date().toISOString().split('T')[0],
-      valid_until: undefined,
+      effective_from: new Date().toISOString().split('T')[0],
+      effective_to: null,
     });
   };
 
@@ -97,13 +88,12 @@ const PayBandsView = () => {
     setSelectedBand(band);
     setFormData({
       job_profile_id: band.job_profile_id,
-      job_level: band.job_level,
+      job_level_id: band.job_level_id,
       min_salary: band.min_salary,
       max_salary: band.max_salary,
-      median_salary: band.median_salary || undefined,
       currency: band.currency,
-      valid_from: band.valid_from,
-      valid_until: band.valid_until || undefined,
+      effective_from: band.effective_from,
+      effective_to: band.effective_to || null,
     });
     setIsEditOpen(true);
   };
@@ -123,23 +113,23 @@ const PayBandsView = () => {
     setSelectedBand(null);
   };
 
-  // Auto-calculate median
-  useEffect(() => {
-    if (formData.min_salary > 0 && formData.max_salary > 0) {
-      const median = Math.round((formData.min_salary + formData.max_salary) / 2);
-      setFormData(prev => ({ ...prev, median_salary: median }));
-    }
-  }, [formData.min_salary, formData.max_salary]);
-
   const getProfileTitle = (profileId: string) => {
-    const profile = jobProfiles.find(p => p.id === profileId);
-    return profile?.title || 'Unbekannt';
+    return jobProfiles.find(p => p.id === profileId)?.title || 'Unbekannt';
   };
+
+  const getLevelName = (levelId: string) => {
+    return jobLevels.find(l => l.id === levelId)?.name || 'Unbekannt';
+  };
+
+  // Auto-calculate median display
+  const medianSalary = formData.min_salary > 0 && formData.max_salary > 0
+    ? Math.round((formData.min_salary + formData.max_salary) / 2)
+    : 0;
 
   const FormFields = () => (
     <div className="grid gap-4 py-4">
       <div className="grid gap-2">
-        <Label htmlFor="job_profile">Job-Profil *</Label>
+        <Label>Job-Profil *</Label>
         <Select
           value={formData.job_profile_id}
           onValueChange={(value) => setFormData({ ...formData, job_profile_id: value })}
@@ -150,7 +140,7 @@ const PayBandsView = () => {
           <SelectContent>
             {jobProfiles.map((profile) => (
               <SelectItem key={profile.id} value={profile.id}>
-                {profile.title} {profile.department && `(${profile.department})`}
+                {profile.title}
               </SelectItem>
             ))}
           </SelectContent>
@@ -158,25 +148,27 @@ const PayBandsView = () => {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="job_level">Karrierestufe *</Label>
+        <Label>Karrierestufe *</Label>
         <Select
-          value={formData.job_level}
-          onValueChange={(value: PayBandFormData['job_level']) => 
-            setFormData({ ...formData, job_level: value })
-          }
+          value={formData.job_level_id}
+          onValueChange={(value) => setFormData({ ...formData, job_level_id: value })}
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Wählen Sie eine Stufe" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="junior">Junior</SelectItem>
-            <SelectItem value="mid">Mid-Level</SelectItem>
-            <SelectItem value="senior">Senior</SelectItem>
-            <SelectItem value="lead">Lead</SelectItem>
-            <SelectItem value="principal">Principal</SelectItem>
-            <SelectItem value="director">Director</SelectItem>
+            {jobLevels.map((level) => (
+              <SelectItem key={level.id} value={level.id}>
+                {level.name} (Rang {level.rank})
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+        {jobLevels.length === 0 && (
+          <p className="text-xs text-amber-600">
+            Erstellen Sie zuerst Karrierestufen unter &quot;Karrierestufen&quot;.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -211,15 +203,13 @@ const PayBandsView = () => {
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="median_salary">Median (berechnet)</Label>
+          <Label>Median (berechnet)</Label>
           <div className="relative">
             <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="median_salary"
               type="number"
-              min={0}
               className="pl-10 bg-muted"
-              value={formData.median_salary || ''}
+              value={medianSalary || ''}
               readOnly
             />
           </div>
@@ -228,33 +218,33 @@ const PayBandsView = () => {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="valid_from">Gültig ab *</Label>
+          <Label htmlFor="effective_from">Gültig ab *</Label>
           <Input
-            id="valid_from"
+            id="effective_from"
             type="date"
-            value={formData.valid_from}
-            onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })}
+            value={formData.effective_from}
+            onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="valid_until">Gültig bis (optional)</Label>
+          <Label htmlFor="effective_to">Gültig bis (optional)</Label>
           <Input
-            id="valid_until"
+            id="effective_to"
             type="date"
-            value={formData.valid_until || ''}
-            onChange={(e) => setFormData({ ...formData, valid_until: e.target.value || undefined })}
+            value={formData.effective_to || ''}
+            onChange={(e) => setFormData({ ...formData, effective_to: e.target.value || null })}
           />
         </div>
       </div>
     </div>
   );
 
-  const loading = profilesLoading || bandsLoading;
+  const loading = profilesLoading || bandsLoading || levelsLoading;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -276,7 +266,7 @@ const PayBandsView = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Gehaltsbänder</h2>
-          <p className="text-muted-foreground">Definieren Sie Gehaltsspannen für Ihre Job-Profile</p>
+          <p className="text-muted-foreground">Definieren Sie Gehaltsspannen für Ihre Job-Profile und Karrierestufen</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -289,18 +279,16 @@ const PayBandsView = () => {
             <DialogHeader>
               <DialogTitle>Neues Gehaltsband erstellen</DialogTitle>
               <DialogDescription>
-                Definieren Sie eine Gehaltsspanne für ein Job-Profil und Karrierestufe.
+                Definieren Sie eine Gehaltsspanne für ein Job-Profil und eine Karrierestufe.
               </DialogDescription>
             </DialogHeader>
             <FormFields />
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button 
-                variant="hero" 
-                onClick={handleCreate} 
-                disabled={!formData.job_profile_id || formData.min_salary <= 0 || formData.max_salary <= 0}
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
+              <Button
+                variant="hero"
+                onClick={handleCreate}
+                disabled={!formData.job_profile_id || !formData.job_level_id || formData.min_salary <= 0 || formData.max_salary <= 0}
               >
                 Erstellen
               </Button>
@@ -329,8 +317,8 @@ const PayBandsView = () => {
                 <TableHead>Job-Profil</TableHead>
                 <TableHead>Karrierestufe</TableHead>
                 <TableHead>Gehaltsspanne</TableHead>
-                <TableHead>Median</TableHead>
                 <TableHead>Gültig ab</TableHead>
+                <TableHead>Gültig bis</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
@@ -340,34 +328,23 @@ const PayBandsView = () => {
                   <TableCell className="font-medium">{getProfileTitle(band.job_profile_id)}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      {jobLevelLabels[band.job_level]}
+                      {getLevelName(band.job_level_id)}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="font-mono text-sm">
                     {formatCurrency(band.min_salary, band.currency)} – {formatCurrency(band.max_salary, band.currency)}
                   </TableCell>
-                  <TableCell>
-                    {band.median_salary ? formatCurrency(band.median_salary, band.currency) : '—'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(band.valid_from).toLocaleDateString('de-DE')}
-                  </TableCell>
+                  <TableCell>{new Date(band.effective_from).toLocaleDateString('de-DE')}</TableCell>
+                  <TableCell>{band.effective_to ? new Date(band.effective_to).toLocaleDateString('de-DE') : '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(band)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(band)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedBand(band);
-                          setIsDeleteOpen(true);
-                        }}
+                        onClick={() => { setSelectedBand(band); setIsDeleteOpen(true); }}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -386,19 +363,15 @@ const PayBandsView = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Gehaltsband bearbeiten</DialogTitle>
-            <DialogDescription>
-              Aktualisieren Sie die Details des Gehaltsbands.
-            </DialogDescription>
+            <DialogDescription>Aktualisieren Sie die Details des Gehaltsbands.</DialogDescription>
           </DialogHeader>
           <FormFields />
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button 
-              variant="hero" 
-              onClick={handleUpdate} 
-              disabled={!formData.job_profile_id || formData.min_salary <= 0 || formData.max_salary <= 0}
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
+            <Button
+              variant="hero"
+              onClick={handleUpdate}
+              disabled={!formData.job_profile_id || !formData.job_level_id || formData.min_salary <= 0 || formData.max_salary <= 0}
             >
               Speichern
             </Button>
@@ -412,7 +385,7 @@ const PayBandsView = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Gehaltsband löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie dieses Gehaltsband löschen möchten? 
+              Sind Sie sicher, dass Sie dieses Gehaltsband löschen möchten?
               Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

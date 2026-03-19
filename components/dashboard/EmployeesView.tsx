@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useEmployees, Employee, EmployeeFormData } from '@/hooks/useEmployees';
 import { useJobProfiles } from '@/hooks/useJobProfiles';
+import { useDepartments } from '@/hooks/useDepartments';
+import { useJobLevels } from '@/hooks/useJobLevels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro } from 'lucide-react';
 
 const genderLabels: Record<string, string> = {
   male: 'Männlich',
@@ -46,54 +48,61 @@ const genderLabels: Record<string, string> = {
   not_specified: 'Keine Angabe',
 };
 
-const jobLevelLabels: Record<string, string> = {
-  junior: 'Junior',
-  mid: 'Mid-Level',
-  senior: 'Senior',
-  lead: 'Lead',
-  principal: 'Principal',
-  director: 'Director',
+const employmentTypeLabels: Record<string, string> = {
+  full_time: 'Vollzeit',
+  part_time: 'Teilzeit',
+  contract: 'Vertrag',
+};
+
+const formatCurrency = (value: number, currency: string = 'EUR') => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const defaultFormData: EmployeeFormData = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  employee_number: '',
+  gender: 'not_specified',
+  hire_date: new Date().toISOString().split('T')[0],
+  employment_type: 'full_time',
+  base_salary: 0,
+  variable_pay: 0,
+  weekly_hours: 40,
+  currency: 'EUR',
+  job_profile_id: '',
+  job_level_id: '',
+  department_id: '',
+  location: '',
+  is_active: true,
 };
 
 const EmployeesView = () => {
   const { employees, loading, createEmployee, updateEmployee, deleteEmployee } = useEmployees();
   const { jobProfiles } = useJobProfiles();
+  const { departments } = useDepartments();
+  const { jobLevels } = useJobLevels();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    first_name: '',
-    last_name: '',
-    email: '',
-    employee_number: '',
-    gender: undefined,
-    hire_date: '',
-    job_profile_id: '',
-    job_level: undefined,
-    department: '',
-    location: '',
-    is_active: true,
-  });
+  const [formData, setFormData] = useState<EmployeeFormData>({ ...defaultFormData });
 
   const resetForm = () => {
-    setFormData({
-      first_name: '',
-      last_name: '',
-      email: '',
-      employee_number: '',
-      gender: undefined,
-      hire_date: '',
-      job_profile_id: '',
-      job_level: undefined,
-      department: '',
-      location: '',
-      is_active: true,
-    });
+    setFormData({ ...defaultFormData });
   };
 
   const handleCreate = async () => {
-    await createEmployee(formData);
+    const submitData = { ...formData };
+    if (!submitData.job_profile_id) delete submitData.job_profile_id;
+    if (!submitData.job_level_id) delete submitData.job_level_id;
+    if (!submitData.department_id) delete submitData.department_id;
+    await createEmployee(submitData);
     setIsCreateOpen(false);
     resetForm();
   };
@@ -105,11 +114,16 @@ const EmployeesView = () => {
       last_name: employee.last_name,
       email: employee.email || '',
       employee_number: employee.employee_number || '',
-      gender: (employee.gender as EmployeeFormData['gender']) || undefined,
-      hire_date: employee.hire_date || '',
+      gender: employee.gender,
+      hire_date: employee.hire_date,
+      employment_type: employee.employment_type,
+      base_salary: employee.base_salary,
+      variable_pay: employee.variable_pay || 0,
+      weekly_hours: employee.weekly_hours || 40,
+      currency: employee.currency || 'EUR',
       job_profile_id: employee.job_profile_id || '',
-      job_level: (employee.job_level as EmployeeFormData['job_level']) || undefined,
-      department: employee.department || '',
+      job_level_id: employee.job_level_id || '',
+      department_id: employee.department_id || '',
       location: employee.location || '',
       is_active: employee.is_active,
     });
@@ -118,7 +132,11 @@ const EmployeesView = () => {
 
   const handleUpdate = async () => {
     if (!selectedEmployee) return;
-    await updateEmployee(selectedEmployee.id, formData);
+    const submitData = { ...formData };
+    if (!submitData.job_profile_id) delete submitData.job_profile_id;
+    if (!submitData.job_level_id) delete submitData.job_level_id;
+    if (!submitData.department_id) delete submitData.department_id;
+    await updateEmployee(selectedEmployee.id, submitData);
     setIsEditOpen(false);
     setSelectedEmployee(null);
     resetForm();
@@ -133,12 +151,24 @@ const EmployeesView = () => {
 
   const getProfileTitle = (profileId: string | null) => {
     if (!profileId) return '—';
-    const profile = jobProfiles.find(p => p.id === profileId);
-    return profile?.title || '—';
+    return jobProfiles.find(p => p.id === profileId)?.title || '—';
   };
 
+  const getDeptName = (deptId: string | null) => {
+    if (!deptId) return '—';
+    return departments.find(d => d.id === deptId)?.name || '—';
+  };
+
+  const getLevelName = (levelId: string | null) => {
+    if (!levelId) return null;
+    return jobLevels.find(l => l.id === levelId)?.name || null;
+  };
+
+  const canSubmit = formData.first_name && formData.last_name && formData.gender && formData.hire_date && formData.employment_type && formData.base_salary > 0;
+
   const FormFields = () => (
-    <div className="grid gap-4 py-4">
+    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+      {/* Name */}
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
           <Label htmlFor="first_name">Vorname *</Label>
@@ -160,6 +190,7 @@ const EmployeesView = () => {
         </div>
       </div>
 
+      {/* Email + Personalnr */}
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">E-Mail</Label>
@@ -182,18 +213,17 @@ const EmployeesView = () => {
         </div>
       </div>
 
+      {/* Gender + Employment Type */}
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="gender">Geschlecht</Label>
+          <Label>Geschlecht *</Label>
           <Select
-            value={formData.gender || ''}
-            onValueChange={(value: EmployeeFormData['gender']) => 
-              setFormData({ ...formData, gender: value || undefined })
+            value={formData.gender}
+            onValueChange={(value: EmployeeFormData['gender']) =>
+              setFormData({ ...formData, gender: value })
             }
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Auswählen" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="male">Männlich</SelectItem>
               <SelectItem value="female">Weiblich</SelectItem>
@@ -203,66 +233,32 @@ const EmployeesView = () => {
           </Select>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="hire_date">Eintrittsdatum</Label>
+          <Label>Beschäftigungsart *</Label>
+          <Select
+            value={formData.employment_type}
+            onValueChange={(value: EmployeeFormData['employment_type']) =>
+              setFormData({ ...formData, employment_type: value })
+            }
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="full_time">Vollzeit</SelectItem>
+              <SelectItem value="part_time">Teilzeit</SelectItem>
+              <SelectItem value="contract">Vertrag</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Hire date + Location */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="hire_date">Eintrittsdatum *</Label>
           <Input
             id="hire_date"
             type="date"
             value={formData.hire_date}
             onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="job_profile">Job-Profil</Label>
-          <Select
-            value={formData.job_profile_id || ''}
-            onValueChange={(value) => setFormData({ ...formData, job_profile_id: value || undefined })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Auswählen" />
-            </SelectTrigger>
-            <SelectContent>
-              {jobProfiles.map((profile) => (
-                <SelectItem key={profile.id} value={profile.id}>
-                  {profile.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="job_level">Karrierestufe</Label>
-          <Select
-            value={formData.job_level || ''}
-            onValueChange={(value: EmployeeFormData['job_level']) => 
-              setFormData({ ...formData, job_level: value || undefined })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Auswählen" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="junior">Junior</SelectItem>
-              <SelectItem value="mid">Mid-Level</SelectItem>
-              <SelectItem value="senior">Senior</SelectItem>
-              <SelectItem value="lead">Lead</SelectItem>
-              <SelectItem value="principal">Principal</SelectItem>
-              <SelectItem value="director">Director</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="department">Abteilung</Label>
-          <Input
-            id="department"
-            value={formData.department}
-            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            placeholder="IT, HR, Vertrieb..."
           />
         </div>
         <div className="grid gap-2">
@@ -275,13 +271,112 @@ const EmployeesView = () => {
           />
         </div>
       </div>
+
+      {/* Department + Job Profile */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label>Abteilung</Label>
+          <Select
+            value={formData.department_id || 'none'}
+            onValueChange={(value) => setFormData({ ...formData, department_id: value === 'none' ? '' : value })}
+          >
+            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Keine —</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label>Job-Profil</Label>
+          <Select
+            value={formData.job_profile_id || 'none'}
+            onValueChange={(value) => setFormData({ ...formData, job_profile_id: value === 'none' ? '' : value })}
+          >
+            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Keines —</SelectItem>
+              {jobProfiles.map((profile) => (
+                <SelectItem key={profile.id} value={profile.id}>{profile.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Job Level + Weekly Hours */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label>Karrierestufe</Label>
+          <Select
+            value={formData.job_level_id || 'none'}
+            onValueChange={(value) => setFormData({ ...formData, job_level_id: value === 'none' ? '' : value })}
+          >
+            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Keine —</SelectItem>
+              {jobLevels.map((level) => (
+                <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="weekly_hours">Wochenstunden</Label>
+          <Input
+            id="weekly_hours"
+            type="number"
+            min={0}
+            max={60}
+            step={0.5}
+            value={formData.weekly_hours ?? 40}
+            onChange={(e) => setFormData({ ...formData, weekly_hours: parseFloat(e.target.value) || 40 })}
+          />
+        </div>
+      </div>
+
+      {/* Salary */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="base_salary">Grundgehalt (jährlich) *</Label>
+          <div className="relative">
+            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="base_salary"
+              type="number"
+              min={0}
+              className="pl-10"
+              value={formData.base_salary || ''}
+              onChange={(e) => setFormData({ ...formData, base_salary: parseFloat(e.target.value) || 0 })}
+              placeholder="50.000"
+            />
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="variable_pay">Variable Vergütung (jährlich)</Label>
+          <div className="relative">
+            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="variable_pay"
+              type="number"
+              min={0}
+              className="pl-10"
+              value={formData.variable_pay || ''}
+              onChange={(e) => setFormData({ ...formData, variable_pay: parseFloat(e.target.value) || 0 })}
+              placeholder="5.000"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -303,22 +398,12 @@ const EmployeesView = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Neuen Mitarbeiter anlegen</DialogTitle>
-              <DialogDescription>
-                Erfassen Sie die Stammdaten des Mitarbeiters.
-              </DialogDescription>
+              <DialogDescription>Erfassen Sie die Stamm- und Gehaltsdaten des Mitarbeiters.</DialogDescription>
             </DialogHeader>
             <FormFields />
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button 
-                variant="hero" 
-                onClick={handleCreate} 
-                disabled={!formData.first_name || !formData.last_name}
-              >
-                Erstellen
-              </Button>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
+              <Button variant="hero" onClick={handleCreate} disabled={!canSubmit}>Erstellen</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -346,6 +431,7 @@ const EmployeesView = () => {
                 <TableHead>Abteilung</TableHead>
                 <TableHead>Job-Profil</TableHead>
                 <TableHead>Stufe</TableHead>
+                <TableHead>Grundgehalt</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -355,16 +441,22 @@ const EmployeesView = () => {
                 <TableRow key={employee.id}>
                   <TableCell className="font-medium">
                     {employee.first_name} {employee.last_name}
+                    <div className="text-xs text-muted-foreground">
+                      {genderLabels[employee.gender]} · {employmentTypeLabels[employee.employment_type]}
+                    </div>
                   </TableCell>
                   <TableCell>{employee.employee_number || '—'}</TableCell>
-                  <TableCell>{employee.department || '—'}</TableCell>
+                  <TableCell>{getDeptName(employee.department_id)}</TableCell>
                   <TableCell>{getProfileTitle(employee.job_profile_id)}</TableCell>
                   <TableCell>
-                    {employee.job_level ? (
+                    {getLevelName(employee.job_level_id) ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                        {jobLevelLabels[employee.job_level]}
+                        {getLevelName(employee.job_level_id)}
                       </span>
                     ) : '—'}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {formatCurrency(employee.base_salary, employee.currency)}
                   </TableCell>
                   <TableCell>
                     {employee.is_active ? (
@@ -381,20 +473,13 @@ const EmployeesView = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(employee)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(employee)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedEmployee(employee);
-                          setIsDeleteOpen(true);
-                        }}
+                        onClick={() => { setSelectedEmployee(employee); setIsDeleteOpen(true); }}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -413,22 +498,12 @@ const EmployeesView = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Mitarbeiter bearbeiten</DialogTitle>
-            <DialogDescription>
-              Aktualisieren Sie die Mitarbeiterdaten.
-            </DialogDescription>
+            <DialogDescription>Aktualisieren Sie die Mitarbeiterdaten.</DialogDescription>
           </DialogHeader>
           <FormFields />
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button 
-              variant="hero" 
-              onClick={handleUpdate} 
-              disabled={!formData.first_name || !formData.last_name}
-            >
-              Speichern
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
+            <Button variant="hero" onClick={handleUpdate} disabled={!canSubmit}>Speichern</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -439,7 +514,7 @@ const EmployeesView = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Mitarbeiter löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie {selectedEmployee?.first_name} {selectedEmployee?.last_name} löschen möchten? 
+              Sind Sie sicher, dass Sie {selectedEmployee?.first_name} {selectedEmployee?.last_name} löschen möchten?
               Alle zugehörigen Gehaltsdaten werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

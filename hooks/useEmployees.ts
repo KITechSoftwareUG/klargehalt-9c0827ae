@@ -5,18 +5,28 @@ import { toast } from 'sonner';
 export interface Employee {
   id: string;
   organization_id: string;
-  user_id: string | null;
   employee_number: string | null;
   first_name: string;
   last_name: string;
   email: string | null;
-  gender: string | null;
-  birth_date: string | null;
-  hire_date: string | null;
+  gender: 'male' | 'female' | 'diverse' | 'not_specified';
+  birth_year: number | null;
   job_profile_id: string | null;
-  job_level: string | null;
-  department: string | null;
+  job_level_id: string | null;
+  department_id: string | null;
+  employment_type: 'full_time' | 'part_time' | 'contract';
   location: string | null;
+  hire_date: string;
+  base_salary: number;
+  variable_pay: number;
+  weekly_hours: number;
+  currency: string;
+  pay_band_id: string | null;
+  on_leave: boolean;
+  leave_type: string | null;
+  leave_start: string | null;
+  leave_end: string | null;
+  user_id: string | null;
   is_active: boolean;
   created_by: string;
   created_at: string;
@@ -28,13 +38,19 @@ export interface EmployeeFormData {
   first_name: string;
   last_name: string;
   email?: string;
-  gender?: 'male' | 'female' | 'diverse' | 'not_specified';
-  birth_date?: string;
-  hire_date?: string;
+  gender: 'male' | 'female' | 'diverse' | 'not_specified';
+  birth_year?: number;
   job_profile_id?: string;
-  job_level?: 'junior' | 'mid' | 'senior' | 'lead' | 'principal' | 'director';
-  department?: string;
+  job_level_id?: string;
+  department_id?: string;
+  employment_type: 'full_time' | 'part_time' | 'contract';
   location?: string;
+  hire_date: string;
+  base_salary: number;
+  variable_pay?: number;
+  weekly_hours?: number;
+  currency?: string;
+  pay_band_id?: string;
   is_active: boolean;
 }
 
@@ -57,7 +73,6 @@ export function useEmployees() {
       if (orgId) {
         query = query.eq('organization_id', orgId);
       } else {
-        // Fallback: Demo-Daten (null) oder eigene Mitarbeiter
         query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
       }
 
@@ -65,9 +80,10 @@ export function useEmployees() {
 
       if (error) throw error;
       setEmployees((data || []) as Employee[]);
-    } catch (error: any) {
-      console.error('Detailed error fetching employees:', error);
-      toast.error(`Fehler beim Laden der Mitarbeiter: ${error.message || 'Unbekannter Fehler'}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      console.error('Error fetching employees:', error);
+      toast.error(`Fehler beim Laden der Mitarbeiter: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -95,7 +111,7 @@ export function useEmployees() {
       toast.success('Mitarbeiter erfolgreich erstellt');
       await fetchEmployees();
       return data as Employee;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating employee:', error);
       toast.error('Fehler beim Erstellen des Mitarbeiters');
       return null;
@@ -114,7 +130,7 @@ export function useEmployees() {
       toast.success('Mitarbeiter erfolgreich aktualisiert');
       await fetchEmployees();
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating employee:', error);
       toast.error('Fehler beim Aktualisieren des Mitarbeiters');
       return false;
@@ -133,7 +149,7 @@ export function useEmployees() {
       toast.success('Mitarbeiter erfolgreich gelöscht');
       await fetchEmployees();
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting employee:', error);
       toast.error('Fehler beim Löschen des Mitarbeiters');
       return false;

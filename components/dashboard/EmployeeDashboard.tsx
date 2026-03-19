@@ -9,14 +9,8 @@ import { InfoRequestsView } from '@/components/dashboard/InfoRequestsView';
 
 type EmployeeSection = 'home' | 'my-profile' | 'my-level' | 'my-requests';
 
-const JOB_LEVEL_LABELS: Record<string, string> = {
-    junior: 'Junior',
-    mid: 'Specialist',
-    senior: 'Senior',
-    lead: 'Lead',
-    principal: 'Principal',
-    director: 'Director',
-};
+// Job level labels are now fetched from the DB via job_levels table.
+// This static map is kept as a fallback for display only.
 
 /**
  * EmployeeDashboard
@@ -28,6 +22,8 @@ export default function EmployeeDashboard() {
     const [section, setSection] = useState<EmployeeSection>('home');
     const [employeeData, setEmployeeData] = useState<any>(null);
     const [jobProfile, setJobProfile] = useState<any>(null);
+    const [jobLevelName, setJobLevelName] = useState<string | null>(null);
+    const [departmentName, setDepartmentName] = useState<string | null>(null);
     const [loadingData, setLoadingData] = useState(true);
 
     useEffect(() => {
@@ -47,10 +43,28 @@ export default function EmployeeDashboard() {
                 if (emp?.job_profile_id) {
                     const { data: jp } = await supabase
                         .from('job_profiles')
-                        .select('title, description, employment_type')
+                        .select('title, description')
                         .eq('id', emp.job_profile_id)
                         .maybeSingle();
                     setJobProfile(jp);
+                }
+
+                if (emp?.job_level_id) {
+                    const { data: jl } = await supabase
+                        .from('job_levels')
+                        .select('name')
+                        .eq('id', emp.job_level_id)
+                        .maybeSingle();
+                    setJobLevelName(jl?.name || null);
+                }
+
+                if (emp?.department_id) {
+                    const { data: dept } = await supabase
+                        .from('departments')
+                        .select('name')
+                        .eq('id', emp.department_id)
+                        .maybeSingle();
+                    setDepartmentName(dept?.name || null);
                 }
             } catch (e) {
                 console.error('Error loading employee data:', e);
@@ -65,15 +79,17 @@ export default function EmployeeDashboard() {
     const renderSection = () => {
         switch (section) {
             case 'my-profile':
-                return <MyProfileSection employee={employeeData} jobProfile={jobProfile} loading={loadingData} />;
+                return <MyProfileSection employee={employeeData} jobProfile={jobProfile} departmentName={departmentName} loading={loadingData} />;
             case 'my-level':
-                return <MyLevelSection employee={employeeData} jobProfile={jobProfile} loading={loadingData} onNavigate={setSection} />;
+                return <MyLevelSection employee={employeeData} jobProfile={jobProfile} jobLevelName={jobLevelName} loading={loadingData} onNavigate={setSection} />;
             case 'my-requests':
                 return <InfoRequestsView />;
             default:
                 return <EmployeeHome
                     employee={employeeData}
                     jobProfile={jobProfile}
+                    departmentName={departmentName}
+                    jobLevelName={jobLevelName}
                     loading={loadingData}
                     onNavigate={setSection}
                 />;
@@ -118,7 +134,7 @@ export default function EmployeeDashboard() {
 
 // ---- Sub-sections ----
 
-function EmployeeHome({ employee, jobProfile, loading, onNavigate }: any) {
+function EmployeeHome({ employee, jobProfile, departmentName, jobLevelName, loading, onNavigate }: any) {
     if (loading) return <LoadingSkeleton />;
 
     const cards = [
@@ -126,7 +142,7 @@ function EmployeeHome({ employee, jobProfile, loading, onNavigate }: any) {
             icon: User,
             title: 'Mein Profil',
             description: employee
-                ? `${employee.first_name} ${employee.last_name} • ${employee.department || 'Keine Abteilung'}`
+                ? `${employee.first_name} ${employee.last_name} • ${departmentName || 'Keine Abteilung'}`
                 : 'Ihr Profil wurde noch nicht angelegt',
             action: 'my-profile' as const,
             color: 'from-blue-500 to-indigo-600',
@@ -134,8 +150,8 @@ function EmployeeHome({ employee, jobProfile, loading, onNavigate }: any) {
         {
             icon: Award,
             title: 'Mein Entgeltband',
-            description: employee?.job_level
-                ? `Sie befinden sich auf Level: ${JOB_LEVEL_LABELS[employee.job_level] || employee.job_level}`
+            description: jobLevelName
+                ? `Sie befinden sich auf Level: ${jobLevelName}`
                 : 'Noch kein Level zugewiesen',
             action: 'my-level' as const,
             color: 'from-emerald-500 to-teal-600',
@@ -188,7 +204,7 @@ function EmployeeHome({ employee, jobProfile, loading, onNavigate }: any) {
     );
 }
 
-function MyProfileSection({ employee, jobProfile, loading }: any) {
+function MyProfileSection({ employee, jobProfile, departmentName, loading }: any) {
     if (loading) return <LoadingSkeleton />;
     if (!employee) return (
         <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
@@ -203,7 +219,7 @@ function MyProfileSection({ employee, jobProfile, loading }: any) {
         { label: 'Nachname', value: employee.last_name },
         { label: 'E-Mail', value: employee.email || '—' },
         { label: 'Personalnummer', value: employee.employee_number || '—' },
-        { label: 'Abteilung', value: employee.department || '—' },
+        { label: 'Abteilung', value: departmentName || '—' },
         { label: 'Standort', value: employee.location || '—' },
         { label: 'Einstellungsdatum', value: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('de-DE') : '—' },
         { label: 'Jobprofil', value: jobProfile?.title || '—' },
@@ -228,18 +244,15 @@ function MyProfileSection({ employee, jobProfile, loading }: any) {
     );
 }
 
-function MyLevelSection({ employee, jobProfile, loading, onNavigate }: any) {
+function MyLevelSection({ employee, jobProfile, jobLevelName, loading, onNavigate }: any) {
     if (loading) return <LoadingSkeleton />;
-    if (!employee?.job_level) return (
+    if (!employee?.job_level_id || !jobLevelName) return (
         <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
             <Award className="h-12 w-12 mx-auto mb-4 text-slate-300" />
             <p className="font-medium">Ihnen wurde noch kein Level zugewiesen.</p>
             <p className="text-sm mt-1">Bitte wenden Sie sich an Ihre HR-Abteilung.</p>
         </div>
     );
-
-    const levels = ['junior', 'mid', 'senior', 'lead', 'principal', 'director'];
-    const currentIdx = levels.indexOf(employee.job_level);
 
     return (
         <div className="space-y-4">
@@ -260,38 +273,11 @@ function MyLevelSection({ employee, jobProfile, loading, onNavigate }: any) {
                         </div>
                     )}
 
-                    {/* Level ladder */}
-                    <div>
-                        <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-3">Level-Einordnung</p>
-                        <div className="flex items-center gap-0">
-                            {levels.map((lvl, idx) => {
-                                const isActive = idx === currentIdx;
-                                const isPast = idx < currentIdx;
-                                return (
-                                    <div key={lvl} className="flex items-center flex-1">
-                                        <div className={`relative flex flex-col items-center flex-1`}>
-                                            <div className={`h-3 w-full ${isPast ? 'bg-emerald-500' : isActive ? 'bg-emerald-500' : 'bg-slate-200'
-                                                } ${idx === 0 ? 'rounded-l-full' : ''} ${idx === levels.length - 1 ? 'rounded-r-full' : ''}`} />
-                                            {isActive && (
-                                                <div className="absolute -top-4 flex flex-col items-center">
-                                                    <div className="h-4 w-4 rounded-full bg-emerald-500 border-2 border-white shadow-md" />
-                                                </div>
-                                            )}
-                                            <p className={`mt-5 text-xs ${isActive ? 'font-bold text-emerald-700' : 'text-slate-400'}`}>
-                                                {JOB_LEVEL_LABELS[lvl]}
-                                            </p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
                     {/* Band position note */}
                     <div className="flex gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-800">
                         <Info className="h-5 w-5 shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-semibold">Sie befinden sich auf Level: {JOB_LEVEL_LABELS[employee.job_level]}</p>
+                            <p className="font-semibold">Sie befinden sich auf Level: {jobLevelName}</p>
                             <p className="mt-0.5 text-emerald-700">Für genaue Informationen zu Ihrem Entgeltband und Ihrer Eingruppierung nutzen Sie die Auskunftsanfragen.</p>
                         </div>
                     </div>

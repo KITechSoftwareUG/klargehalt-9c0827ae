@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useJobProfiles, JobProfile, JobProfileFormData } from '@/hooks/useJobProfiles';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,15 +40,39 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Briefcase, CheckCircle, XCircle } from 'lucide-react';
 
-const employmentTypeLabels: Record<string, string> = {
-  full_time: 'Vollzeit',
-  part_time: 'Teilzeit',
-  contract: 'Vertrag',
-  intern: 'Praktikum',
-};
+const scoreLabels = ['—', '1 - Niedrig', '2', '3 - Mittel', '4', '5 - Hoch'];
+
+const ScoreSelect = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null | undefined;
+  onChange: (val: number | null) => void;
+}) => (
+  <div className="grid gap-1.5">
+    <Label className="text-xs">{label}</Label>
+    <Select
+      value={value != null ? String(value) : 'none'}
+      onValueChange={(v) => onChange(v === 'none' ? null : parseInt(v))}
+    >
+      <SelectTrigger className="h-9">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">— Nicht bewertet —</SelectItem>
+        {[1, 2, 3, 4, 5].map((s) => (
+          <SelectItem key={s} value={String(s)}>{scoreLabels[s]}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
 
 const JobProfilesView = () => {
   const { jobProfiles, loading, createJobProfile, updateJobProfile, deleteJobProfile } = useJobProfiles();
+  const { departments } = useDepartments();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -55,11 +80,11 @@ const JobProfilesView = () => {
   const [formData, setFormData] = useState<JobProfileFormData>({
     title: '',
     description: '',
-    responsibilities: '',
-    required_qualifications: '',
-    min_experience_years: 0,
-    department: '',
-    employment_type: 'full_time',
+    department_id: null,
+    skills_score: null,
+    effort_score: null,
+    responsibility_score: null,
+    working_conditions_score: null,
     is_active: true,
   });
 
@@ -67,11 +92,11 @@ const JobProfilesView = () => {
     setFormData({
       title: '',
       description: '',
-      responsibilities: '',
-      required_qualifications: '',
-      min_experience_years: 0,
-      department: '',
-      employment_type: 'full_time',
+      department_id: null,
+      skills_score: null,
+      effort_score: null,
+      responsibility_score: null,
+      working_conditions_score: null,
       is_active: true,
     });
   };
@@ -87,11 +112,11 @@ const JobProfilesView = () => {
     setFormData({
       title: profile.title,
       description: profile.description || '',
-      responsibilities: profile.responsibilities || '',
-      required_qualifications: profile.required_qualifications || '',
-      min_experience_years: profile.min_experience_years,
-      department: profile.department || '',
-      employment_type: profile.employment_type,
+      department_id: profile.department_id,
+      skills_score: profile.skills_score,
+      effort_score: profile.effort_score,
+      responsibility_score: profile.responsibility_score,
+      working_conditions_score: profile.working_conditions_score,
       is_active: profile.is_active,
     });
     setIsEditOpen(true);
@@ -112,8 +137,19 @@ const JobProfilesView = () => {
     setSelectedProfile(null);
   };
 
+  const getDeptName = (deptId: string | null) => {
+    if (!deptId) return '—';
+    return departments.find(d => d.id === deptId)?.name || '—';
+  };
+
+  const getAvgScore = (profile: JobProfile): string => {
+    const scores = [profile.skills_score, profile.effort_score, profile.responsibility_score, profile.working_conditions_score].filter((s): s is number => s != null);
+    if (scores.length === 0) return '—';
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+  };
+
   const FormFields = () => (
-    <div className="grid gap-4 py-4">
+    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
       <div className="grid gap-2">
         <Label htmlFor="title">Titel *</Label>
         <Input
@@ -124,13 +160,21 @@ const JobProfilesView = () => {
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="department">Abteilung</Label>
-        <Input
-          id="department"
-          value={formData.department}
-          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-          placeholder="z.B. IT, HR, Vertrieb"
-        />
+        <Label>Abteilung</Label>
+        <Select
+          value={formData.department_id || 'none'}
+          onValueChange={(value) => setFormData({ ...formData, department_id: value === 'none' ? null : value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Auswählen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— Keine —</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Beschreibung</Label>
@@ -142,55 +186,34 @@ const JobProfilesView = () => {
           rows={2}
         />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="responsibilities">Verantwortlichkeiten</Label>
-        <Textarea
-          id="responsibilities"
-          value={formData.responsibilities}
-          onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
-          placeholder="Hauptverantwortlichkeiten der Position"
-          rows={2}
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="qualifications">Erforderliche Qualifikationen</Label>
-        <Textarea
-          id="qualifications"
-          value={formData.required_qualifications}
-          onChange={(e) => setFormData({ ...formData, required_qualifications: e.target.value })}
-          placeholder="Benötigte Qualifikationen und Fähigkeiten"
-          rows={2}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="experience">Min. Erfahrung (Jahre)</Label>
-          <Input
-            id="experience"
-            type="number"
-            min={0}
-            value={formData.min_experience_years}
-            onChange={(e) => setFormData({ ...formData, min_experience_years: parseInt(e.target.value) || 0 })}
+
+      {/* EU Directive Scores (Article 4.4) */}
+      <div className="border rounded-lg p-4 bg-muted/30">
+        <p className="text-sm font-semibold mb-1">EU-Richtlinie Art. 4.4 — Bewertungskriterien</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          Bewerten Sie die objektiven Kriterien für gleichwertige Arbeit (1-5 Skala).
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <ScoreSelect
+            label="Kompetenzen"
+            value={formData.skills_score}
+            onChange={(val) => setFormData({ ...formData, skills_score: val })}
           />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="employment_type">Beschäftigungsart</Label>
-          <Select
-            value={formData.employment_type}
-            onValueChange={(value: 'full_time' | 'part_time' | 'contract' | 'intern') => 
-              setFormData({ ...formData, employment_type: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="full_time">Vollzeit</SelectItem>
-              <SelectItem value="part_time">Teilzeit</SelectItem>
-              <SelectItem value="contract">Vertrag</SelectItem>
-              <SelectItem value="intern">Praktikum</SelectItem>
-            </SelectContent>
-          </Select>
+          <ScoreSelect
+            label="Belastung"
+            value={formData.effort_score}
+            onChange={(val) => setFormData({ ...formData, effort_score: val })}
+          />
+          <ScoreSelect
+            label="Verantwortung"
+            value={formData.responsibility_score}
+            onChange={(val) => setFormData({ ...formData, responsibility_score: val })}
+          />
+          <ScoreSelect
+            label="Arbeitsbedingungen"
+            value={formData.working_conditions_score}
+            onChange={(val) => setFormData({ ...formData, working_conditions_score: val })}
+          />
         </div>
       </div>
     </div>
@@ -199,7 +222,7 @@ const JobProfilesView = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -222,17 +245,13 @@ const JobProfilesView = () => {
             <DialogHeader>
               <DialogTitle>Neues Job-Profil erstellen</DialogTitle>
               <DialogDescription>
-                Erstellen Sie ein neues Stellenprofil für Ihre Entgeltstruktur.
+                Erstellen Sie ein neues Stellenprofil mit EU-Bewertungskriterien.
               </DialogDescription>
             </DialogHeader>
             <FormFields />
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button variant="hero" onClick={handleCreate} disabled={!formData.title}>
-                Erstellen
-              </Button>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
+              <Button variant="hero" onClick={handleCreate} disabled={!formData.title}>Erstellen</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -257,8 +276,7 @@ const JobProfilesView = () => {
               <TableRow>
                 <TableHead>Titel</TableHead>
                 <TableHead>Abteilung</TableHead>
-                <TableHead>Beschäftigungsart</TableHead>
-                <TableHead>Min. Erfahrung</TableHead>
+                <TableHead>EU-Score (Ø)</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -267,9 +285,12 @@ const JobProfilesView = () => {
               {jobProfiles.map((profile) => (
                 <TableRow key={profile.id}>
                   <TableCell className="font-medium">{profile.title}</TableCell>
-                  <TableCell>{profile.department || '—'}</TableCell>
-                  <TableCell>{employmentTypeLabels[profile.employment_type]}</TableCell>
-                  <TableCell>{profile.min_experience_years} Jahre</TableCell>
+                  <TableCell>{getDeptName(profile.department_id)}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      {getAvgScore(profile)}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     {profile.is_active ? (
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-status-ok/10 text-status-ok">
@@ -285,20 +306,13 @@ const JobProfilesView = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(profile)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedProfile(profile);
-                          setIsDeleteOpen(true);
-                        }}
+                        onClick={() => { setSelectedProfile(profile); setIsDeleteOpen(true); }}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -317,18 +331,12 @@ const JobProfilesView = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Job-Profil bearbeiten</DialogTitle>
-            <DialogDescription>
-              Aktualisieren Sie die Details des Stellenprofils.
-            </DialogDescription>
+            <DialogDescription>Aktualisieren Sie die Details des Stellenprofils.</DialogDescription>
           </DialogHeader>
           <FormFields />
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button variant="hero" onClick={handleUpdate} disabled={!formData.title}>
-              Speichern
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
+            <Button variant="hero" onClick={handleUpdate} disabled={!formData.title}>Speichern</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -339,8 +347,8 @@ const JobProfilesView = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Job-Profil löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie das Profil "{selectedProfile?.title}" löschen möchten? 
-              Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Gehaltsbänder werden ebenfalls gelöscht.
+              Sind Sie sicher, dass Sie das Profil &quot;{selectedProfile?.title}&quot; löschen möchten?
+              Alle zugehörigen Gehaltsbänder werden ebenfalls gelöscht.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

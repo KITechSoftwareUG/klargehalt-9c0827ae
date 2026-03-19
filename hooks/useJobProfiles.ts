@@ -7,28 +7,27 @@ export interface JobProfile {
   organization_id: string;
   title: string;
   description: string | null;
-  responsibilities: string | null;
-  required_qualifications: string | null;
-  min_experience_years: number;
-  department: string | null;
-  employment_type: 'full_time' | 'part_time' | 'contract' | 'intern';
+  department_id: string | null;
+  skills_score: number | null;
+  effort_score: number | null;
+  responsibility_score: number | null;
+  working_conditions_score: number | null;
   is_active: boolean;
-  created_by: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface PayBand {
   id: string;
+  organization_id: string;
   job_profile_id: string;
-  job_level: 'junior' | 'mid' | 'senior' | 'lead' | 'principal' | 'director';
+  job_level_id: string;
   min_salary: number;
   max_salary: number;
-  median_salary: number | null;
   currency: string;
-  valid_from: string;
-  valid_until: string | null;
-  created_by: string;
+  is_active: boolean;
+  effective_from: string;
+  effective_to: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,23 +35,23 @@ export interface PayBand {
 export interface JobProfileFormData {
   title: string;
   description?: string;
-  responsibilities?: string;
-  required_qualifications?: string;
-  min_experience_years: number;
-  department?: string;
-  employment_type: 'full_time' | 'part_time' | 'contract' | 'intern';
+  department_id?: string | null;
+  skills_score?: number | null;
+  effort_score?: number | null;
+  responsibility_score?: number | null;
+  working_conditions_score?: number | null;
   is_active: boolean;
 }
 
 export interface PayBandFormData {
   job_profile_id: string;
-  job_level: 'junior' | 'mid' | 'senior' | 'lead' | 'principal' | 'director';
+  job_level_id: string;
   min_salary: number;
   max_salary: number;
-  median_salary?: number;
   currency: string;
-  valid_from: string;
-  valid_until?: string;
+  is_active?: boolean;
+  effective_from: string;
+  effective_to?: string | null;
 }
 
 export function useJobProfiles() {
@@ -73,17 +72,16 @@ export function useJobProfiles() {
 
       if (orgId) {
         query = query.eq('organization_id', orgId);
-      } else {
-        query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
       }
 
       const { data, error } = await query.order('title');
 
       if (error) throw error;
       setJobProfiles(data || []);
-    } catch (error: any) {
-      console.error('Detailed error fetching job profiles:', error);
-      toast.error(`Fehler beim Laden der Job-Profile: ${error.message || 'Unbekannter Fehler'}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      console.error('Error fetching job profiles:', error);
+      toast.error(`Fehler beim Laden der Job-Profile: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -101,7 +99,6 @@ export function useJobProfiles() {
         .insert({
           ...formData,
           organization_id: orgId,
-          created_by: user.id,
         })
         .select()
         .single();
@@ -111,7 +108,7 @@ export function useJobProfiles() {
       toast.success('Job-Profil erfolgreich erstellt');
       await fetchJobProfiles();
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating job profile:', error);
       toast.error('Fehler beim Erstellen des Job-Profils');
       return null;
@@ -130,7 +127,7 @@ export function useJobProfiles() {
       toast.success('Job-Profil erfolgreich aktualisiert');
       await fetchJobProfiles();
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating job profile:', error);
       toast.error('Fehler beim Aktualisieren des Job-Profils');
       return false;
@@ -149,7 +146,7 @@ export function useJobProfiles() {
       toast.success('Job-Profil erfolgreich gelöscht');
       await fetchJobProfiles();
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting job profile:', error);
       toast.error('Fehler beim Löschen des Job-Profils');
       return false;
@@ -175,7 +172,7 @@ export function useJobProfiles() {
 export function usePayBands(jobProfileId?: string) {
   const [payBands, setPayBands] = useState<PayBand[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded, supabase } = useAuth();
 
   const fetchPayBands = async () => {
     if (!isLoaded || !user) return;
@@ -183,11 +180,15 @@ export function usePayBands(jobProfileId?: string) {
     setLoading(true);
     let query = supabase.from('pay_bands').select('*');
 
+    if (orgId) {
+      query = query.eq('organization_id', orgId);
+    }
+
     if (jobProfileId) {
       query = query.eq('job_profile_id', jobProfileId);
     }
 
-    const { data, error } = await query.order('job_level');
+    const { data, error } = await query.order('created_at');
 
     if (error) {
       console.error('Error fetching pay bands:', error);
@@ -199,13 +200,16 @@ export function usePayBands(jobProfileId?: string) {
   };
 
   const createPayBand = async (formData: PayBandFormData): Promise<PayBand | null> => {
-    if (!user) return null;
+    if (!user || !orgId) {
+      toast.error('Keine Organisation zugeordnet');
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('pay_bands')
       .insert({
         ...formData,
-        created_by: user.id,
+        organization_id: orgId,
       })
       .select()
       .single();
