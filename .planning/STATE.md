@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-01-PLAN.md (canonical schema migration + RLS)
-last_updated: "2026-03-19T14:50:14Z"
+stopped_at: Completed 01-02-PLAN.md — dead AI dependencies removed, TypeScript clean
+last_updated: "2026-03-19T14:57:58.921Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -46,6 +46,7 @@ Plan: 2 of 2 (plan 01 complete)
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-schema-and-security-foundation P02 | 16min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - [01-01]: FORCE ROW LEVEL SECURITY on all tenant tables — prevents table-owner bypass
 - [01-01]: audit_logs is append-only (INSERT + SELECT policies only — no UPDATE or DELETE)
 - [01-01]: employees table uses split SELECT policies (hr_select + self_select) for salary data isolation
+- [Phase 01]: Removed @google/generative-ai and svix: AI features out of scope per research decision
+- [Phase 01]: Deleted PayEquityChat component and all AI API routes - no fallback, just remove
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19
-Stopped at: Completed 01-01-PLAN.md — canonical schema migration + 17 migrations archived
+Last session: 2026-03-19T14:57:58.916Z
+Stopped at: Completed 01-02-PLAN.md — dead AI dependencies removed, TypeScript clean
 Resume file: None

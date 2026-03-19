@@ -13,8 +13,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FOUN-02**: All tenant-scoped tables enforce `organization_id TEXT NOT NULL`
 - [x] **FOUN-03**: RLS policies use Logto JWT claims (`auth.jwt() ->> 'org_id'`) for tenant isolation — no USING(true) policies remain
 - [x] **FOUN-04**: `user_roles` table has UNIQUE constraint on `(user_id, organization_id)` to support multi-org users
-- [ ] **FOUN-05**: Dead dependencies removed (`@google/generative-ai`, `svix`)
-- [ ] **FOUN-06**: AI-related API routes and services removed (`/api/pay-equity/chat`, `/api/pay-equity/generate-explanation`, `lib/services/gemini-service.ts`)
+- [x] **FOUN-05**: Dead dependencies removed (`@google/generative-ai`, `svix`)
+- [x] **FOUN-06**: AI-related API routes and services removed (`/api/pay-equity/chat`, `/api/pay-equity/generate-explanation`, `lib/services/gemini-service.ts`)
 
 ### Employee Records
 
@@ -114,8 +114,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUN-02 | Phase 1 | Complete (01-01) |
 | FOUN-03 | Phase 1 | Complete (01-01) |
 | FOUN-04 | Phase 1 | Complete (01-01) |
-| FOUN-05 | Phase 1 | Pending |
-| FOUN-06 | Phase 1 | Pending |
+| FOUN-05 | Phase 1 | Complete |
+| FOUN-06 | Phase 1 | Complete |
 | EMPL-01 | Phase 2 | Pending |
 | EMPL-02 | Phase 2 | Pending |
 | EMPL-03 | Phase 2 | Pending |

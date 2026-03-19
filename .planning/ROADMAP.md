@@ -12,7 +12,7 @@ The work proceeds in four dependency-ordered phases. Phase 1 tears out the broke
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Schema and Security Foundation** - Replace broken schema and RLS with a single authoritative migration and working Logto JWT tenant isolation
+- [x] **Phase 1: Schema and Security Foundation** - Replace broken schema and RLS with a single authoritative migration and working Logto JWT tenant isolation (completed 2026-03-19)
 - [ ] **Phase 2: Data Management** - HR manager CRUD for job categories, pay bands, and employee records including CSV import
 - [ ] **Phase 3: Analytics and Role Views** - Seven EU Article 9 indicators computed in PostgreSQL, surfaced through role-differentiated dashboards
 - [ ] **Phase 4: Compliance Reports and Audit** - Exportable CSV and PDF compliance reports, immutable audit log, report generation workflow
@@ -91,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Schema and Security Foundation | 0/2 | Planning complete | - |
+| 1. Schema and Security Foundation | 2/2 | Complete   | 2026-03-19 |
 | 2. Data Management | 0/3 | Not started | - |
 | 3. Analytics and Role Views | 0/3 | Not started | - |
 | 4. Compliance Reports and Audit | 0/2 | Not started | - |
