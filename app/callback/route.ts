@@ -1,21 +1,25 @@
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleSignIn } from '@logto/next/server-actions';
-import { ACTIVE_ORG_COOKIE, getLogtoConfig } from '@/lib/logto';
+import { getLogtoConfig } from '@/lib/logto';
 
 export async function GET(request: NextRequest) {
   const config = getLogtoConfig();
+  const baseUrl = config.baseUrl;
 
   try {
     await handleSignIn(config, request.nextUrl.searchParams);
   } catch (error) {
-    console.error('Callback handleSignIn error:', error);
-    // If sign-in session is lost, redirect to sign-in to start fresh
-    return NextResponse.redirect(new URL('/sign-in', request.url));
+    const err = error as Error & { code?: string; digest?: string };
+
+    // Next.js redirect() throws a special error with digest 'NEXT_REDIRECT'
+    // This is expected behavior, not an actual error
+    if (err.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
+    console.error('Callback error:', err.code, err.message);
+    return NextResponse.redirect(new URL('/sign-in', baseUrl));
   }
 
-  // After successful sign-in, check organizations via /api/auth/me
-  // We can't call getLogtoContext here reliably, so redirect and let
-  // the client-side AuthProvider handle org detection
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  return NextResponse.redirect(new URL('/dashboard', baseUrl));
 }
