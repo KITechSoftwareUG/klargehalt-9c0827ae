@@ -2,10 +2,12 @@ import LogtoClient from '@logto/next/edge';
 import { NextResponse } from 'next/server';
 import { ACTIVE_ORG_COOKIE, getLogtoConfig } from '@/lib/logto';
 
-const isPublicRoute = (pathname: string) =>
-  pathname === '/' ||
+const isAuthRoute = (pathname: string) =>
   pathname.startsWith('/sign-in') ||
-  pathname.startsWith('/sign-up') ||
+  pathname.startsWith('/sign-up');
+
+const isSkipAuthCheck = (pathname: string) =>
+  pathname === '/' ||
   pathname.startsWith('/auth/') ||
   pathname.startsWith('/callback') ||
   pathname.startsWith('/api/auth/');
@@ -22,30 +24,42 @@ export default async function middleware(request: Request) {
       return NextResponse.redirect(new URL('/dashboard', nextRequest.url));
     }
 
-    if (!isPublicRoute(pathname)) {
-      const context = await client.getLogtoContext(nextRequest);
+    // Skip auth check for auth flow routes (callback, sign-out, etc.)
+    if (isSkipAuthCheck(pathname)) {
+      return NextResponse.next();
+    }
 
-      if (!context.isAuthenticated) {
-        return NextResponse.redirect(new URL('/sign-in', nextRequest.url));
+    const context = await client.getLogtoContext(nextRequest);
+
+    // Authenticated user on sign-in/sign-up → redirect to dashboard
+    if (isAuthRoute(pathname)) {
+      if (context.isAuthenticated) {
+        return NextResponse.redirect(new URL('/dashboard', nextRequest.url));
       }
+      return NextResponse.next();
+    }
 
-      const organizations = context.claims?.organizations ?? [];
-      const activeOrganizationId = nextRequest.cookies.get(ACTIVE_ORG_COOKIE)?.value;
+    // Protected routes: require authentication
+    if (!context.isAuthenticated) {
+      return NextResponse.redirect(new URL('/sign-in', nextRequest.url));
+    }
 
-      if (!activeOrganizationId && organizations.length > 0) {
-        const response = NextResponse.next();
-        response.cookies.set(ACTIVE_ORG_COOKIE, organizations[0], {
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          path: '/',
-        });
-        return response;
-      }
+    const organizations = context.claims?.organizations ?? [];
+    const activeOrganizationId = nextRequest.cookies.get(ACTIVE_ORG_COOKIE)?.value;
 
-      if (!activeOrganizationId && !pathname.startsWith('/onboarding')) {
-        return NextResponse.redirect(new URL('/onboarding', nextRequest.url));
-      }
+    if (!activeOrganizationId && organizations.length > 0) {
+      const response = NextResponse.next();
+      response.cookies.set(ACTIVE_ORG_COOKIE, organizations[0], {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+      return response;
+    }
+
+    if (!activeOrganizationId && !pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding', nextRequest.url));
     }
 
     return NextResponse.next();
