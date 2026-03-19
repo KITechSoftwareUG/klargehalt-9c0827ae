@@ -3,144 +3,169 @@
 import {
   Shield,
   Users,
-  FileText,
   Lock,
   BarChart3,
   FileCheck,
   Eye,
-  History,
 } from "lucide-react";
 
+const features = [
+  {
+    icon: BarChart3,
+    label: "Analyse",
+    title: "Gender-Pay-Gap auf Knopfdruck",
+    description:
+      "Median-Berechnung, Abweichungsmarker und EU-konforme Auswertungen. Vollautomatisch, ohne manuelles Rechnen.",
+    detail: "EU-Richtlinie 2023/970 konform",
+  },
+  {
+    icon: Users,
+    label: "Zugriff",
+    title: "Rollenbasierte Kontrolle",
+    description:
+      "Admin, HR-Manager, Mitarbeiter — jede Rolle sieht exakt das, was sie sehen darf. Nicht mehr, nicht weniger.",
+    detail: "Row Level Security auf DB-Ebene",
+  },
+  {
+    icon: Lock,
+    label: "Verschluesselung",
+    title: "AES-256 fuer jedes Feld",
+    description:
+      "Gehaltsdaten werden feldweise verschluesselt gespeichert. Selbst bei einem Breach bleiben die Daten unlesbar.",
+    detail: "Ende-zu-Ende, TLS 1.3 in transit",
+  },
+  {
+    icon: FileCheck,
+    label: "Audit",
+    title: "Lueckenlose Protokollierung",
+    description:
+      "Immutable Audit-Logs mit Hash-Signatur. Wer hat wann was geaendert — beweissicher fuer Behoerden und Pruefer.",
+    detail: "PDF/CSV Export mit Zeitstempel",
+  },
+  {
+    icon: Eye,
+    label: "Transparenz",
+    title: "Minimal-Auskunft, maximal compliant",
+    description:
+      "Mitarbeiter sehen nur Gruppenstatistiken. Keine Einzelgehaelter, keine direkten Vergleiche — DSGVO-konform.",
+    detail: "Art. 15/17 DSGVO abgedeckt",
+  },
+  {
+    icon: Shield,
+    label: "Hosting",
+    title: "EU-only, keine Kompromisse",
+    description:
+      "Ihre Daten verlassen nie die EU. Frankfurt-basiertes Hosting, ISO 27001 zertifiziert, SOC 2 geprueft.",
+    detail: "Mandantentrennung auf Datenbankebene",
+  },
+];
+
 const FeaturesSection = () => {
-  const features = [
-    {
-      icon: Users,
-      title: "Rollenbasiertes Zugriffsmodell",
-      description:
-        "Striktes RBAC mit Admin, HR-Manager und Mitarbeiter. Niemand sieht mehr als erlaubt.",
-    },
-    {
-      icon: Lock,
-      title: "Verschluesselte Gehaltsdaten",
-      description:
-        "AES-256 Verschluesselung aller sensiblen Daten. Feldweise Verschluesselung fuer maximale Sicherheit.",
-    },
-    {
-      icon: BarChart3,
-      title: "Automatische Berechnungen",
-      description:
-        "Median-Berechnung, Gender-Pay-Gap-Analyse und Abweichungsmarker – vollautomatisch und EU-konform.",
-    },
-    {
-      icon: FileText,
-      title: "Mitarbeiter-Auskunft",
-      description:
-        "Rechtssichere Auskunftsanfragen mit versionierter Dokumentation. Nur anonymisierte Vergleichswerte.",
-    },
-    {
-      icon: History,
-      title: "Immutable Audit-Logs",
-      description:
-        "Wer hat wann was geaendert? Lueckenlose Protokollierung mit Hash-Signatur fuer Behoerden und Pruefer.",
-    },
-    {
-      icon: FileCheck,
-      title: "Beweissichere Exporte",
-      description:
-        "PDF und CSV Exporte mit Zeitstempel und Hash-Signatur. Auf Knopfdruck beweisfaehig.",
-    },
-    {
-      icon: Shield,
-      title: "DSGVO-Konformitaet",
-      description:
-        "Mandantenfaehigkeit, Row Level Security, EU-Hosting only. Art. 15/17 DSGVO vollstaendig abgedeckt.",
-    },
-    {
-      icon: Eye,
-      title: "Minimal-Transparenz",
-      description:
-        "Mitarbeiter sehen nur eigene Gruppe und statistische Werte. Keine Einzelgehaelter, keine Vergleiche.",
-    },
-  ];
-
-  // Split into two rows for desktop
-  const topRow = features.slice(0, 4);
-  const bottomRow = features.slice(4);
-
   return (
-    <section id="features" className="py-24 lg:py-36 bg-background relative">
-      {/* Subtle horizontal line accent */}
+    <section id="features" className="py-32 lg:py-44 relative">
+      {/* Subtle divider */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-      <div className="container mx-auto px-4 lg:px-8">
-        {/* Section Header */}
-        <div className="max-w-2xl mb-16 lg:mb-24">
+      <div className="max-w-[1400px] mx-auto px-4 lg:px-8">
+        {/* Section header — left aligned, taste-skill ANTI-CENTER BIAS */}
+        <div className="max-w-xl mb-20 lg:mb-28">
           <p className="text-accent text-sm font-semibold tracking-widest uppercase mb-4">
-            Funktionen
+            Was KlarGehalt kann
           </p>
-          <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-6 tracking-tight leading-tight">
-            Alles fuer Ihre
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tight leading-none mb-6">
+            Compliance ohne
             <br />
-            Compliance
+            Kompromisse
           </h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            KlarGehalt vereint alle Werkzeuge, die Sie fuer die rechtssichere
-            Umsetzung der EU-Entgelttransparenzrichtlinie benoetigen.
+          <p className="text-base text-muted-foreground leading-relaxed max-w-[50ch]">
+            Sechs Kernmodule, die zusammen eine lueckenlose
+            Entgelttransparenz-Loesung ergeben.
           </p>
         </div>
 
-        {/* Features Grid — 2 rows of 4 */}
-        <div className="space-y-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {topRow.map((feature, index) => (
-              <FeatureCard key={feature.title} feature={feature} index={index} />
-            ))}
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {bottomRow.map((feature, index) => (
-              <FeatureCard key={feature.title} feature={feature} index={index + 4} />
-            ))}
-          </div>
+        {/* Zig-Zag feature blocks — taste-skill ANTI 3-COL CARD */}
+        <div className="space-y-24 lg:space-y-32">
+          {features.map((feature, i) => {
+            const isEven = i % 2 === 0;
+            return (
+              <div
+                key={feature.title}
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20 items-start ${
+                  isEven ? "" : "lg:direction-rtl"
+                }`}
+                style={{
+                  animationDelay: `${i * 80}ms`,
+                }}
+              >
+                {/* Text side */}
+                <div
+                  className={`space-y-5 ${isEven ? "lg:order-1" : "lg:order-2"}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                      <feature.icon className="w-5 h-5 text-accent" />
+                    </div>
+                    <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+                      {feature.label}
+                    </span>
+                  </div>
+
+                  <h3 className="text-2xl lg:text-3xl font-bold text-foreground tracking-tight leading-tight">
+                    {feature.title}
+                  </h3>
+
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-[50ch]">
+                    {feature.description}
+                  </p>
+
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-2 text-sm text-foreground/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-status-success" />
+                      {feature.detail}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual side — abstract representation */}
+                <div
+                  className={`${isEven ? "lg:order-2" : "lg:order-1"}`}
+                >
+                  <div className="relative aspect-[4/3] rounded-2xl bg-card border border-border/40 overflow-hidden group">
+                    {/* Abstract grid pattern representing the feature */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                      {/* Decorative bars — echoing the video Balken motif */}
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <div
+                          key={j}
+                          className="h-2 rounded-full bg-accent/[0.06] group-hover:bg-accent/[0.12] transition-colors duration-700"
+                          style={{
+                            width: `${55 + Math.sin(i * 2.1 + j * 1.3) * 30}%`,
+                            marginLeft: isEven
+                              ? "0"
+                              : `${15 + Math.cos(i + j) * 10}%`,
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Large feature number */}
+                    <div className="absolute bottom-6 right-8 text-[120px] font-bold leading-none text-foreground/[0.03] select-none">
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+
+                    {/* Icon watermark */}
+                    <div className="absolute top-8 right-8">
+                      <feature.icon className="w-8 h-8 text-accent/20" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 };
-
-function FeatureCard({
-  feature,
-  index,
-}: {
-  feature: { icon: React.ElementType; title: string; description: string };
-  index: number;
-}) {
-  return (
-    <div
-      className="group relative p-6 lg:p-8 rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm hover:border-accent/30 hover:bg-card transition-all duration-500"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      {/* Number */}
-      <span className="absolute top-6 right-6 lg:top-8 lg:right-8 text-xs font-mono text-muted-foreground/40">
-        {String(index + 1).padStart(2, "0")}
-      </span>
-
-      {/* Icon */}
-      <div className="w-10 h-10 rounded-lg bg-accent/8 flex items-center justify-center mb-6 group-hover:bg-accent/15 transition-colors duration-300">
-        <feature.icon className="w-5 h-5 text-accent" />
-      </div>
-
-      {/* Content */}
-      <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">
-        {feature.title}
-      </h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        {feature.description}
-      </p>
-
-      {/* Bottom accent line on hover */}
-      <div className="absolute bottom-0 left-6 right-6 lg:left-8 lg:right-8 h-px bg-accent/0 group-hover:bg-accent/20 transition-colors duration-500" />
-    </div>
-  );
-}
 
 export default FeaturesSection;
