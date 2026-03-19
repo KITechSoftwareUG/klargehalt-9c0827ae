@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
-const outfit = Outfit({ subsets: ['latin'] });
+const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
-    title: 'KlarGehalt - EU-Entgelttransparenz',
-    description: 'B2B-Compliance-Plattform für die EU-Entgelttransparenzrichtlinie',
+    title: 'KlarGehalt - Entgelttransparenz fuer Unternehmen',
+    description: 'Die B2B-Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie 2023/970. Gehaltsstrukturen verwalten, Lohngleichheit nachweisen.',
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="de" suppressHydrationWarning>
-            <body className={outfit.className}>
+            <body className={font.className}>
                 <Providers>{children}</Providers>
             </body>
         </html>

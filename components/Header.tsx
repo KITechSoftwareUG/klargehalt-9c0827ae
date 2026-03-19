@@ -8,11 +8,17 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getAppUrl, getMarketingUrl } from '@/utils/url';
 
+const navLinks = [
+  { label: 'Funktionen', href: '/#features' },
+  { label: 'Sicherheit', href: '/#security' },
+  { label: 'Preise', href: '/#pricing' },
+  { label: 'Kontakt', href: '/#contact' },
+];
+
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isSignedIn, user, signOut } = useAuth();
-  const userLabel = user?.firstName || user?.email || 'Konto';
   const userInitial = (user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'K').toUpperCase();
 
   useEffect(() => {
@@ -23,32 +29,35 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white/80 backdrop-blur-xl border-b border-border/50 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
-          : 'bg-transparent border-b border-transparent'
+          ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+          : 'bg-transparent'
       }`}
     >
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
-        <div className="flex items-center justify-between h-18 lg:h-20">
-          <Link href={getMarketingUrl('/')} className="flex items-center hover:opacity-80 transition-opacity">
-            <Image src="/brandname.svg" alt="KlarGehalt" width={220} height={32} className="h-7 lg:h-8 w-auto" priority />
+      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        <div className="flex items-center justify-between h-[72px]">
+          {/* Logo — groesser */}
+          <Link href={getMarketingUrl('/')} className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer">
+            <Image
+              src="/brandname.svg"
+              alt="KlarGehalt"
+              width={200}
+              height={32}
+              priority
+              className="h-8 sm:h-9 w-auto"
+            />
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-8">
-            {[
-              { label: 'Funktionen', href: '/#features' },
-              { label: 'Sicherheit', href: '/#security' },
-              { label: 'Preise', href: '/#pricing' },
-              { label: 'Kontakt', href: '/#contact' },
-            ].map((link) => (
+            {navLinks.map((l) => (
               <Link
-                key={link.label}
-                href={getMarketingUrl(link.href)}
-                className="text-[13px] font-medium text-foreground/50 hover:text-foreground transition-colors"
+                key={l.label}
+                href={getMarketingUrl(l.href)}
+                className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
               >
-                {link.label}
+                {l.label}
               </Link>
             ))}
           </nav>
@@ -58,11 +67,11 @@ export default function Header() {
             {isSignedIn ? (
               <>
                 <Link href={getAppUrl('/dashboard')}>
-                  <Button variant="ghost" size="sm">Dashboard</Button>
+                  <Button variant="ghost" size="sm" className="text-[13px] cursor-pointer">Dashboard</Button>
                 </Link>
                 <Button
                   variant="ghost"
-                  className="h-9 w-9 rounded-full border border-border p-0 text-sm font-semibold"
+                  className="h-9 w-9 rounded-full bg-slate-100 p-0 text-sm font-semibold text-slate-700 hover:bg-slate-200 cursor-pointer"
                   onClick={() => void signOut()}
                   title="Abmelden"
                 >
@@ -72,10 +81,15 @@ export default function Header() {
             ) : (
               <>
                 <Link href={getAppUrl('/sign-in')}>
-                  <Button variant="ghost" size="sm" className="text-[13px] text-foreground/50">Anmelden</Button>
+                  <Button variant="ghost" size="sm" className="text-[13px] text-slate-500 cursor-pointer">
+                    Anmelden
+                  </Button>
                 </Link>
                 <Link href={getAppUrl('/sign-up')}>
-                  <Button size="sm" className="text-[13px] bg-foreground text-background hover:bg-foreground/90 rounded-lg px-5">
+                  <Button
+                    size="sm"
+                    className="text-[13px] bg-[#1E293B] text-white hover:bg-[#0F172A] rounded-lg px-5 shadow-sm cursor-pointer"
+                  >
                     Demo anfragen
                   </Button>
                 </Link>
@@ -83,64 +97,47 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile toggle */}
           <button
-            className="lg:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'Menu schliessen' : 'Menu oeffnen'}
+            className="lg:hidden p-2 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? 'Menu schliessen' : 'Menu oeffnen'}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden py-6 border-t border-border/50 animate-fade-in">
-            <nav className="flex flex-col gap-4">
-              {[
-                { label: 'Funktionen', href: '/#features' },
-                { label: 'Sicherheit', href: '/#security' },
-                { label: 'Preise', href: '/#pricing' },
-                { label: 'Kontakt', href: '/#contact' },
-              ].map((link) => (
+        {menuOpen && (
+          <div className="lg:hidden pb-6 border-t border-slate-100 animate-fade-in">
+            <nav className="flex flex-col gap-1 pt-4">
+              {navLinks.map((l) => (
                 <Link
-                  key={link.label}
-                  href={getMarketingUrl(link.href)}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+                  key={l.label}
+                  href={getMarketingUrl(l.href)}
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900 py-2.5 px-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => setMenuOpen(false)}
                 >
-                  {link.label}
+                  {l.label}
                 </Link>
               ))}
-
-              <div className="pt-4 border-t border-border/50 flex flex-col gap-2">
-                {isSignedIn ? (
-                  <>
-                    <Link href={getAppUrl('/dashboard')} onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full">Dashboard</Button>
-                    </Link>
-                    <div className="flex items-center gap-2 p-2">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold">
-                        {userInitial}
-                      </div>
-                      <span className="text-sm">{userLabel}</span>
-                      <Button variant="ghost" size="sm" onClick={() => void signOut()}>
-                        Abmelden
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Link href={getAppUrl('/sign-in')} onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full">Anmelden</Button>
-                    </Link>
-                    <Link href={getAppUrl('/sign-up')} onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full bg-foreground text-background hover:bg-foreground/90">Demo anfragen</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
             </nav>
+            <div className="pt-4 mt-2 border-t border-slate-100 flex flex-col gap-2">
+              {isSignedIn ? (
+                <Link href={getAppUrl('/dashboard')} onClick={() => setMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full cursor-pointer">Dashboard</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href={getAppUrl('/sign-in')} onClick={() => setMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full cursor-pointer">Anmelden</Button>
+                  </Link>
+                  <Link href={getAppUrl('/sign-up')} onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full bg-[#1E293B] text-white hover:bg-[#0F172A] cursor-pointer">Demo anfragen</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
