@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { BrandName } from "@/components/BrandName";
+import Image from "next/image";
 import Link from "next/link";
 import { getAppUrl } from "@/utils/url";
 
@@ -14,53 +14,62 @@ const HeroSection = () => {
   ];
 
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden">
-      {/* Video Background */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
+    <section className="relative min-h-[100dvh] flex flex-col overflow-hidden">
+      {/* Video area — takes up the top portion */}
+      <div className="relative w-full h-[55dvh] md:h-[60dvh] flex-shrink-0">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            style={{
+              maskImage:
+                "radial-gradient(ellipse 75% 70% at 50% 50%, black 20%, transparent 68%)",
+              WebkitMaskImage:
+                "radial-gradient(ellipse 75% 70% at 50% 50%, black 20%, transparent 68%)",
+            }}
+          >
+            <source src="/balken.mp4" type="video/mp4" />
+          </video>
+        </div>
+
+        {/* Edge fade for clean bleed */}
+        <div
+          className="absolute inset-0 pointer-events-none"
           style={{
-            maskImage:
-              "radial-gradient(ellipse 65% 60% at 50% 50%, black 25%, transparent 72%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 65% 60% at 50% 50%, black 25%, transparent 72%)",
+            background:
+              "radial-gradient(ellipse 85% 80% at 50% 50%, transparent 25%, hsl(var(--background)) 68%)",
           }}
-        >
-          <source src="/balken.mp4" type="video/mp4" />
-        </video>
+        />
+
+        {/* Top fade */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none" />
       </div>
 
-      {/* Additional edge fade to ensure clean bleed into concrete background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 75% at 50% 50%, transparent 30%, hsl(var(--background)) 72%)",
-        }}
-      />
-
-      {/* Top fade */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
-
-      {/* Content — Centered */}
-      <div className="relative z-20 container mx-auto px-4 lg:px-8 py-24 lg:py-32 flex flex-col items-center text-center">
+      {/* Content — below the video, not overlapping */}
+      <div className="relative z-10 flex-1 flex flex-col items-center text-center px-4 lg:px-8 -mt-24 md:-mt-32">
         {/* Badge */}
-        <div className="animate-fade-in mb-10">
+        <div className="animate-fade-in mb-8">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-status-warning-bg text-status-warning text-sm font-semibold backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-status-warning animate-pulse-gentle" />
             Pflicht ab Juni 2026
           </span>
         </div>
 
-        {/* Brandname — Large wordmark */}
-        <div className="animate-fade-in animation-delay-100 mb-8">
-          <BrandName className="h-10 md:h-14 lg:h-[72px] xl:h-20" color="hsl(var(--foreground))" />
+        {/* Brandname SVG — elegant, large */}
+        <div className="animate-fade-in animation-delay-100 mb-10">
+          <Image
+            src="/brandname.svg"
+            alt="KlarGehalt"
+            width={600}
+            height={80}
+            priority
+            className="h-12 md:h-16 lg:h-20 xl:h-24 w-auto"
+          />
         </div>
 
         {/* Headline */}
