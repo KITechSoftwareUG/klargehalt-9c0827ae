@@ -1,194 +1,140 @@
 'use client';
 
-import { ArrowLeft, Clock, AlertCircle, Scale } from 'lucide-react';
+import { ArrowLeft, Clock, Scale } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function SignInPage() {
-    // Countdown to June 7, 2026 (EU Pay Transparency Directive deadline)
     const targetDate = new Date('2026-06-07T00:00:00');
-    const [timeLeft, setTimeLeft] = useState({
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-    });
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
     useEffect(() => {
-        const calculateTimeLeft = () => {
-            const now = new Date();
-            const difference = targetDate.getTime() - now.getTime();
-
-            if (difference > 0) {
+        const calc = () => {
+            const diff = targetDate.getTime() - Date.now();
+            if (diff > 0) {
                 setTimeLeft({
-                    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-                    minutes: Math.floor((difference / 1000 / 60) % 60),
-                    seconds: Math.floor((difference / 1000) % 60),
+                    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+                    minutes: Math.floor((diff / 1000 / 60) % 60),
+                    seconds: Math.floor((diff / 1000) % 60),
                 });
             }
         };
-
-        calculateTimeLeft();
-        const timer = setInterval(calculateTimeLeft, 1000);
-
+        calc();
+        const timer = setInterval(calc, 1000);
         return () => clearInterval(timer);
     }, []);
 
     return (
-        <div className="min-h-screen flex">
-            {/* Left Side - Brand/Marketing with Countdown */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-12 flex-col justify-between relative overflow-hidden">
-                {/* Animated background elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-                    <div className="absolute top-0 -right-4 w-96 h-96 bg-purple-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-                    <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+        <div className="min-h-screen flex bg-[#071423]">
+            {/* Left Side */}
+            <div className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-between relative overflow-hidden">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:4rem_4rem]" />
 
-                    {/* Grid pattern */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
-                </div>
-
-                {/* Content */}
                 <div className="relative z-10">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3 mb-12">
-                        <Image src="/brandname.svg" alt="klargehalt" width={200} height={30} className="h-8 w-auto invert" />
+                    <Link href="https://klargehalt.de" className="inline-block mb-12">
+                        <Image src="/brandname.svg" alt="klargehalt" width={200} height={30} className="h-8 w-auto brightness-0 invert" />
+                    </Link>
+
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#52e0de]/10 border border-[#52e0de]/20 mb-6">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#52e0de] animate-pulse" />
+                        <span className="text-xs font-semibold text-[#52e0de] uppercase tracking-wide">Frist läuft</span>
                     </div>
 
-                    {/* Alert Badge */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 backdrop-blur-sm mb-6">
-                        <AlertCircle className="w-4 h-4 text-amber-400" />
-                        <span className="text-sm font-medium text-amber-200">Wichtige Gesetzesänderung</span>
-                    </div>
+                    <h1 className="text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.08] mb-6">
+                        EU-Entgelttransparenz-
+                        <br /><span className="text-white/40">richtlinie 2023/970</span>
+                    </h1>
+                    <p className="text-base text-white/50 leading-relaxed max-w-[48ch] mb-10">
+                        Ab dem <span className="text-white font-semibold">7. Juni 2026</span> müssen Unternehmen mit mehr als 100 Mitarbeitern Gehaltsstrukturen offenlegen.
+                    </p>
 
-                    {/* Main Message */}
-                    <div className="space-y-6 mb-10">
-                        <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                            EU-Entgelttransparenz-richtlinie
-                        </h1>
-                        <p className="text-lg text-slate-300 leading-relaxed">
-                            Ab dem <span className="text-white font-semibold">7. Juni 2026</span> müssen alle Unternehmen mit mehr als 100 Mitarbeitern die EU-Richtlinie 2023/970 zur Entgelttransparenz umsetzen.
-                        </p>
-                    </div>
-
-                    {/* Countdown Timer */}
+                    {/* Countdown */}
                     <div className="mb-10">
                         <div className="flex items-center gap-2 mb-4">
-                            <Clock className="w-5 h-5 text-primary" />
-                            <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">Zeit bis zur Umsetzung</span>
+                            <Clock className="w-4 h-4 text-[#946df7]" />
+                            <span className="text-xs font-semibold text-white/30 uppercase tracking-wide">Zeit bis zur Umsetzung</span>
                         </div>
-
                         <div className="grid grid-cols-4 gap-3">
                             {[
                                 { value: timeLeft.days, label: 'Tage' },
-                                { value: timeLeft.hours, label: 'Stunden' },
-                                { value: timeLeft.minutes, label: 'Minuten' },
-                                { value: timeLeft.seconds, label: 'Sekunden' },
-                            ].map((item, index) => (
-                                <div key={index} className="relative group">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                                    <div className="relative bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-xl p-4 text-center hover:border-primary/30 transition-all duration-300">
-                                        <div className="text-3xl font-bold text-white mb-1 tabular-nums">
-                                            {String(item.value).padStart(2, '0')}
-                                        </div>
-                                        <div className="text-xs text-slate-400 uppercase tracking-wide">
-                                            {item.label}
-                                        </div>
+                                { value: timeLeft.hours, label: 'Std' },
+                                { value: timeLeft.minutes, label: 'Min' },
+                                { value: timeLeft.seconds, label: 'Sek' },
+                            ].map((item, i) => (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                                    <div className="text-2xl font-extrabold text-white tabular-nums">
+                                        {String(item.value).padStart(2, '0')}
                                     </div>
+                                    <div className="text-[10px] text-white/30 uppercase tracking-wide mt-1">{item.label}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Law Reference */}
-                    <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 space-y-3">
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
                         <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-                                <Scale className="w-4 h-4 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-white mb-1">
-                                    Richtlinie (EU) 2023/970
-                                </h3>
-                                <p className="text-xs text-slate-400 leading-relaxed">
-                                    Zur Stärkung der Anwendung des Grundsatzes des gleichen Entgelts für Männer und Frauen bei gleicher oder gleichwertiger Arbeit durch Entgelttransparenz und Durchsetzungsmechanismen.
+                            <Scale className="w-5 h-5 text-[#946df7] flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="text-sm font-bold text-white mb-1">Richtlinie (EU) 2023/970</h3>
+                                <p className="text-xs text-white/40 leading-relaxed">
+                                    Gleicher Lohn für gleiche Arbeit — durch Transparenz und Durchsetzungsmechanismen.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="relative z-10 space-y-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-sm">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                        <span>DSGVO-konform • EU-Server • Verschlüsselt</span>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-2 text-white/30 text-xs">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        DSGVO-konform · EU-Hosting · Verschlüsselt
                     </div>
-                    <p className="text-slate-500 text-xs">
-                        © 2025 KlarGehalt. Alle Rechte vorbehalten.
-                    </p>
                 </div>
-
-                <style jsx>{`
-          @keyframes blob {
-            0%, 100% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-          }
-          .animate-blob {
-            animation: blob 7s infinite;
-          }
-          .animation-delay-2000 {
-            animation-delay: 2s;
-          }
-          .animation-delay-4000 {
-            animation-delay: 4s;
-          }
-        `}</style>
             </div>
 
-            {/* Right Side - Logto Sign-In */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
+            {/* Right Side — Login */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[#f9f9f9]">
                 <div className="w-full max-w-md">
-                    {/* Back Button */}
                     <Link
                         href="https://klargehalt.de"
-                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
+                        className="inline-flex items-center gap-2 text-sm text-[#535a6b] hover:text-[#071423] mb-8 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Zurück zur Startseite
                     </Link>
 
-                    {/* Mobile Logo */}
-                    <div className="lg:hidden flex items-center gap-3 mb-8">
+                    <div className="lg:hidden mb-8">
                         <Image src="/brandname.svg" alt="klargehalt" width={160} height={24} className="h-6 w-auto" />
                     </div>
 
-                    <Card className="border-slate-200 shadow-xl">
-                        <CardHeader className="space-y-3">
-                            <CardTitle className="text-2xl">Anmelden</CardTitle>
-                            <CardDescription>
-                                Melden Sie sich sicher in Ihrem KlarGehalt-Workspace an. Ihre Gehaltsdaten sind Ende-zu-Ende verschlüsselt.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Link href="/auth/sign-in" className="block">
-                                <Button className="w-full" size="lg">
-                                    Sicher anmelden
-                                </Button>
+                    <div className="bg-white rounded-2xl border border-[#e0e0e2] shadow-lg p-8">
+                        <h2 className="text-2xl font-extrabold text-[#071423] tracking-tight mb-2">Anmelden</h2>
+                        <p className="text-sm text-[#535a6b] mb-6">
+                            Melden Sie sich sicher in Ihrem klargehalt-Workspace an.
+                        </p>
+                        <Link href="/auth/sign-in" className="block mb-4">
+                            <Button className="w-full h-12 rounded-xl bg-[#071423] text-white hover:bg-[#0d1f33] text-sm font-semibold cursor-pointer">
+                                Sicher anmelden
+                            </Button>
+                        </Link>
+                        <p className="text-sm text-[#535a6b]">
+                            Noch kein Konto?{' '}
+                            <Link href="/sign-up" className="text-[#946df7] font-semibold hover:underline">
+                                Jetzt registrieren
                             </Link>
-                            <p className="text-sm text-muted-foreground">
-                                Noch kein Konto?{' '}
-                                <Link href="/sign-up" className="text-primary hover:underline">
-                                    Jetzt registrieren
-                                </Link>
-                            </p>
-                        </CardContent>
-                    </Card>
+                        </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-center gap-4 text-[10px] text-[#aaacb5]">
+                        <span>AES-256</span>
+                        <span className="w-1 h-1 rounded-full bg-[#e0e0e2]" />
+                        <span>Frankfurt</span>
+                        <span className="w-1 h-1 rounded-full bg-[#e0e0e2]" />
+                        <span>Row Level Security</span>
+                    </div>
                 </div>
             </div>
         </div>

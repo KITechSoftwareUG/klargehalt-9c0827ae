@@ -28,27 +28,27 @@ const modules = [
     {
         number: '01',
         title: 'Gehaltsstrukturen erfassen',
-        subtitle: 'Job-Profile & Gehaltsbaender',
-        description: 'Definieren Sie Ihre Gehaltsstruktur zentral. Job-Profile mit Leveln, Abteilungen und Standorten anlegen. Gehaltsbaender mit Min/Max/Median hinterlegen. CSV-Import fuer bestehende Daten.',
+        subtitle: 'Job-Profile & Gehaltsbänder',
+        description: 'Definieren Sie Ihre Gehaltsstruktur zentral. Job-Profile mit Leveln, Abteilungen und Standorten anlegen. Gehaltsbänder mit Min/Max/Median hinterlegen. CSV-Import für bestehende Daten.',
         capabilities: [
             'Job-Profile mit Level, Abteilung und Standort',
-            'Gehaltsbaender mit Min, Max und Median',
-            'CSV-Import fuer bestehende Mitarbeiterdaten',
+            'Gehaltsbänder mit Min, Max und Median',
+            'CSV-Import für bestehende Mitarbeiterdaten',
             'Flexible Gruppierung nach beliebigen Kriterien',
-            'Historische Daten fuer Vergleichszeitraeume',
+            'Historische Daten für Vergleichszeitraeume',
         ],
     },
     {
         number: '02',
         title: 'Pay-Gap automatisch berechnen',
         subtitle: 'Gender-Pay-Gap Analyse',
-        description: 'Die EU-Richtlinie verlangt Median-Vergleiche nach Geschlecht, aufgeschluesselt nach Job-Profil. KlarGehalt berechnet diese automatisch und markiert Abweichungen ab 5%.',
+        description: 'Die EU-Richtlinie verlangt Median-Vergleiche nach Geschlecht, aufgeschlüsselt nach Job-Profil. KlarGehalt berechnet diese automatisch und markiert Abweichungen ab 5%.',
         capabilities: [
             'Median- und Durchschnitts-Pay-Gap pro Job-Profil',
             'Automatische Abweichungsmarker (5% / 10% Schwellen)',
             'Aufschluesselung nach Geschlecht, Abteilung, Standort',
-            'Trendanalyse ueber mehrere Zeitraeume',
-            'Export als PDF-Bericht fuer Behoerden und Pruefer',
+            'Trendanalyse über mehrere Zeiträume',
+            'Export als PDF-Bericht für Behörden und Prüfer',
         ],
     },
     {
@@ -68,9 +68,9 @@ const modules = [
         number: '04',
         title: 'Mitarbeiter-Auskunft',
         subtitle: 'DSGVO-konforme Gehaltsauskunft',
-        description: 'Die Richtlinie gibt Mitarbeitern das Recht, die durchschnittliche Verguetung ihrer Vergleichsgruppe zu erfahren. KlarGehalt stellt das als Self-Service Portal bereit — anonymisiert und DSGVO-konform.',
+        description: 'Die Richtlinie gibt Mitarbeitern das Recht, die durchschnittliche Vergütung ihrer Vergleichsgruppe zu erfahren. KlarGehalt stellt das als Self-Service Portal bereit — anonymisiert und DSGVO-konform.',
         capabilities: [
-            'Self-Service Portal fuer Mitarbeiter',
+            'Self-Service Portal für Mitarbeiter',
             'Anonymisierte Gruppenstatistiken — keine Einzelgehaelter',
             'Automatische Vergleichsgruppen-Zuordnung',
             'Auskunftsanfragen mit Audit-Trail',
@@ -80,27 +80,27 @@ const modules = [
     {
         number: '05',
         title: 'Audit-Trail',
-        subtitle: 'Lueckenlose Protokollierung',
-        description: 'Wer hat wann was geaendert? Jede Aktion wird protokolliert — von der Gehaltsaenderung bis zum Datenzugriff. Exportierbar fuer Wirtschaftspruefer, Behoerden und interne Revision.',
+        subtitle: 'Lückenlose Protokollierung',
+        description: 'Wer hat wann was geaendert? Jede Aktion wird protokolliert — von der Gehaltsänderung bis zum Datenzugriff. Exportierbar für Wirtschaftsprüfer, Behörden und interne Revision.',
         capabilities: [
-            'Automatische Protokollierung aller Aenderungen',
-            'Benutzer, Zeitstempel und Aenderungsdetails',
-            'Export als CSV oder PDF fuer Pruefer',
-            'Unveraenderbare Eintraege (append-only)',
+            'Automatische Protokollierung aller Änderungen',
+            'Benutzer, Zeitstempel und Änderungsdetails',
+            'Export als CSV oder PDF für Prüfer',
+            'Unveränderbare Eintraege (append-only)',
             'Filterbar nach Benutzer, Zeitraum und Aktion',
         ],
     },
     {
         number: '06',
-        title: 'EU-Hosting & Verschluesselung',
+        title: 'EU-Hosting & Verschlüsselung',
         subtitle: 'Daten bleiben in der EU',
-        description: 'Alle Daten liegen auf Servern in Frankfurt. Verschluesselung in Transit (TLS 1.3) und at Rest (AES-256). Kein Transfer in Drittlaender, kein US Cloud Act.',
+        description: 'Alle Daten liegen auf Servern in Frankfurt. Verschlüsselung in Transit (TLS 1.3) und at Rest (AES-256). Kein Transfer in Drittlaender, kein US Cloud Act.',
         capabilities: [
             'Hosting in Frankfurt, Deutschland',
-            'AES-256 Verschluesselung at rest',
-            'TLS 1.3 Verschluesselung in transit',
+            'AES-256 Verschlüsselung at rest',
+            'TLS 1.3 Verschlüsselung in transit',
             'Kein Datentransfer in Drittlaender',
-            'Regelmaessige Sicherheitsaudits',
+            'Regelmäßige Sicherheitsaudits',
         ],
     },
 ];
@@ -120,7 +120,7 @@ export default function FunktionenPage() {
                             <span className="text-white/40">Entgelttransparenz ohne Aufwand.</span>
                         </h1>
                         <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
-                            KlarGehalt ist kein generisches HR-Tool. Jedes Modul wurde spezifisch fuer die
+                            KlarGehalt ist kein generisches HR-Tool. Jedes Modul wurde spezifisch für die
                             Anforderungen der EU-Entgelttransparenzrichtlinie 2023/970 entwickelt.
                         </p>
                     </div>

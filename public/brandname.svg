@@ -1,14 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 64" fill="none">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600&amp;display=swap');
-  </style>
-  <text
-    x="0"
-    y="48"
-    font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="52"
-    font-weight="600"
-    letter-spacing="-1"
-    fill="#071423"
-  >klargehalt</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 235 64" fill="none">
+  <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700&amp;display=swap');</style>
+  <text x="0" y="50" font-family="'Inter', sans-serif" font-size="48" letter-spacing="-1.5" fill="#071423">
+    <tspan font-weight="700">klar</tspan><tspan font-weight="500">gehalt</tspan>
+  </text>
+  <circle cx="229" cy="50" r="4" fill="#52e0de"/>
 </svg>

@@ -42,12 +42,12 @@ const comparisonFeatures: { category: string; features: { name: string; starter:
     {
         category: 'Kernfunktionen',
         features: [
-            { name: 'Job-Profile & Gehaltsbaender', starter: true, business: true, enterprise: true },
+            { name: 'Job-Profile & Gehaltsbänder', starter: true, business: true, enterprise: true },
             { name: 'Mitarbeiterverwaltung', starter: 'Bis 50', business: 'Bis 250', enterprise: 'Unbegrenzt' },
             { name: 'CSV-Import', starter: true, business: true, enterprise: true },
             { name: 'Gender-Pay-Gap Analyse', starter: false, business: true, enterprise: true },
             { name: 'Pay-Gap Berichte (PDF)', starter: false, business: true, enterprise: true },
-            { name: 'Trendanalyse ueber Zeitraeume', starter: false, business: true, enterprise: true },
+            { name: 'Trendanalyse über Zeiträume', starter: false, business: true, enterprise: true },
         ],
     },
     {
@@ -57,7 +57,7 @@ const comparisonFeatures: { category: string; features: { name: string; starter:
             { name: 'HR-Manager Rolle', starter: true, business: true, enterprise: true },
             { name: 'Mitarbeiter Self-Service', starter: true, business: true, enterprise: true },
             { name: 'SSO Integration', starter: false, business: true, enterprise: true },
-            { name: 'Pruefer-Zugaenge (read-only)', starter: false, business: false, enterprise: true },
+            { name: 'Prüfer-Zugaenge (read-only)', starter: false, business: false, enterprise: true },
         ],
     },
     {
@@ -65,7 +65,7 @@ const comparisonFeatures: { category: string; features: { name: string; starter:
         features: [
             { name: 'Basis Audit-Trail', starter: true, business: true, enterprise: true },
             { name: 'Erweiterter Audit-Trail', starter: false, business: true, enterprise: true },
-            { name: 'Export fuer Pruefer', starter: false, business: true, enterprise: true },
+            { name: 'Export für Prüfer', starter: false, business: true, enterprise: true },
             { name: 'DSGVO Auskunfts-Workflow', starter: true, business: true, enterprise: true },
         ],
     },
@@ -85,27 +85,27 @@ const comparisonFeatures: { category: string; features: { name: string; starter:
 const faqs = [
     {
         q: 'Gibt es eine kostenlose Testphase?',
-        a: 'Ja. Wir bieten eine 14-taegige kostenlose Testphase fuer alle Plaene an. Keine Kreditkarte noetig. Sprechen Sie uns an fuer den Zugang.',
+        a: 'Ja. Wir bieten eine 14-taegige kostenlose Testphase für alle Plaene an. Keine Kreditkarte noetig. Sprechen Sie uns an für den Zugang.',
     },
     {
         q: 'Was passiert, wenn wir mehr als 250 Mitarbeiter haben?',
         a: 'Ab 250 Mitarbeitern empfehlen wir den Enterprise-Plan. Dieser wird individuell auf Ihre Anforderungen zugeschnitten — inkl. SLA, dediziertem Ansprechpartner und Custom Integrationen.',
     },
     {
-        q: 'Koennen wir spaeter upgraden?',
-        a: 'Jederzeit. Ein Upgrade ist innerhalb weniger Minuten moeglich. Alle Daten bleiben erhalten. Downgrades sind zum naechsten Abrechnungszeitraum moeglich.',
+        q: 'Können wir später upgraden?',
+        a: 'Jederzeit. Ein Upgrade ist innerhalb weniger Minuten möglich. Alle Daten bleiben erhalten. Downgrades sind zum naechsten Abrechnungszeitraum möglich.',
     },
     {
         q: 'Wie wird abgerechnet?',
         a: 'Monatlich oder jaehrlich. Bei jaehrlicher Abrechnung sparen Sie zwei Monatsgebuehren. Alle Preise verstehen sich zzgl. MwSt.',
     },
     {
-        q: 'Gibt es Rabatte fuer gemeinnuetzige Organisationen?',
-        a: 'Ja. Kontaktieren Sie uns fuer ein individuelles Angebot.',
+        q: 'Gibt es Rabatte für gemeinnuetzige Organisationen?',
+        a: 'Ja. Kontaktieren Sie uns für ein individuelles Angebot.',
     },
     {
         q: 'Was ist im Onboarding enthalten?',
-        a: 'Im Business- und Enterprise-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams. Beim Starter-Plan stehen Ihnen ausfuehrliche Dokumentation und E-Mail-Support zur Verfuegung.',
+        a: 'Im Business- und Enterprise-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams. Beim Starter-Plan stehen Ihnen ausführliche Dokumentation und E-Mail-Support zur Verfügung.',
     },
 ];
 
@@ -187,7 +187,7 @@ export default function PreisePage() {
                             </div>
                         ))}
                     </div>
-                    <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. MwSt. Jaehrliche Abrechnung moeglich.</p>
+                    <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. MwSt. Jaehrliche Abrechnung möglich.</p>
                 </div>
             </section>
 

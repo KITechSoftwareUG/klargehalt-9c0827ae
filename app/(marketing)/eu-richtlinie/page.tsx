@@ -5,57 +5,57 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'EU-Entgelttransparenzrichtlinie 2023/970',
-    description: 'Was ist die EU-Entgelttransparenzrichtlinie? Wer ist betroffen? Welche Pflichten entstehen? Fristen, Anforderungen und Bussgelder einfach erklaert.',
+    description: 'Was ist die EU-Entgelttransparenzrichtlinie? Wer ist betroffen? Welche Pflichten entstehen? Fristen, Anforderungen und Bußgelder einfach erklärt.',
 };
 
 const timeline = [
     { date: 'Juni 2023', event: 'Richtlinie 2023/970 in Kraft getreten', desc: 'Veroeffentlichung im Amtsblatt der Europaeischen Union. Mitgliedstaaten haben drei Jahre zur Umsetzung.' },
-    { date: 'Juni 2026', event: 'Umsetzungsfrist fuer Mitgliedstaaten', desc: 'Bis zum 7. Juni 2026 muss die Richtlinie in nationales Recht umgesetzt sein. Deutschland arbeitet am Entgelttransparenzgesetz 2.0.' },
-    { date: 'Juni 2027', event: 'Erster Berichtszeitraum (250+ MA)', desc: 'Unternehmen mit 250+ Mitarbeitern muessen ihren ersten Gender-Pay-Gap Bericht vorlegen. Danach jaehrlich.' },
-    { date: 'Juni 2031', event: 'Erster Berichtszeitraum (100-249 MA)', desc: 'Unternehmen mit 100-249 Mitarbeitern muessen erstmals berichten. Danach alle drei Jahre.' },
+    { date: 'Juni 2026', event: 'Umsetzungsfrist für Mitgliedstaaten', desc: 'Bis zum 7. Juni 2026 muss die Richtlinie in nationales Recht umgesetzt sein. Deutschland arbeitet am Entgelttransparenzgesetz 2.0.' },
+    { date: 'Juni 2027', event: 'Erster Berichtszeitraum (250+ MA)', desc: 'Unternehmen mit 250+ Mitarbeitern müssen ihren ersten Gender-Pay-Gap Bericht vorlegen. Danach jaehrlich.' },
+    { date: 'Juni 2031', event: 'Erster Berichtszeitraum (100-249 MA)', desc: 'Unternehmen mit 100-249 Mitarbeitern müssen erstmals berichten. Danach alle drei Jahre.' },
 ];
 
 const requirements = [
     {
         title: 'Entgelttransparenz bei der Einstellung',
         article: 'Art. 5',
-        desc: 'Stellenausschreibungen muessen Gehaltsangaben oder Gehaltsspannen enthalten. Arbeitgeber duerfen Bewerber nicht nach ihrem aktuellen Gehalt fragen.',
-        impact: 'HR-Abteilungen muessen Gehaltsbaender fuer jede offene Stelle definieren und in Stellenanzeigen veroeffentlichen.',
+        desc: 'Stellenausschreibungen müssen Gehaltsangaben oder Gehaltsspannen enthalten. Arbeitgeber duerfen Bewerber nicht nach ihrem aktuellen Gehalt fragen.',
+        impact: 'HR-Abteilungen müssen Gehaltsbänder für jede offene Stelle definieren und in Stellenanzeigen veroeffentlichen.',
     },
     {
-        title: 'Auskunftsrecht fuer Beschaeftigte',
+        title: 'Auskunftsrecht für Beschäftigte',
         article: 'Art. 7',
-        desc: 'Arbeitnehmer haben das Recht, die durchschnittliche Verguetung ihrer Vergleichsgruppe zu erfahren — aufgeschluesselt nach Geschlecht.',
+        desc: 'Arbeitnehmer haben das Recht, die durchschnittliche Vergütung ihrer Vergleichsgruppe zu erfahren — aufgeschlüsselt nach Geschlecht.',
         impact: 'Unternehmen brauchen ein System, das diese Daten auf Anfrage bereitstellen kann. Frist: 2 Monate nach Anfrage.',
     },
     {
         title: 'Gender-Pay-Gap Berichterstattung',
         article: 'Art. 9',
-        desc: 'Unternehmen muessen den Gender Pay Gap nach verschiedenen Kriterien berechnen und veroeffentlichen: Median, Durchschnitt, nach Entgeltgruppen.',
+        desc: 'Unternehmen müssen den Gender Pay Gap nach verschiedenen Kriterien berechnen und veroeffentlichen: Median, Durchschnitt, nach Entgeltgruppen.',
         impact: 'Automatisierte Berechnung und Berichterstellung wird notwendig. Manuelle Excel-Berechnungen skalieren nicht.',
     },
     {
         title: 'Gemeinsame Entgeltbewertung',
         article: 'Art. 10',
-        desc: 'Liegt der Pay Gap bei 5% oder mehr und kann nicht durch objektive Faktoren erklaert werden, muss eine gemeinsame Bewertung mit Arbeitnehmervertretern durchgefuehrt werden.',
-        impact: 'Unternehmen muessen nicht nur den Gap berechnen, sondern auch dokumentieren, welche Faktoren ihn erklaeren — oder Massnahmen einleiten.',
+        desc: 'Liegt der Pay Gap bei 5% oder mehr und kann nicht durch objektive Faktoren erklärt werden, muss eine gemeinsame Bewertung mit Arbeitnehmervertretern durchgeführt werden.',
+        impact: 'Unternehmen müssen nicht nur den Gap berechnen, sondern auch dokumentieren, welche Faktoren ihn erklären — oder Maßnahmen einleiten.',
     },
     {
         title: 'Recht auf Entschaedigung',
         article: 'Art. 16',
-        desc: 'Arbeitnehmer, die aufgrund von Entgeltdiskriminierung benachteiligt wurden, haben Anspruch auf vollstaendige Entschaedigung — einschliesslich Nachzahlung und Schadensersatz.',
+        desc: 'Arbeitnehmer, die aufgrund von Entgeltdiskriminierung benachteiligt wurden, haben Anspruch auf vollständige Entschaedigung — einschliesslich Nachzahlung und Schadensersatz.',
         impact: 'Die Beweislast liegt beim Arbeitgeber. Wer keine saubere Dokumentation hat, steht vor Gericht schlecht da.',
     },
     {
         title: 'Sanktionen',
         article: 'Art. 23',
-        desc: 'Mitgliedstaaten muessen wirksame, verhaeltnismaessige und abschreckende Sanktionen festlegen. Dazu gehoeren Geldstrafen.',
-        impact: 'Die genauen Bussgelder werden im nationalen Gesetz geregelt. Erfahrungsgemaess orientieren sie sich an der Unternehmensgroesse.',
+        desc: 'Mitgliedstaaten müssen wirksame, verhaeltnismaessige und abschreckende Sanktionen festlegen. Dazu gehören Geldstrafen.',
+        impact: 'Die genauen Bußgelder werden im nationalen Gesetz geregelt. Erfahrungsgemaess orientieren sie sich an der Unternehmensgroesse.',
     },
 ];
 
 const whoIsAffected = [
-    { size: '1 - 99 Mitarbeiter', obligation: 'Entgelttransparenz bei Einstellung + Auskunftsrecht', reporting: 'Keine regelmaessige Berichtspflicht', deadline: 'Ab Umsetzung (Juni 2026)' },
+    { size: '1 - 99 Mitarbeiter', obligation: 'Entgelttransparenz bei Einstellung + Auskunftsrecht', reporting: 'Keine regelmäßige Berichtspflicht', deadline: 'Ab Umsetzung (Juni 2026)' },
     { size: '100 - 149 Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Alle 3 Jahre', deadline: 'Erster Bericht: Juni 2031' },
     { size: '150 - 249 Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Alle 3 Jahre', deadline: 'Erster Bericht: Juni 2031' },
     { size: '250+ Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Jaehrlich', deadline: 'Erster Bericht: Juni 2027' },
@@ -73,11 +73,11 @@ export default function EuRichtliniePage() {
                                 Frist: 7. Juni 2026
                             </span>
                             <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
-                                Die EU-Entgelttransparenz&shy;richtlinie einfach erklaert.
+                                Die EU-Entgelttransparenz&shy;richtlinie einfach erklärt.
                             </h1>
                             <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
-                                Was muessen Unternehmen tun? Bis wann? Und was passiert, wenn nicht?
-                                Hier steht alles, was Sie wissen muessen — ohne Juristendeutsch.
+                                Was müssen Unternehmen tun? Bis wann? Und was passiert, wenn nicht?
+                                Hier steht alles, was Sie wissen müssen — ohne Juristendeutsch.
                             </p>
                         </div>
                         <div className="bg-[var(--ep-yellow)]/10 border border-[var(--ep-yellow)]/20 rounded-2xl p-8">
@@ -105,8 +105,8 @@ export default function EuRichtliniePage() {
                             <div className="space-y-4 text-sm text-slate-500 leading-relaxed">
                                 <p>
                                     Die <strong className="text-[#071423]">Richtlinie (EU) 2023/970</strong> verpflichtet Arbeitgeber in der gesamten EU,
-                                    ihre Gehaltsstrukturen transparent zu machen. Ziel: Gleiche Bezahlung fuer gleiche oder gleichwertige Arbeit,
-                                    unabhaengig vom Geschlecht.
+                                    ihre Gehaltsstrukturen transparent zu machen. Ziel: Gleiche Bezahlung für gleiche oder gleichwertige Arbeit,
+                                    unabhängig vom Geschlecht.
                                 </p>
                                 <p>
                                     Das klingt nach einem Grundsatz, der laengst gelten sollte. In der Praxis zeigt sich aber:
@@ -114,7 +114,7 @@ export default function EuRichtliniePage() {
                                     Auch der bereinigte Gap — also nach Abzug struktureller Unterschiede — liegt bei 6%.
                                 </p>
                                 <p>
-                                    Die Richtlinie will das aendern, indem sie Transparenz erzwingt. Nicht als Empfehlung, sondern als Pflicht.
+                                    Die Richtlinie will das ändern, indem sie Transparenz erzwingt. Nicht als Empfehlung, sondern als Pflicht.
                                     Mit Berichtspflichten, Auskunftsrechten und Sanktionen.
                                 </p>
                             </div>
@@ -124,8 +124,8 @@ export default function EuRichtliniePage() {
                             <div className="space-y-6">
                                 {[
                                     { n: '1', title: 'Transparenz vor der Einstellung', desc: 'Gehaltsangaben in Stellenanzeigen. Kein Fragen nach dem Vorgehalt.' },
-                                    { n: '2', title: 'Transparenz im Arbeitsverhaeltnis', desc: 'Auskunftsrecht fuer Mitarbeiter. Gender-Pay-Gap Berichtspflicht.' },
-                                    { n: '3', title: 'Durchsetzung', desc: 'Beweislastumkehr. Entschaedigungsansprueche. Bussgelder bei Verstoss.' },
+                                    { n: '2', title: 'Transparenz im Arbeitsverhaeltnis', desc: 'Auskunftsrecht für Mitarbeiter. Gender-Pay-Gap Berichtspflicht.' },
+                                    { n: '3', title: 'Durchsetzung', desc: 'Beweislastumkehr. Entschaedigungsansprueche. Bußgelder bei Verstoss.' },
                                 ].map((s) => (
                                     <div key={s.n} className="flex gap-4">
                                         <span className="text-2xl font-extrabold text-white/20 w-6 flex-shrink-0">{s.n}</span>
@@ -179,7 +179,7 @@ export default function EuRichtliniePage() {
                         <table className="w-full min-w-[600px]">
                             <thead>
                                 <tr className="border-b-2 border-slate-200">
-                                    <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Groesse</th>
+                                    <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Größe</th>
                                     <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Pflichten</th>
                                     <th className="text-left py-4 pr-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Berichtszyklus</th>
                                     <th className="text-left py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Erster Bericht</th>
@@ -204,7 +204,7 @@ export default function EuRichtliniePage() {
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
-                        Was muessen Unternehmen konkret tun?
+                        Was müssen Unternehmen konkret tun?
                     </h2>
                     <p className="text-base text-slate-500 mb-12 max-w-[55ch]">
                         Die wichtigsten Anforderungen der Richtlinie — und was sie praktisch bedeuten.
@@ -242,12 +242,12 @@ export default function EuRichtliniePage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
-                            { req: 'Gehaltsangaben in Stellenanzeigen', solution: 'Gehaltsbaender pro Job-Profil definieren und als Vorlage fuer Stellenanzeigen exportieren.' },
+                            { req: 'Gehaltsangaben in Stellenanzeigen', solution: 'Gehaltsbänder pro Job-Profil definieren und als Vorlage für Stellenanzeigen exportieren.' },
                             { req: 'Auskunftsrecht der Mitarbeiter', solution: 'Self-Service Portal mit anonymisierten Gruppenstatistiken. Anfragen werden automatisch protokolliert.' },
                             { req: 'Gender-Pay-Gap Berechnung', solution: 'Automatische Median- und Durchschnittsberechnung nach Geschlecht und Job-Profil.' },
-                            { req: 'Berichterstattung', solution: 'PDF-Berichte fuer Behoerden und Pruefer auf Knopfdruck generieren.' },
-                            { req: 'Gemeinsame Entgeltbewertung', solution: 'Abweichungen ab 5% werden automatisch markiert. Dokumentation der Erklaerungsfaktoren.' },
-                            { req: 'Nachweispflicht', solution: 'Lueckenloser Audit-Trail. Jede Aenderung, jeder Zugriff — beweissicher dokumentiert.' },
+                            { req: 'Berichterstattung', solution: 'PDF-Berichte für Behörden und Prüfer auf Knopfdruck generieren.' },
+                            { req: 'Gemeinsame Entgeltbewertung', solution: 'Abweichungen ab 5% werden automatisch markiert. Dokumentation der Erklärungsfaktoren.' },
+                            { req: 'Nachweispflicht', solution: 'Lückenloser Audit-Trail. Jede Änderung, jeder Zugriff — beweissicher dokumentiert.' },
                         ].map((item) => (
                             <div key={item.req} className="bg-slate-50 rounded-xl p-6">
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Anforderung</p>
@@ -266,7 +266,7 @@ export default function EuRichtliniePage() {
                         Die Frist laeuft. Handeln Sie jetzt.
                     </h2>
                     <p className="text-sm text-slate-400 mb-8 max-w-[50ch] mx-auto">
-                        Je frueher Sie Gehaltsstrukturen erfassen, desto besser stehen Sie da — bei Behoerden, Pruefern und Ihren Mitarbeitern.
+                        Je frueher Sie Gehaltsstrukturen erfassen, desto besser stehen Sie da — bei Behörden, Prüfern und Ihren Mitarbeitern.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/kontakt">

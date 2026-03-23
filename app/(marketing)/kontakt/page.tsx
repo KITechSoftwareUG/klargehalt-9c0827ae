@@ -3,7 +3,7 @@ import ContactForm from './contact-form';
 
 export const metadata: Metadata = {
     title: 'Kontakt',
-    description: 'Kontaktieren Sie KlarGehalt fuer eine Demo, Beratung oder technische Fragen. Antwort innerhalb eines Werktags.',
+    description: 'Kontaktieren Sie KlarGehalt für eine Demo, Beratung oder technische Fragen. Antwort innerhalb eines Werktags.',
 };
 
 export default function KontaktPage() {
@@ -17,10 +17,10 @@ export default function KontaktPage() {
                             Kontakt aufnehmen
                         </span>
                         <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
-                            Sprechen wir drueber.
+                            Sprechen wir darüber.
                         </h1>
                         <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
-                            Ob Demo, Beratung oder technische Fragen — wir sind fuer Sie da.
+                            Ob Demo, Beratung oder technische Fragen — wir sind für Sie da.
                             Melden Sie sich und wir antworten innerhalb eines Werktags.
                         </p>
                     </div>

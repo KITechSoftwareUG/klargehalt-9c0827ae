@@ -5,8 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-    title: 'Ueber uns',
-    description: 'Das Team hinter KlarGehalt. Unsere Mission: Entgelttransparenz fuer jedes Unternehmen zugaenglich machen.',
+    title: 'Über uns',
+    description: 'Das Team hinter KlarGehalt. Unsere Mission: Entgelttransparenz für jedes Unternehmen zugänglich machen.',
 };
 
 const values = [
@@ -16,21 +16,21 @@ const values = [
     },
     {
         title: 'Datenschutz ist kein Feature',
-        desc: 'Datenschutz ist eine Grundvoraussetzung. Wir haben KlarGehalt von Tag eins fuer die DSGVO gebaut — nicht nachtraeglich angepasst.',
+        desc: 'Datenschutz ist eine Grundvoraussetzung. Wir haben KlarGehalt von Tag eins für die DSGVO gebaut — nicht nachträglich angepasst.',
     },
     {
         title: 'Einfachheit gewinnt',
         desc: 'Compliance-Software muss nicht kompliziert sein. Wenn eine HR-Managerin das Tool nicht in 30 Minuten versteht, haben wir versagt.',
     },
     {
-        title: 'Substanz vor Oberflaeche',
+        title: 'Substanz vor Oberfläche',
         desc: 'Wir investieren in Sicherheit, Mandantentrennung und saubere Architektur. Nicht in Hochglanz-Demos, die in der Praxis nicht funktionieren.',
     },
 ];
 
 const milestones = [
-    { year: '2024', event: 'Idee', desc: 'Erkenntnis: Es gibt kein gutes Tool fuer die EU-Entgelttransparenzrichtlinie im deutschen Markt. Excel und Beratung skalieren nicht.' },
-    { year: '2025', event: 'Entwicklungsstart', desc: 'Architektur, Security-Konzept, erste Module. Fokus auf Mandantentrennung und DSGVO-Konformitaet von Anfang an.' },
+    { year: '2024', event: 'Idee', desc: 'Erkenntnis: Es gibt kein gutes Tool für die EU-Entgelttransparenzrichtlinie im deutschen Markt. Excel und Beratung skalieren nicht.' },
+    { year: '2025', event: 'Entwicklungsstart', desc: 'Architektur, Security-Konzept, erste Module. Fokus auf Mandantentrennung und DSGVO-Konformität von Anfang an.' },
     { year: '2026', event: 'Launch', desc: 'KlarGehalt geht live — rechtzeitig vor der Umsetzungsfrist im Juni 2026. Erste Kunden im Onboarding.' },
 ];
 
@@ -46,11 +46,11 @@ export default function UeberUnsPage() {
                         </span>
                         <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                             Wir bauen das Tool,<br />
-                            <span className="text-white/40">das wir selbst gebraucht haetten.</span>
+                            <span className="text-white/40">das wir selbst gebraucht hätten.</span>
                         </h1>
                         <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
                             KlarGehalt entsteht aus einer einfachen Beobachtung: Die EU-Entgelttransparenzrichtlinie
-                            kommt, aber es gibt kein gutes Tool dafuer. Wir aendern das.
+                            kommt, aber es gibt kein gutes Tool dafür. Wir ändern das.
                         </p>
                     </div>
                 </div>
@@ -68,7 +68,7 @@ export default function UeberUnsPage() {
                             <div className="space-y-4 text-sm text-slate-500 leading-relaxed">
                                 <p>
                                     <strong className="text-[#071423]">Entgelttransparenz darf kein Luxus sein.</strong> Grosse Konzerne
-                                    koennen sich Beratungshaeuser und Custom-Entwicklungen leisten. Mittelstaendler nicht.
+                                    können sich Beratungshäuser und Custom-Entwicklungen leisten. Mittelständler nicht.
                                 </p>
                                 <p>
                                     Wir glauben, dass jedes Unternehmen — ob 50 oder 5.000 Mitarbeiter — Zugang
@@ -76,8 +76,8 @@ export default function UeberUnsPage() {
                                     Ohne monatelanges Implementierungsprojekt. Ohne sechsstelliges Budget.
                                 </p>
                                 <p>
-                                    KlarGehalt ist Software, keine Beratung. Das heisst: Sie koennen sofort starten,
-                                    Ihre Daten gehoeren Ihnen, und Sie sind nicht von externen Dienstleistern abhaengig.
+                                    KlarGehalt ist Software, keine Beratung. Das heißt: Sie können sofort starten,
+                                    Ihre Daten gehören Ihnen, und Sie sind nicht von externen Dienstleistern abhängig.
                                 </p>
                             </div>
                         </div>
@@ -158,9 +158,9 @@ export default function UeberUnsPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
-                            { name: 'Gruender & Entwicklung', desc: 'Architektur, Backend, Security. Verantwortlich fuer die technische Vision und Umsetzung.' },
+                            { name: 'Gründer & Entwicklung', desc: 'Architektur, Backend, Security. Verantwortlich für die technische Vision und Umsetzung.' },
                             { name: 'Product & UX', desc: 'Nutzererfahrung, Interviews, Feature-Priorisierung. Stellt sicher, dass das Tool im Alltag funktioniert.' },
-                            { name: 'Compliance & Recht', desc: 'EU-Richtlinie, DSGVO, Arbeitsrecht. Uebersetzt juristische Anforderungen in Produktfeatures.' },
+                            { name: 'Compliance & Recht', desc: 'EU-Richtlinie, DSGVO, Arbeitsrecht. Übersetzt juristische Anforderungen in Produktfeatures.' },
                         ].map((member) => (
                             <div key={member.name} className="bg-white rounded-xl border border-slate-200 p-6">
                                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">

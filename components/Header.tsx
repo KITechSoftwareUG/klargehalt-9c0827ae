@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getMarketingUrl } from '@/utils/url';
+import { getMarketingUrl, getAppUrl } from '@/utils/url';
 
 const navItems = [
   {
@@ -140,7 +140,7 @@ export default function Header() {
           {/* Desktop Auth */}
           <div className="hidden lg:flex items-center gap-3">
             <Link
-              href={getMarketingUrl('/kontakt')}
+              href={getAppUrl('/sign-in')}
               className="px-5 py-2 rounded-full text-sm font-medium text-[#071423] bg-white hover:bg-white/90 transition-colors cursor-pointer"
             >
               Login
@@ -151,7 +151,7 @@ export default function Header() {
           <button
             className="lg:hidden p-2 text-white/70 hover:text-white transition-colors cursor-pointer"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? 'Menu schliessen' : 'Menu oeffnen'}
+            aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -192,7 +192,7 @@ export default function Header() {
             </nav>
             <div className="pt-4 mt-2 border-t border-white/10">
               <Link
-                href={getMarketingUrl('/kontakt')}
+                href={getAppUrl('/sign-in')}
                 onClick={() => setMenuOpen(false)}
                 className="block text-center px-5 py-2.5 rounded-full text-sm font-medium text-[#071423] bg-white hover:bg-white/90 transition-colors cursor-pointer"
               >

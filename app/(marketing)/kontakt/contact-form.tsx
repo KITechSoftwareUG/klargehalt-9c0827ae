@@ -21,7 +21,7 @@ export default function ContactForm() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-[#071423]">kontakt@klargehalt.de</p>
-                                        <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">Fuer allgemeine Anfragen und Demos</p>
+                                        <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">Für allgemeine Anfragen und Demos</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
@@ -60,7 +60,7 @@ export default function ContactForm() {
                             <div className="space-y-4">
                                 {[
                                     { step: '1', text: 'Wir melden uns innerhalb eines Werktags per E-Mail.' },
-                                    { step: '2', text: 'Gemeinsam finden wir einen Termin fuer eine 20-Minuten Demo.' },
+                                    { step: '2', text: 'Gemeinsam finden wir einen Termin für eine 20-Minuten Demo.' },
                                     { step: '3', text: 'Sie sehen KlarGehalt live — mit Ihren Fragen und Anforderungen.' },
                                     { step: '4', text: 'Wenn es passt, richten wir Ihren Testzugang ein.' },
                                 ].map((s) => (
@@ -101,7 +101,7 @@ export default function ContactForm() {
                                 </div>
                                 <FormField label="Ihre Rolle" id="role" placeholder="z.B. HR-Leitung, Geschaeftsfuehrung" />
                                 <div>
-                                    <label htmlFor="interest" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Wofuer interessieren Sie sich?</label>
+                                    <label htmlFor="interest" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Wofür interessieren Sie sich?</label>
                                     <select id="interest" className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all cursor-pointer">
                                         <option value="">Bitte waehlen</option>
                                         <option value="demo">Live-Demo</option>

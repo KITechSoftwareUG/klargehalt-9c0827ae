@@ -5,30 +5,30 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'Sicherheit & Datenschutz',
-    description: 'Wie KlarGehalt Gehaltsdaten schuetzt: AES-256, Mandantentrennung, EU-Hosting in Frankfurt, DSGVO-Konformitaet und Audit-Trail.',
+    description: 'Wie KlarGehalt Gehaltsdaten schützt: AES-256, Mandantentrennung, EU-Hosting in Frankfurt, DSGVO-Konformität und Audit-Trail.',
 };
 
 const layers = [
     {
-        title: 'Verschluesselung',
+        title: 'Verschlüsselung',
         items: [
-            { label: 'In Transit', value: 'TLS 1.3 fuer alle Verbindungen. Keine Ausnahmen. HSTS mit Preloading.' },
+            { label: 'In Transit', value: 'TLS 1.3 für alle Verbindungen. Keine Ausnahmen. HSTS mit Preloading.' },
             { label: 'At Rest', value: 'AES-256 auf Datenbankebene. Gehaltsdaten sind auch bei physischem Zugriff unlesbar.' },
-            { label: 'Schluessel-Management', value: 'Automatische Schluesselrotation. Schluessel werden getrennt von Daten gespeichert.' },
+            { label: 'Schlüssel-Management', value: 'Automatische Schlüsselrotation. Schlüssel werden getrennt von Daten gespeichert.' },
         ],
     },
     {
         title: 'Mandantentrennung',
         items: [
-            { label: 'Row Level Security', value: 'Jede Datenbankabfrage wird auf Ebene der PostgreSQL-Engine gefiltert. Kein Tenant kann Daten eines anderen sehen — unabhaengig vom Anwendungscode.' },
-            { label: 'Organization ID', value: 'Jede Zeile in jeder Tabelle ist einer Organisation zugeordnet. Queries ohne gueltige Organization-ID erhalten keine Daten.' },
-            { label: 'Kein Shared-Schema-Risiko', value: 'Die Trennung liegt nicht im Anwendungscode (wo Bugs moeglich sind), sondern in der Datenbank selbst.' },
+            { label: 'Row Level Security', value: 'Jede Datenbankabfrage wird auf Ebene der PostgreSQL-Engine gefiltert. Kein Tenant kann Daten eines anderen sehen — unabhängig vom Anwendungscode.' },
+            { label: 'Organization ID', value: 'Jede Zeile in jeder Tabelle ist einer Organisation zugeordnet. Queries ohne gültige Organization-ID erhalten keine Daten.' },
+            { label: 'Kein Shared-Schema-Risiko', value: 'Die Trennung liegt nicht im Anwendungscode (wo Bugs möglich sind), sondern in der Datenbank selbst.' },
         ],
     },
     {
         title: 'Authentifizierung & Zugriff',
         items: [
-            { label: 'Multi-Faktor', value: 'Optionale 2FA fuer alle Benutzer. SSO-Integration fuer Enterprise-Kunden.' },
+            { label: 'Multi-Faktor', value: 'Optionale 2FA für alle Benutzer. SSO-Integration für Enterprise-Kunden.' },
             { label: 'Rollenmodell', value: 'Drei Rollen (Admin, HR-Manager, Mitarbeiter) mit klar definierten Rechten. Durchgesetzt auf Datenbankebene.' },
             { label: 'Session-Management', value: 'Automatische Session-Invalidierung. Kein persistentes Token-Caching im Browser.' },
         ],
@@ -37,19 +37,19 @@ const layers = [
         title: 'Infrastruktur',
         items: [
             { label: 'Standort', value: 'Frankfurt am Main, Deutschland. Alle Daten bleiben in der EU. Kein US Cloud Act.' },
-            { label: 'Backup', value: 'Taegliche automatische Backups mit Point-in-Time Recovery. Getrennte Backup-Infrastruktur.' },
-            { label: 'Monitoring', value: 'Echtzeit-Ueberwachung aller Systeme. Automatische Alarmierung bei Anomalien.' },
+            { label: 'Backup', value: 'Tägliche automatische Backups mit Point-in-Time Recovery. Getrennte Backup-Infrastruktur.' },
+            { label: 'Monitoring', value: 'Echtzeit-Überwachung aller Systeme. Automatische Alarmierung bei Anomalien.' },
         ],
     },
 ];
 
 const dsgvoArticles = [
-    { article: 'Art. 5', title: 'Grundsaetze', desc: 'Datenminimierung, Zweckbindung und Speicherbegrenzung sind in der Architektur verankert, nicht nur in Richtlinien.' },
-    { article: 'Art. 6', title: 'Rechtsgrundlage', desc: 'Verarbeitung auf Basis des berechtigten Interesses (Compliance-Pflicht) und Vertragsdurchfuehrung.' },
-    { article: 'Art. 15', title: 'Auskunftsrecht', desc: 'Mitarbeiter koennen ihre Daten einsehen. Automatisierte Auskunftsfunktion im Self-Service Portal.' },
-    { article: 'Art. 17', title: 'Recht auf Loeschung', desc: 'Datenloesch-Workflows sind implementiert. Aufbewahrungsfristen werden automatisch ueberwacht.' },
-    { article: 'Art. 25', title: 'Privacy by Design', desc: 'Datenschutz ist in die Architektur eingebaut — nicht nachtraeglich ergaenzt.' },
-    { article: 'Art. 32', title: 'Technische Massnahmen', desc: 'Verschluesselung, Zugriffskontrolle und regelmaessige Sicherheitsueberpruefungen.' },
+    { article: 'Art. 5', title: 'Grundsätze', desc: 'Datenminimierung, Zweckbindung und Speicherbegrenzung sind in der Architektur verankert, nicht nur in Richtlinien.' },
+    { article: 'Art. 6', title: 'Rechtsgrundlage', desc: 'Verarbeitung auf Basis des berechtigten Interesses (Compliance-Pflicht) und Vertragsdurchführung.' },
+    { article: 'Art. 15', title: 'Auskunftsrecht', desc: 'Mitarbeiter können ihre Daten einsehen. Automatisierte Auskunftsfunktion im Self-Service Portal.' },
+    { article: 'Art. 17', title: 'Recht auf Löschung', desc: 'Datenlösch-Workflows sind implementiert. Aufbewahrungsfristen werden automatisch ueberwacht.' },
+    { article: 'Art. 25', title: 'Privacy by Design', desc: 'Datenschutz ist in die Architektur eingebaut — nicht nachträglich ergaenzt.' },
+    { article: 'Art. 32', title: 'Technische Maßnahmen', desc: 'Verschlüsselung, Zugriffskontrolle und regelmäßige Sicherheitsüberprüfungen.' },
 ];
 
 export default function SicherheitPage() {
@@ -69,12 +69,12 @@ export default function SicherheitPage() {
                             </h1>
                             <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
                                 Keine Marketing-Versprechen. Hier steht, was wir technisch tun,
-                                um Ihre Verguetungsdaten zu schuetzen.
+                                um Ihre Vergütungsdaten zu schützen.
                             </p>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             {[
-                                { icon: Lock, label: 'AES-256', sub: 'Verschluesselung' },
+                                { icon: Lock, label: 'AES-256', sub: 'Verschlüsselung' },
                                 { icon: Server, label: 'Frankfurt', sub: 'EU-Hosting' },
                                 { icon: Shield, label: 'RLS', sub: 'Mandantentrennung' },
                             ].map((badge) => (
@@ -116,10 +116,10 @@ export default function SicherheitPage() {
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
                     <div className="max-w-2xl mb-14">
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
-                            DSGVO-Konformitaet im Detail.
+                            DSGVO-Konformität im Detail.
                         </h2>
                         <p className="text-sm text-slate-400 leading-relaxed">
-                            KlarGehalt wurde von Anfang an fuer die DSGVO gebaut.
+                            KlarGehalt wurde von Anfang an für die DSGVO gebaut.
                             Hier ist, welche Artikel wir wie abdecken.
                         </p>
                     </div>
@@ -145,8 +145,8 @@ export default function SicherheitPage() {
                         </h2>
                         <div className="space-y-0">
                             {[
-                                { step: '1', label: 'Authentifizierung', desc: 'Login ueber unseren Auth-Server (EU-gehostet). Multi-Faktor optional. JWT-Token mit Organisation-ID.' },
-                                { step: '2', label: 'Autorisierung', desc: 'Jede Anfrage wird gegen das Rollenmodell geprueft. Nur berechtigte Rollen erhalten Zugriff.' },
+                                { step: '1', label: 'Authentifizierung', desc: 'Login über unseren Auth-Server (EU-gehostet). Multi-Faktor optional. JWT-Token mit Organisation-ID.' },
+                                { step: '2', label: 'Autorisierung', desc: 'Jede Anfrage wird gegen das Rollenmodell geprüft. Nur berechtigte Rollen erhalten Zugriff.' },
                                 { step: '3', label: 'Datenbank-Ebene', desc: 'Row Level Security filtert automatisch nach Organisation. Kein Code-Bug kann diese Schicht umgehen.' },
                                 { step: '4', label: 'Antwort', desc: 'Nur die Daten, die der Benutzer sehen darf. Verschluesselt uebertragen. Kein Caching sensibler Daten.' },
                             ].map((s) => (
