@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -173,17 +174,55 @@ export default function UeberUnsPage() {
                 </div>
             </section>
 
+            {/* Karriere */}
+            <section className="relative bg-[#51398e] py-20 lg:py-28 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#51398e] via-[#51398e] to-[#946df7]/30" />
+                <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                        <div>
+                            <p className="text-[#e0d4fd] text-sm font-semibold tracking-wide uppercase mb-3">
+                                Karriere
+                            </p>
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+                                Neue Rolle?
+                                <br />Take it, and
+                                <br />make it.
+                            </h2>
+                            <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[44ch]">
+                                Wir suchen Menschen, die mit uns die Zukunft der Entgelttransparenz gestalten.
+                                Faire Bezahlung fängt bei uns selbst an.
+                            </p>
+                            <Link
+                                href="/kontakt"
+                                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[#51398e] hover:bg-white/90 transition-colors cursor-pointer"
+                            >
+                                Offene Stellen ansehen <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                        <div className="relative rounded-2xl overflow-hidden aspect-[4/3]">
+                            <Image
+                                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80"
+                                alt="Team arbeitet zusammen"
+                                fill
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#51398e]/40 to-transparent" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#071423]">
+            <section className="py-20 lg:py-24 bg-white">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
                         Lernen Sie uns kennen.
                     </h2>
-                    <p className="text-sm text-slate-400 mb-8 max-w-[45ch] mx-auto">
-                        Wir freuen uns, von Ihnen zu hoeren — ob als potenzieller Kunde, Partner oder einfach Interessierter.
+                    <p className="text-sm text-[#535a6b] mb-8 max-w-[45ch] mx-auto">
+                        Wir freuen uns, von Ihnen zu hören — ob als potenzieller Kunde, Partner oder einfach Interessierter.
                     </p>
                     <Link href="/kontakt">
-                        <Button className="bg-white text-[#071423] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                        <Button className="bg-[#071423] text-white hover:bg-[#0d1f33] h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
                             Kontakt aufnehmen <ArrowRight className="w-4 h-4" />
                         </Button>
                     </Link>

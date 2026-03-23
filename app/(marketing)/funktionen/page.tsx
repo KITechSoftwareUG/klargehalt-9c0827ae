@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Building2, Users, Briefcase, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+
+const partners = [
+    { name: 'SAP', icon: Building2 },
+    { name: 'Personio', icon: Users },
+    { name: 'Workday', icon: Briefcase },
+    { name: 'DATEV', icon: TrendingUp },
+];
 
 export const metadata: Metadata = {
     title: 'Funktionen',
@@ -169,8 +176,41 @@ export default function FunktionenPage() {
                 </div>
             </section>
 
+            {/* Integrationen */}
+            <section className="bg-[#071423] py-20 lg:py-28">
+                <div className="max-w-7xl mx-auto px-5 sm:px-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                        <div>
+                            <p className="text-[var(--ep-teal)] text-sm font-semibold tracking-wide uppercase mb-3">
+                                Integrationen
+                            </p>
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+                                Die klargehalt
+                                <br />Plattform geht auch
+                                <br />digital.
+                            </h2>
+                            <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[48ch]">
+                                Nahtlose Integration in Ihre bestehende HR-Landschaft.
+                                Verbinden Sie klargehalt mit den Tools, die Sie bereits nutzen.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {partners.map((p) => (
+                                <div
+                                    key={p.name}
+                                    className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-colors"
+                                >
+                                    <p.icon className="w-8 h-8 text-white/60" />
+                                    <p className="text-sm font-medium text-white/80">{p.name}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#071423]">
+            <section className="py-20 lg:py-24 bg-[#f9f9f9]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
                         Alle Funktionen live erleben.
