@@ -9,7 +9,7 @@ const MARKETING_URL = `https://${ROOT_DOMAIN}`;
 export const getAppUrl = (path: string = '') => {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
-    if (typeof window === 'undefined') return cleanPath;
+    if (typeof window === 'undefined') return `${APP_URL}${cleanPath}`;
     if (process.env.NODE_ENV === 'development' && !window.location.hostname.includes(ROOT_DOMAIN)) {
         return cleanPath;
     }
