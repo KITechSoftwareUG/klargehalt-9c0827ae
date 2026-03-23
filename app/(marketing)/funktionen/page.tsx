@@ -8,6 +8,15 @@ export const metadata: Metadata = {
     description: 'Alle Funktionen von KlarGehalt: Gehaltsstrukturen, Pay-Gap Analyse, Rollenbasierte Zugriffe, Mitarbeiter-Auskunft, Audit-Trail und EU-Hosting.',
 };
 
+const moduleColors = [
+    { accent: 'var(--ep-teal)', bg: 'var(--ep-teal-light)', text: 'var(--ep-teal-dark)' },
+    { accent: 'var(--ep-purple)', bg: 'var(--ep-purple-light)', text: 'var(--ep-purple-dark)' },
+    { accent: 'var(--ep-yellow)', bg: 'var(--ep-yellow-light)', text: 'var(--ep-yellow-dark)' },
+    { accent: 'var(--ep-teal)', bg: 'var(--ep-teal-light)', text: 'var(--ep-teal-dark)' },
+    { accent: 'var(--ep-purple)', bg: 'var(--ep-purple-light)', text: 'var(--ep-purple-dark)' },
+    { accent: 'var(--ep-yellow)', bg: 'var(--ep-yellow-light)', text: 'var(--ep-yellow-dark)' },
+];
+
 const modules = [
     {
         number: '01',
@@ -93,74 +102,84 @@ export default function FunktionenPage() {
     return (
         <>
             {/* Hero */}
-            <section className="pt-[72px] bg-white">
+            <section className="pt-[72px] bg-[#071423]">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 lg:pt-36 pb-16">
                     <div className="max-w-3xl">
-                        <p className="text-xs font-mono font-bold text-slate-400 mb-4">FUNKTIONEN</p>
-                        <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-[#1E293B] tracking-tight leading-[1.1] mb-6">
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[var(--ep-teal)]/20 text-[var(--ep-teal)] mb-5">
+                            6 Module
+                        </span>
+                        <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                             Sechs Module. Ein Ziel:<br />
-                            <span className="text-slate-400">Entgelttransparenz ohne Aufwand.</span>
+                            <span className="text-white/40">Entgelttransparenz ohne Aufwand.</span>
                         </h1>
-                        <p className="text-base lg:text-lg text-slate-500 leading-relaxed max-w-[55ch]">
+                        <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
                             KlarGehalt ist kein generisches HR-Tool. Jedes Modul wurde spezifisch fuer die
                             Anforderungen der EU-Entgelttransparenzrichtlinie 2023/970 entwickelt.
                         </p>
                     </div>
                 </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-24 bg-gradient-to-b from-[#071423] to-white" />
             </section>
 
             {/* Modules */}
             <section className="py-20 lg:py-28">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 space-y-20 lg:space-y-28">
-                    {modules.map((m, i) => (
+                    {modules.map((m, i) => {
+                        const color = moduleColors[i];
+                        return (
                         <div
                             key={m.number}
-                            className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start ${
-                                i % 2 === 1 ? 'lg:direction-rtl' : ''
-                            }`}
+                            className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start`}
                         >
                             <div className={i % 2 === 1 ? 'lg:order-2' : ''}>
-                                <span className="text-xs font-mono font-bold text-slate-300 mb-3 block">{m.number}</span>
-                                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-2">
+                                <span
+                                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-sm font-bold mb-4"
+                                    style={{ backgroundColor: color.bg, color: color.text }}
+                                >
+                                    {m.number}
+                                </span>
+                                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-2">
                                     {m.title}
                                 </h2>
-                                <p className="text-sm font-medium text-slate-400 mb-5">{m.subtitle}</p>
-                                <p className="text-sm text-slate-500 leading-relaxed mb-8">{m.description}</p>
+                                <p className="text-sm font-medium text-[var(--ep-gray-3)] mb-5">{m.subtitle}</p>
+                                <p className="text-sm text-[var(--ep-gray-4)] leading-relaxed mb-8">{m.description}</p>
 
                                 <ul className="space-y-2.5">
                                     {m.capabilities.map((c) => (
                                         <li key={c} className="flex items-start gap-2.5">
-                                            <Check className="w-4 h-4 text-slate-300 flex-shrink-0 mt-0.5" />
-                                            <span className="text-sm text-slate-600">{c}</span>
+                                            <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: color.accent }} />
+                                            <span className="text-sm text-[var(--ep-gray-4)]">{c}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
 
-                            {/* Placeholder for future screenshots */}
-                            <div className={`bg-slate-50 rounded-2xl border border-slate-200 aspect-[4/3] flex items-center justify-center ${i % 2 === 1 ? 'lg:order-1' : ''}`}>
+                            <div
+                                className={`rounded-2xl aspect-[4/3] flex items-center justify-center relative overflow-hidden ${i % 2 === 1 ? 'lg:order-1' : ''}`}
+                                style={{ backgroundColor: color.bg }}
+                            >
                                 <div className="text-center">
-                                    <span className="text-4xl font-extrabold text-slate-200">{m.number}</span>
-                                    <p className="text-xs text-slate-300 mt-2">Screenshot folgt</p>
+                                    <span className="text-6xl font-extrabold" style={{ color: color.accent, opacity: 0.3 }}>{m.number}</span>
+                                    <p className="text-xs mt-2" style={{ color: color.text }}>Screenshot folgt</p>
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </section>
 
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#1E293B]">
+            <section className="py-20 lg:py-24 bg-[#071423]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
                         Alle Funktionen live erleben.
                     </h2>
-                    <p className="text-sm text-slate-400 mb-8 max-w-[45ch] mx-auto">
+                    <p className="text-sm text-white/50 mb-8 max-w-[45ch] mx-auto">
                         Wir zeigen Ihnen KlarGehalt mit Ihren eigenen Daten. 20 Minuten, unverbindlich.
                     </p>
                     <Link href="/kontakt">
-                        <Button className="bg-white text-[#1E293B] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                        <Button className="bg-white text-[#071423] hover:bg-white/90 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
                             Demo anfragen <ArrowRight className="w-4 h-4" />
                         </Button>
                     </Link>

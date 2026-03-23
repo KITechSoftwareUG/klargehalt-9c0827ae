@@ -18,25 +18,23 @@ import {
   Lock,
   Info
 } from 'lucide-react';
-import { usePayGapStatistics, PayEquityReport, DepartmentStatistic } from '@/hooks/usePayGapStatistics';
+import { usePayGapStatistics, DepartmentStatistic, GenderPayGap } from '@/hooks/usePayGapStatistics';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 
 export function PayGapReportView() {
-  const { 
-    loading, 
-    generatePayEquityReport, 
+  const {
+    loading,
     getDepartmentStatistics,
-    analyzeDeviations 
+    calculateGenderPayGap,
   } = usePayGapStatistics();
   const { hasPermission } = usePermissions();
-  
-  const [report, setReport] = useState<PayEquityReport | null>(null);
+
   const [deptStats, setDeptStats] = useState<DepartmentStatistic[]>([]);
-  const [deviations, setDeviations] = useState<any[]>([]);
-  
-  const canViewReport = hasPermission('reports.pay_gap') || hasPermission('audit.view');
+  const [gapData, setGapData] = useState<GenderPayGap[]>([]);
+
+  const canViewReport = hasPermission('reports.view') || hasPermission('audit.view');
 
   useEffect(() => {
     if (canViewReport) {
@@ -45,15 +43,13 @@ export function PayGapReportView() {
   }, [canViewReport]);
 
   const loadData = async () => {
-    const [reportData, stats, devs] = await Promise.all([
-      generatePayEquityReport(),
+    const [stats, gaps] = await Promise.all([
       getDepartmentStatistics(),
-      analyzeDeviations(20)
+      calculateGenderPayGap(),
     ]);
-    
-    if (reportData) setReport(reportData);
+
     setDeptStats(stats);
-    setDeviations(devs);
+    setGapData(gaps);
   };
 
   const formatCurrency = (value: number | null) => {
@@ -95,7 +91,7 @@ export function PayGapReportView() {
     );
   }
 
-  if (loading && !report) {
+  if (loading && gapData.length === 0) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
@@ -127,7 +123,7 @@ export function PayGapReportView() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Aktualisieren
           </Button>
-          <Button variant="default" size="sm" disabled={!report}>
+          <Button variant="default" size="sm" disabled={gapData.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export PDF
           </Button>
@@ -139,22 +135,21 @@ export function PayGapReportView() {
         <ShieldCheck className="h-4 w-4" />
         <AlertTitle>Datenschutz gewährleistet</AlertTitle>
         <AlertDescription>
-          Alle Werte sind aggregiert mit Mindestgruppengröße {report?.anonymization_threshold || 5}. 
+          Alle Werte sind aggregiert mit Mindestgruppengröße 5.
           Kleine Gruppen werden automatisch unterdrückt um Rückschlüsse auf Einzelpersonen zu verhindern.
         </AlertDescription>
       </Alert>
 
-      {/* Kritische Warnungen */}
-      {report?.critical_warnings && report.critical_warnings.length > 0 && (
+      {/* Breach warnings */}
+      {gapData.filter(g => g.gap_status === 'breach').length > 0 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Kritische Abweichungen erkannt</AlertTitle>
+          <AlertTitle>Handlungsbedarf erkannt</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 space-y-1">
-              {report.critical_warnings.map((warning, i) => (
+              {gapData.filter(g => g.gap_status === 'breach').map((g, i) => (
                 <li key={i} className="text-sm">
-                  <strong>{warning.profile}</strong> ({warning.level}): 
-                  {warning.deviation}% Abweichung - {warning.recommendation}
+                  <strong>{g.scope_label || g.scope}</strong>: {g.mean_gap_pct?.toFixed(1)}% Mean Gap
                 </li>
               ))}
             </ul>
@@ -168,52 +163,26 @@ export function PayGapReportView() {
           <CardHeader className="pb-2">
             <CardDescription>Gesamter Gender Pay Gap</CardDescription>
             <CardTitle className="flex items-center gap-2 text-3xl">
-              {report?.overall_gap.is_reportable ? (
+              {gapData.length > 0 ? (
                 <>
-                  {getGapIndicator(report.overall_gap.gap_percent)}
-                  {report.overall_gap.gap_percent?.toFixed(1)}%
+                  {getGapIndicator(gapData[0]?.mean_gap_pct ?? null)}
+                  {gapData[0]?.mean_gap_pct?.toFixed(1) ?? '—'}%
                 </>
               ) : (
-                <span className="text-muted-foreground text-lg">Nicht berechenbar</span>
+                <span className="text-muted-foreground text-lg">Keine Snapshots</span>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {report?.overall_gap.is_reportable && (
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Männer (Median)</span>
-                  <span>{formatCurrency(report.overall_gap.male_median)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Frauen (Median)</span>
-                  <span>{formatCurrency(report.overall_gap.female_median)}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
         </Card>
 
         <Card className="border-border/50">
           <CardHeader className="pb-2">
-            <CardDescription>Erfasste Mitarbeiter</CardDescription>
+            <CardDescription>Erfasste Mitarbeiter (Abteilungen)</CardDescription>
             <CardTitle className="flex items-center gap-2 text-3xl">
               <Users className="h-6 w-6 text-primary" />
-              {(report?.overall_gap.male_count || 0) + (report?.overall_gap.female_count || 0)}
+              {deptStats.reduce((sum, d) => sum + d.total_employees, 0)}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Männer</span>
-                <span>{report?.overall_gap.male_count || '—'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Frauen</span>
-                <span>{report?.overall_gap.female_count || '—'}</span>
-              </div>
-            </div>
-          </CardContent>
         </Card>
 
         <Card className="border-border/50">
@@ -221,12 +190,12 @@ export function PayGapReportView() {
             <CardDescription>Abteilungen analysiert</CardDescription>
             <CardTitle className="flex items-center gap-2 text-3xl">
               <Building2 className="h-6 w-6 text-primary" />
-              {report?.by_department.filter(d => d.is_reportable).length || 0}
+              {deptStats.filter(d => !d.is_suppressed).length}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground">
-              von {report?.by_department.length || 0} Abteilungen mit 
+              von {deptStats.length} Abteilungen mit
               ausreichender Gruppengröße
             </div>
           </CardContent>
@@ -235,57 +204,53 @@ export function PayGapReportView() {
 
       {/* Tabs für Details */}
       <Tabs defaultValue="departments" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="departments">Nach Abteilung</TabsTrigger>
-          <TabsTrigger value="levels">Nach Level</TabsTrigger>
-          <TabsTrigger value="deviations">Abweichungen</TabsTrigger>
+          <TabsTrigger value="snapshots">Pay Gap Snapshots</TabsTrigger>
         </TabsList>
 
         <TabsContent value="departments" className="mt-4">
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle className="text-lg">Pay Gap nach Abteilung</CardTitle>
+              <CardTitle className="text-lg">Mitarbeiter nach Abteilung</CardTitle>
               <CardDescription>
-                Vergleich der Median-Gehälter zwischen Geschlechtern pro Abteilung
+                Geschlechterverteilung pro Abteilung
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {report?.by_department.length === 0 ? (
+              {deptStats.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Info className="h-8 w-8 mx-auto mb-2" />
                   Keine Abteilungsdaten verfügbar
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {report?.by_department.map((dept, i) => (
+                  {deptStats.map((dept, i) => (
                     <div key={i} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{dept.department}</span>
-                        {dept.is_reportable ? (
-                          <Badge className={getGapColor(dept.gap_percent)}>
-                            {dept.gap_percent?.toFixed(1)}% Gap
-                          </Badge>
-                        ) : (
+                        <span className="font-medium">{dept.department_name}</span>
+                        {dept.is_suppressed ? (
                           <Badge variant="outline" className="text-muted-foreground">
                             <Lock className="h-3 w-3 mr-1" />
                             Unterdrückt
                           </Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            {dept.total_employees} MA
+                          </Badge>
                         )}
                       </div>
-                      {dept.is_reportable && dept.gap_percent !== null && (
+                      {!dept.is_suppressed && (
                         <div className="flex items-center gap-4">
-                          <Progress 
-                            value={Math.min(100, Math.abs(dept.gap_percent) * 5)} 
+                          <Progress
+                            value={dept.total_employees > 0 ? (dept.female_count / dept.total_employees) * 100 : 0}
                             className="h-2 flex-1"
                           />
                           <div className="flex gap-4 text-xs text-muted-foreground">
-                            <span>♂ {formatCurrency(dept.male_median)}</span>
-                            <span>♀ {formatCurrency(dept.female_median)}</span>
+                            <span>♂ {dept.male_count}</span>
+                            <span>♀ {dept.female_count}</span>
                           </div>
                         </div>
-                      )}
-                      {!dept.is_reportable && (
-                        <p className="text-xs text-muted-foreground">{dept.reason}</p>
                       )}
                     </div>
                   ))}
@@ -295,94 +260,49 @@ export function PayGapReportView() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="levels" className="mt-4">
+        <TabsContent value="snapshots" className="mt-4">
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle className="text-lg">Pay Gap nach Karrierestufe</CardTitle>
+              <CardTitle className="text-lg">Pay Gap Snapshots</CardTitle>
               <CardDescription>
-                Analyse über alle Job-Level hinweg
+                Berechnete Pay-Gap-Analysen aus dem Snapshot-System
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {report?.by_level.length === 0 ? (
+              {gapData.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Info className="h-8 w-8 mx-auto mb-2" />
-                  Keine Level-Daten verfügbar
+                  Keine Snapshots vorhanden. Starten Sie eine Pay-Gap-Analyse.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {report?.by_level.map((level, i) => (
+                  {gapData.map((gap, i) => (
                     <div key={i} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{level.level}</span>
-                        {level.gap_data?.is_reportable ? (
-                          <Badge className={getGapColor(level.gap_data.gap_percent)}>
-                            {level.gap_data.gap_percent?.toFixed(1)}% Gap
-                          </Badge>
-                        ) : (
+                        <span className="font-medium">{gap.scope_label || gap.scope}</span>
+                        {gap.is_suppressed ? (
                           <Badge variant="outline" className="text-muted-foreground">
                             <Lock className="h-3 w-3 mr-1" />
                             Unterdrückt
                           </Badge>
+                        ) : (
+                          <Badge className={getGapColor(gap.mean_gap_pct)}>
+                            {gap.mean_gap_pct?.toFixed(1)}% Gap
+                          </Badge>
                         )}
                       </div>
-                      {level.gap_data?.is_reportable && level.gap_data.gap_percent !== null && (
+                      {!gap.is_suppressed && gap.mean_gap_pct !== null && (
                         <div className="flex items-center gap-4">
-                          <Progress 
-                            value={Math.min(100, Math.abs(level.gap_data.gap_percent) * 5)} 
+                          <Progress
+                            value={Math.min(100, Math.abs(gap.mean_gap_pct) * 5)}
                             className="h-2 flex-1"
                           />
                           <div className="flex gap-4 text-xs text-muted-foreground">
-                            <span>♂ {level.gap_data.male_count}</span>
-                            <span>♀ {level.gap_data.female_count}</span>
+                            <span>♂ {gap.male_count}</span>
+                            <span>♀ {gap.female_count}</span>
                           </div>
                         </div>
                       )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="deviations" className="mt-4">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Kritische Abweichungen</CardTitle>
-              <CardDescription>
-                Positionen mit Gehaltsdifferenzen über 20% Schwellenwert
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {deviations.length === 0 ? (
-                <div className="text-center py-8 text-emerald-600">
-                  <ShieldCheck className="h-8 w-8 mx-auto mb-2" />
-                  <p>Keine kritischen Abweichungen gefunden</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {deviations.map((dev, i) => (
-                    <div 
-                      key={i} 
-                      className={`p-3 rounded-lg border ${
-                        dev.is_critical 
-                          ? 'border-destructive/50 bg-destructive/5' 
-                          : 'border-border/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium">{dev.job_profile_title}</p>
-                          <p className="text-sm text-muted-foreground">{dev.job_level_name}</p>
-                        </div>
-                        <Badge variant={dev.is_critical ? 'destructive' : 'secondary'}>
-                          {dev.deviation_percent?.toFixed(1)}%
-                        </Badge>
-                      </div>
-                      <p className="text-sm mt-2 text-muted-foreground">
-                        {dev.recommendation}
-                      </p>
                     </div>
                   ))}
                 </div>
@@ -393,16 +313,13 @@ export function PayGapReportView() {
       </Tabs>
 
       {/* EU Compliance Footer */}
-      {report && (
-        <Card className="border-border/50 bg-muted/30">
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground text-center">
-              {report.eu_compliance_note} • 
-              Generiert am {new Date(report.generated_at).toLocaleString('de-DE')}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-border/50 bg-muted/30">
+        <CardContent className="py-4">
+          <p className="text-xs text-muted-foreground text-center">
+            Analyse gemäß EU-Richtlinie 2023/970 zur Entgelttransparenz
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

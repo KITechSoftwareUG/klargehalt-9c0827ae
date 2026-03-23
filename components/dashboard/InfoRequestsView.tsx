@@ -21,7 +21,8 @@ import {
   Calendar,
   Lock
 } from 'lucide-react';
-import { useInfoRequests, REQUEST_TYPES, InfoRequestType, InfoRequest, InfoRequestResponse } from '@/hooks/useInfoRequests';
+import { useInfoRequests, REQUEST_TYPES, InfoRequestType } from '@/hooks/useInfoRequests';
+import type { InfoRequest } from '@/hooks/useInfoRequests';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -45,9 +46,9 @@ const STATUS_CONFIG: Record<string, { color: string; icon: React.ElementType }> 
 };
 
 export function InfoRequestsView() {
-  const { requests, loading, rateLimits, submitRequest, getResponse } = useInfoRequests();
+  const { requests, loading, submitRequest, getResponse } = useInfoRequests();
   const [selectedType, setSelectedType] = useState<InfoRequestType | null>(null);
-  const [responseData, setResponseData] = useState<InfoRequestResponse | null>(null);
+  const [responseData, setResponseData] = useState<InfoRequest | null>(null);
   const [viewingRequest, setViewingRequest] = useState<InfoRequest | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -75,15 +76,15 @@ export function InfoRequestsView() {
     }).format(value);
   };
 
-  const renderResponseContent = (response: InfoRequestResponse) => {
-    const data = response.response_data;
-    
+  const renderResponseContent = (response: InfoRequest) => {
+    const data = response.response_data as Record<string, any> | null;
+
     if (!data) {
       return <p className="text-muted-foreground">Keine Daten verfügbar.</p>;
     }
 
     switch (response.request_type) {
-      case 'salary_band_position':
+      case 'pay_band':
         return (
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -125,7 +126,7 @@ export function InfoRequestsView() {
           </div>
         );
 
-      case 'salary_criteria':
+      case 'avg_pay_category':
         return (
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -167,59 +168,21 @@ export function InfoRequestsView() {
           </div>
         );
 
-      case 'career_progression':
+      case 'gap_explanation':
         return (
           <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-sm text-muted-foreground">Aktuelles Level</p>
-              <p className="font-medium text-lg">{data.current_level}</p>
-            </div>
-            
-            {data.next_levels && data.next_levels.length > 0 ? (
-              <div className="space-y-3">
-                <h4 className="font-medium">Nächste Karrierestufen:</h4>
-                {data.next_levels.map((level: any, i: number) => (
-                  <div key={i} className="p-4 rounded-lg border border-border/50 bg-muted/30">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{level.name}</span>
-                      {level.pay_band_increase && (
-                        <Badge variant="outline" className="text-emerald-600">
-                          +{formatCurrency(level.pay_band_increase)}
-                        </Badge>
-                      )}
-                    </div>
-                    {level.min_experience && (
-                      <p className="text-sm text-muted-foreground">
-                        Ab {level.min_experience} Jahren Erfahrung
-                      </p>
-                    )}
-                    {level.description && (
-                      <p className="text-sm mt-1">{level.description}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">Keine weiteren Levels definiert.</p>
-            )}
-          </div>
-        );
-
-      case 'pay_gap_category':
-        return (
-          <div className="space-y-4">
-            {data.is_reportable ? (
+            {data.gap_percent != null ? (
               <>
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <p className="text-sm text-muted-foreground mb-1">Gender Pay Gap in Ihrer Kategorie</p>
                   <p className="text-3xl font-bold">
-                    {data.gap_percent?.toFixed(1)}%
+                    {Number(data.gap_percent).toFixed(1)}%
                   </p>
                 </div>
                 <Alert>
                   <ShieldCheck className="h-4 w-4" />
                   <AlertDescription>
-                    Dieser Wert basiert auf anonymisierten, aggregierten Daten und entspricht 
+                    Dieser Wert basiert auf anonymisierten, aggregierten Daten und entspricht
                     den Anforderungen der EU-Richtlinie 2023/970.
                   </AlertDescription>
                 </Alert>
@@ -229,47 +192,9 @@ export function InfoRequestsView() {
                 <Lock className="h-4 w-4" />
                 <AlertTitle>Daten nicht verfügbar</AlertTitle>
                 <AlertDescription>
-                  {data.reason || 'Für Ihre Kategorie liegen nicht ausreichend Daten vor, um anonymisierte Statistiken zu erstellen.'}
+                  Für Ihre Kategorie liegen nicht ausreichend Daten vor, um anonymisierte Statistiken zu erstellen.
                 </AlertDescription>
               </Alert>
-            )}
-          </div>
-        );
-
-      case 'qualification_requirements':
-        return (
-          <div className="space-y-4">
-            {data.current_qualifications && (
-              <div className="p-4 rounded-lg bg-muted/50">
-                <h4 className="font-medium mb-2">Aktuelle Anforderungen:</h4>
-                <ul className="space-y-1 text-sm">
-                  {data.current_qualifications.education_level && (
-                    <li>• Bildung: {data.current_qualifications.education_level}</li>
-                  )}
-                  {data.current_qualifications.min_experience && (
-                    <li>• Erfahrung: {data.current_qualifications.min_experience} Jahre</li>
-                  )}
-                </ul>
-              </div>
-            )}
-            
-            {data.next_level_requirements && data.next_level_requirements.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium">Anforderungen für höhere Levels:</h4>
-                {data.next_level_requirements.map((req: any, i: number) => (
-                  <div key={i} className="p-4 rounded-lg border border-border/50">
-                    <p className="font-medium">{req.level_name}</p>
-                    {req.min_experience && (
-                      <p className="text-sm text-muted-foreground">
-                        Mindestens {req.min_experience} Jahre Erfahrung
-                      </p>
-                    )}
-                    {req.typical_qualifications && (
-                      <p className="text-sm mt-1">{req.typical_qualifications}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
             )}
           </div>
         );
@@ -318,8 +243,7 @@ export function InfoRequestsView() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {(Object.entries(REQUEST_TYPES) as [InfoRequestType, typeof REQUEST_TYPES[InfoRequestType]][]).map(([type, config]) => {
           const Icon = ICON_MAP[config.icon] || FileText;
-          const limit = rateLimits[type];
-          const canRequest = !limit || limit.allowed;
+          const canRequest = true; // Rate limiting removed in canonical schema
           
           return (
             <Card 
@@ -332,11 +256,6 @@ export function InfoRequestsView() {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
-                  {limit && (
-                    <Badge variant="outline" className="text-xs">
-                      {limit.current_count}/{limit.max_allowed} genutzt
-                    </Badge>
-                  )}
                 </div>
                 <CardTitle className="text-base mt-3">{config.label}</CardTitle>
               </CardHeader>
@@ -344,11 +263,6 @@ export function InfoRequestsView() {
                 <CardDescription className="text-sm">
                   {config.description}
                 </CardDescription>
-                {!canRequest && limit && (
-                  <p className="text-xs text-destructive mt-2">
-                    Limit erreicht. Reset: {new Date(limit.next_reset).toLocaleDateString('de-DE')}
-                  </p>
-                )}
               </CardContent>
             </Card>
           );
@@ -363,7 +277,13 @@ export function InfoRequestsView() {
             {requests.map(request => {
               const statusConfig = STATUS_CONFIG[request.status] || STATUS_CONFIG.submitted;
               const StatusIcon = statusConfig.icon;
-              
+              const typeConfig = REQUEST_TYPES[request.request_type as InfoRequestType];
+              const statusLabels: Record<string, string> = {
+                pending: 'Ausstehend',
+                fulfilled: 'Beantwortet',
+                declined: 'Abgelehnt',
+              };
+
               return (
                 <Card key={request.id} className="border-border/50">
                   <CardContent className="py-4">
@@ -371,31 +291,31 @@ export function InfoRequestsView() {
                       <div className="flex items-center gap-4">
                         <StatusIcon className="h-5 w-5 text-muted-foreground" />
                         <div>
-                          <p className="font-medium">{request.request_type_label}</p>
+                          <p className="font-medium">{typeConfig?.label || request.request_type}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(request.submitted_at), { addSuffix: true, locale: de })}
+                            {formatDistanceToNow(new Date(request.created_at), { addSuffix: true, locale: de })}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge className={statusConfig.color}>
-                          {request.status_label}
+                          {statusLabels[request.status] || request.status}
                         </Badge>
-                        {request.has_response && (request.status === 'ready' || request.status === 'viewed') && (
-                          <Button 
-                            size="sm" 
-                            variant={request.status === 'ready' ? 'default' : 'outline'}
+                        {request.status === 'fulfilled' && request.response_data && (
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleViewResponse(request)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            {request.status === 'ready' ? 'Antwort ansehen' : 'Erneut ansehen'}
+                            Antwort ansehen
                           </Button>
                         )}
                       </div>
                     </div>
-                    {request.rejection_reason && (
+                    {request.status === 'declined' && (
                       <p className="text-sm text-destructive mt-2">
-                        Abgelehnt: {request.rejection_reason}
+                        Diese Anfrage wurde abgelehnt.
                       </p>
                     )}
                   </CardContent>
@@ -443,9 +363,9 @@ export function InfoRequestsView() {
       <Dialog open={viewingRequest !== null} onOpenChange={() => { setViewingRequest(null); setResponseData(null); }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{responseData?.request_type_label || 'Antwort'}</DialogTitle>
+            <DialogTitle>{responseData?.request_type ? (REQUEST_TYPES[responseData.request_type as InfoRequestType]?.label || 'Antwort') : 'Antwort'}</DialogTitle>
             <DialogDescription>
-              {responseData?.anonymization_note}
+              Alle Werte sind anonymisiert und aggregiert gemäß EU-Richtlinie 2023/970.
             </DialogDescription>
           </DialogHeader>
           <div className="pt-4">
@@ -457,9 +377,9 @@ export function InfoRequestsView() {
               </div>
             )}
           </div>
-          {responseData?.expires_at && (
+          {responseData?.processed_at && (
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Gültig bis: {new Date(responseData.expires_at).toLocaleDateString('de-DE')}
+              Bearbeitet am: {new Date(responseData.processed_at).toLocaleDateString('de-DE')}
             </p>
           )}
         </DialogContent>

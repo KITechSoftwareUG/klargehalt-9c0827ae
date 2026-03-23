@@ -2,25 +2,18 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
+// Canonical audit_logs columns only
 export interface AuditLog {
   id: string;
   organization_id: string;
   user_id: string;
-  user_email: string;
-  user_role: string;
   action: string;
   entity_type: string;
   entity_id: string | null;
-  entity_name: string | null;
-  old_values: any;
-  new_values: any;
-  metadata: any;
-  created_at: string;
-  record_hash: string;
-  previous_hash: string | null;
-  sequence_number: number | null;
+  before_state: unknown;
+  after_state: unknown;
   ip_address: string | null;
-  user_agent: string | null;
+  created_at: string;
 }
 
 export interface AuditStatistics {
@@ -32,21 +25,11 @@ export interface AuditStatistics {
   daily_activity: Array<{ date: string; count: number }>;
 }
 
-export interface ChainVerification {
-  is_valid: boolean;
-  checked_records: number;
-  first_invalid_sequence: number | null;
-  first_invalid_id: string | null;
-  error_message: string | null;
-}
-
 export interface AuditExport {
   export_id: string;
   record_count: number;
   data: {
-    export_id: string;
     exported_at: string;
-    file_hash: string;
     record_count: number;
     records: AuditLog[];
   };
@@ -62,60 +45,59 @@ export function useAuditSystem() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_audit_statistics', {
-        _organization_id: orgId,
-        _days: days
-      });
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('action, entity_type, user_id, created_at')
+        .eq('organization_id', orgId)
+        .gte('created_at', cutoff.toISOString())
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const result = (data as any[])?.[0];
-      return result ? {
-        total_records: result.total_records,
-        records_by_action: result.records_by_action || {},
-        records_by_entity: result.records_by_entity || {},
-        records_by_user: result.records_by_user || {},
-        top_users: result.top_users || {},
-        daily_activity: result.daily_activity || []
-      } : null;
-    } catch (error: any) {
+      const logs = data || [];
+
+      // Client-side aggregation
+      const records_by_action: Record<string, number> = {};
+      const records_by_entity: Record<string, number> = {};
+      const records_by_user: Record<string, number> = {};
+      const daily_map: Record<string, number> = {};
+
+      for (const log of logs) {
+        records_by_action[log.action] = (records_by_action[log.action] || 0) + 1;
+        records_by_entity[log.entity_type] = (records_by_entity[log.entity_type] || 0) + 1;
+        records_by_user[log.user_id] = (records_by_user[log.user_id] || 0) + 1;
+        const day = log.created_at.split('T')[0];
+        daily_map[day] = (daily_map[day] || 0) + 1;
+      }
+
+      // Top users: sort by count descending, take top 10
+      const sortedUsers = Object.entries(records_by_user)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10);
+      const top_users = Object.fromEntries(sortedUsers);
+
+      const daily_activity = Object.entries(daily_map)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count }));
+
+      return {
+        total_records: logs.length,
+        records_by_action,
+        records_by_entity,
+        records_by_user,
+        top_users,
+        daily_activity,
+      };
+    } catch (error: unknown) {
       console.error('Audit statistics error:', error);
       return null;
     } finally {
       setLoading(false);
     }
   }, [isLoaded, user, orgId, supabase]);
-
-  const verifyChain = useCallback(async (
-    fromSequence?: number,
-    toSequence?: number
-  ): Promise<ChainVerification | null> => {
-    if (!isLoaded || !user || !orgId) return null;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('verify_audit_chain', {
-        _organization_id: orgId,
-        _from_sequence: fromSequence || null,
-        _to_sequence: toSequence || null
-      });
-
-      if (error) throw error;
-      const result = (data as any[])?.[0];
-
-      if (result?.is_valid) {
-        toast({ title: 'Integrität bestätigt', description: `${result.checked_records} Einträge erfolgreich verifiziert.` });
-      } else if (result) {
-        toast({ title: 'Integritätsfehler', description: result.error_message || 'Hash-Kette ist inkonsistent.', variant: 'destructive' });
-      }
-      return result as ChainVerification;
-    } catch (error: any) {
-      toast({ title: 'Fehler', description: error.message || 'Verifizierung fehlgeschlagen', variant: 'destructive' });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoaded, user, orgId, supabase, toast]);
 
   const createExport = useCallback(async (
     exportType: 'full' | 'date_range' | 'entity_type',
@@ -129,21 +111,36 @@ export function useAuditSystem() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('create_audit_export', {
-        _export_type: exportType,
-        _format: format,
-        _date_from: dateFrom || null,
-        _date_to: dateTo || null,
-        _entity_types: entityTypes || null,
-        _actions: actions || null
-      });
+      let query = supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false });
 
+      if (dateFrom) query = query.gte('created_at', dateFrom);
+      if (dateTo) query = query.lte('created_at', dateTo);
+      if (entityTypes?.length) query = query.in('entity_type', entityTypes);
+      if (actions?.length) query = query.in('action', actions);
+
+      const { data, error } = await query;
       if (error) throw error;
-      const result = (data as any[])?.[0] as AuditExport;
+
+      const records = (data || []) as AuditLog[];
+      const result: AuditExport = {
+        export_id: crypto.randomUUID(),
+        record_count: records.length,
+        data: {
+          exported_at: new Date().toISOString(),
+          record_count: records.length,
+          records,
+        },
+      };
+
       toast({ title: 'Export erstellt', description: `${result.record_count} Einträge exportiert.` });
       return result;
-    } catch (error: any) {
-      toast({ title: 'Export fehlgeschlagen', description: error.message || 'Export konnte nicht erstellt werden', variant: 'destructive' });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Export konnte nicht erstellt werden';
+      toast({ title: 'Export fehlgeschlagen', description: msg, variant: 'destructive' });
       return null;
     } finally {
       setLoading(false);
@@ -164,10 +161,13 @@ export function useAuditSystem() {
       if (records.length === 0) {
         content = 'Keine Daten';
       } else {
-        const headers = ['Zeitstempel', 'Benutzer', 'Rolle', 'Aktion', 'Entität', 'Name', 'Hash'];
+        const headers = ['Zeitstempel', 'Benutzer-ID', 'Aktion', 'Entitätstyp', 'Entitäts-ID'];
         const rows = records.map(r => [
-          r.created_at, r.user_email, r.user_role, r.action, r.entity_type,
-          r.entity_name || '', r.record_hash?.substring(0, 16) + '...'
+          r.created_at,
+          r.user_id,
+          r.action,
+          r.entity_type,
+          r.entity_id || '',
         ]);
         content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
       }
@@ -186,5 +186,5 @@ export function useAuditSystem() {
     URL.revokeObjectURL(url);
   }, []);
 
-  return { loading, getStatistics, verifyChain, createExport, downloadExport };
+  return { loading, getStatistics, createExport, downloadExport };
 }

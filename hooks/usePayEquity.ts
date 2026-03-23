@@ -1,179 +1,139 @@
 /**
  * Custom Hook: usePayEquity
- * Zentrale Logik für Pay-Equity-Analysen
+ * Pay-Equity-Analysen basierend auf pay_gap_snapshots (kanonisches Schema)
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type {
-    PayGroup,
-    PayGroupStats,
-    EmployeeComparison,
-    ManagementKPIs,
-    HRDashboardFilters,
+  PayGapSnapshot,
+  ManagementKPIs,
+  GapTrendPoint,
+  PayEquityFilters,
 } from '@/lib/types/pay-equity';
-
-const supabase = createClient();
 
 // ============================================================================
 // QUERIES
 // ============================================================================
 
 /**
- * Hole alle PayGroups einer Firma
+ * Hole alle Pay-Gap-Snapshots (latest per scope)
  */
-export function usePayGroups(companyId: string, filters?: HRDashboardFilters) {
-    return useQuery({
-        queryKey: ['pay-groups', companyId, filters],
-        queryFn: async () => {
-            let query = supabase
-                .from('pay_groups')
-                .select(`
-          *,
-          stats:pay_group_stats(*)
-        `)
-                .eq('company_id', companyId)
-                .order('employee_count', { ascending: false });
+export function usePayGapSnapshots(filters?: PayEquityFilters) {
+  const { orgId, supabase, isSignedIn } = useAuth();
 
-            // Filter anwenden
-            if (filters?.job_family) {
-                query = query.eq('job_family', filters.job_family);
-            }
-            if (filters?.job_level) {
-                query = query.eq('job_level', filters.job_level);
-            }
-            if (filters?.location) {
-                query = query.eq('location', filters.location);
-            }
+  return useQuery({
+    queryKey: ['pay-gap-snapshots', orgId, filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('pay_gap_snapshots')
+        .select('*')
+        .eq('organization_id', orgId!)
+        .order('snapshot_date', { ascending: false });
 
-            const { data, error } = await query;
+      if (filters?.scope && filters.scope !== 'company') {
+        query = query.eq('scope', filters.scope);
+      }
+      if (filters?.scope_id) {
+        query = query.eq('scope_id', filters.scope_id);
+      }
+      if (filters?.gap_status && filters.gap_status !== 'all') {
+        query = query.eq('gap_status', filters.gap_status);
+      }
 
-            if (error) throw error;
-
-            // Filter nach Gap-Status (client-side, da in stats-Tabelle)
-            let filteredData = data;
-            if (filters?.gender_gap_status && filters.gender_gap_status !== 'all') {
-                filteredData = data.filter((group: any) =>
-                    group.stats?.[0]?.gender_gap_status === filters.gender_gap_status
-                );
-            }
-
-            return filteredData as (PayGroup & { stats: PayGroupStats[] })[];
-        },
-        enabled: !!companyId,
-    });
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as PayGapSnapshot[];
+    },
+    enabled: !!orgId && isSignedIn,
+  });
 }
 
 /**
- * Hole Vergleichsdaten eines Mitarbeiters
+ * Hole den neuesten Company-weiten Snapshot für KPI-Übersicht
  */
-export function useEmployeeComparison(employeeId: string) {
-    return useQuery({
-        queryKey: ['employee-comparison', employeeId],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('employee_comparisons')
-                .select(`
-          *,
-          pay_group:pay_groups(*),
-          employee:employees(first_name, last_name, current_salary)
-        `)
-                .eq('employee_id', employeeId)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+export function usePayGapOverview() {
+  const { orgId, supabase, isSignedIn } = useAuth();
 
-            if (error) throw error;
-            return data as EmployeeComparison;
-        },
-        enabled: !!employeeId,
-    });
+  return useQuery({
+    queryKey: ['pay-gap-overview', orgId],
+    queryFn: async () => {
+      // Latest company-wide snapshot
+      const { data: companySnapshot, error: companyErr } = await supabase
+        .from('pay_gap_snapshots')
+        .select('*')
+        .eq('organization_id', orgId!)
+        .eq('scope', 'company')
+        .is('scope_id', null)
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (companyErr) throw companyErr;
+
+      // All latest snapshots for breakdown counts
+      const { data: allSnapshots, error: allErr } = await supabase
+        .from('pay_gap_snapshots')
+        .select('gap_status, requires_joint_assessment, male_count, female_count')
+        .eq('organization_id', orgId!)
+        .order('snapshot_date', { ascending: false });
+
+      if (allErr) throw allErr;
+
+      const snapshots = allSnapshots || [];
+      const totalEmployees = companySnapshot
+        ? (companySnapshot.male_count || 0) + (companySnapshot.female_count || 0)
+        : 0;
+
+      const kpis: ManagementKPIs = {
+        total_employees: totalEmployees,
+        mean_gap_pct: companySnapshot?.mean_gap_base_pct ?? null,
+        median_gap_pct: companySnapshot?.median_gap_base_pct ?? null,
+        breach_count: snapshots.filter(s => s.gap_status === 'breach').length,
+        warning_count: snapshots.filter(s => s.gap_status === 'warning').length,
+        compliant_count: snapshots.filter(s => s.gap_status === 'compliant').length,
+        requires_joint_assessment: snapshots.some(s => s.requires_joint_assessment),
+      };
+
+      return { snapshot: companySnapshot as PayGapSnapshot | null, kpis };
+    },
+    enabled: !!orgId && isSignedIn,
+  });
 }
 
 /**
- * Hole Management-KPIs
+ * Hole Gap-Trend über Zeit (für Charts)
  */
-export function useManagementKPIs(companyId: string) {
-    return useQuery({
-        queryKey: ['management-kpis', companyId],
-        queryFn: async () => {
-            // Hole alle Gruppen mit Stats
-            const { data: groups, error } = await supabase
-                .from('pay_groups')
-                .select(`
-          *,
-          stats:pay_group_stats(*)
-        `)
-                .eq('company_id', companyId);
+export function usePayGapTrend(scope: string = 'company', scopeId?: string) {
+  const { orgId, supabase, isSignedIn } = useAuth();
 
-            if (error) throw error;
+  return useQuery({
+    queryKey: ['pay-gap-trend', orgId, scope, scopeId],
+    queryFn: async () => {
+      let query = supabase
+        .from('pay_gap_snapshots')
+        .select('snapshot_date, mean_gap_base_pct, median_gap_base_pct, gap_status')
+        .eq('organization_id', orgId!)
+        .eq('scope', scope)
+        .order('snapshot_date', { ascending: true })
+        .limit(30);
 
-            // Berechne KPIs
-            const criticalGroups = groups.filter((g: any) =>
-                g.stats?.[0]?.gender_gap_status === 'red'
-            );
+      if (scopeId) {
+        query = query.eq('scope_id', scopeId);
+      } else {
+        query = query.is('scope_id', null);
+      }
 
-            const largestGap = groups.reduce((max: any, current: any) => {
-                const currentGap = Math.abs(current.stats?.[0]?.gender_gap_percent || 0);
-                const maxGap = Math.abs(max?.stats?.[0]?.gender_gap_percent || 0);
-                return currentGap > maxGap ? current : max;
-            }, groups[0]);
+      const { data, error } = await query;
+      if (error) throw error;
 
-            const totalEmployees = groups.reduce(
-                (sum: number, g: any) => sum + (g.employee_count || 0),
-                0
-            );
-
-            // Schätze Kosten (vereinfacht)
-            const estimatedCost = criticalGroups.reduce((sum: number, group: any) => {
-                const stats = group.stats?.[0];
-                if (!stats) return sum;
-
-                const gapAmount = (stats.avg_salary_male || 0) - (stats.avg_salary_female || 0);
-                const femaleCount = group.female_count || 0;
-                return sum + (gapAmount * femaleCount);
-            }, 0);
-
-            return {
-                critical_groups_count: criticalGroups.length,
-                largest_gap_percent: Math.abs(largestGap?.stats?.[0]?.gender_gap_percent || 0),
-                largest_gap_group: largestGap?.group_name || 'N/A',
-                estimated_closing_cost: estimatedCost,
-                total_groups: groups.length,
-                total_employees: totalEmployees,
-            } as ManagementKPIs;
-        },
-        enabled: !!companyId,
-    });
+      return (data || []).map((row): GapTrendPoint => ({
+        date: row.snapshot_date,
+        mean_gap_pct: row.mean_gap_base_pct,
+        median_gap_pct: row.median_gap_base_pct,
+        gap_status: row.gap_status,
+      }));
+    },
+    enabled: !!orgId && isSignedIn,
+  });
 }
-
-/**
- * Hole Gender-Gap-Verlauf
- */
-export function useGenderGapHistory(companyId: string, payGroupId?: string) {
-    return useQuery({
-        queryKey: ['gender-gap-history', companyId, payGroupId],
-        queryFn: async () => {
-            let query = supabase
-                .from('gender_gap_history')
-                .select('*')
-                .eq('company_id', companyId)
-                .order('calculation_date', { ascending: true })
-                .limit(30);
-
-            if (payGroupId) {
-                query = query.eq('pay_group_id', payGroupId);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!companyId,
-    });
-}
-
-// ============================================================================
-// MUTATIONS
-// ============================================================================
-

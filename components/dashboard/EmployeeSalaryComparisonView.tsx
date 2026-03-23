@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { usePayGapStatistics } from '@/hooks/usePayGapStatistics';
 import { useAuth } from '@/hooks/useAuth';
+
+// getSalaryStatistics was removed — this view uses static demo data until Phase 5
 import { 
   StatusBadge, 
   InfoBox, 
@@ -32,7 +34,7 @@ import {
  */
 export function EmployeeSalaryComparisonView() {
   const { profile } = useAuth();
-  const { loading, getSalaryStatistics } = usePayGapStatistics();
+  const { loading } = usePayGapStatistics();
   const [stats, setStats] = useState<any[]>([]);
   const [hasData, setHasData] = useState<boolean | null>(null);
 

@@ -30,11 +30,9 @@ const CompanySetup = ({ onComplete }: CompanySetupProps) => {
   const [formData, setFormData] = useState<CompanyFormData>({
     name: '',
     legal_name: '',
-    tax_id: '',
-    address: '',
     country: 'DE',
     industry: '',
-    employee_count_range: undefined,
+    employee_size_band: undefined,
   });
 
   const handleSubmit = async () => {
@@ -74,35 +72,13 @@ const CompanySetup = ({ onComplete }: CompanySetupProps) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="legal_name">Rechtliche Bezeichnung</Label>
-                <Input
-                  id="legal_name"
-                  value={formData.legal_name}
-                  onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
-                  placeholder="Muster GmbH & Co. KG"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tax_id">Steuernummer / USt-IdNr.</Label>
-                <Input
-                  id="tax_id"
-                  value={formData.tax_id}
-                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-                  placeholder="DE123456789"
-                />
-              </div>
-            </div>
-
             <div className="grid gap-2">
-              <Label htmlFor="address">Adresse</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Musterstraße 1, 12345 Berlin"
-                rows={2}
+              <Label htmlFor="legal_name">Rechtliche Bezeichnung</Label>
+              <Input
+                id="legal_name"
+                value={formData.legal_name}
+                onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
+                placeholder="Muster GmbH & Co. KG"
               />
             </div>
 
@@ -117,23 +93,20 @@ const CompanySetup = ({ onComplete }: CompanySetupProps) => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="employee_count">Mitarbeiteranzahl</Label>
+                <Label htmlFor="employee_size_band">Unternehmensgröße (EU-Berichtspflicht)</Label>
                 <Select
-                  value={formData.employee_count_range}
-                  onValueChange={(value: CompanyFormData['employee_count_range']) => 
-                    setFormData({ ...formData, employee_count_range: value })
+                  value={formData.employee_size_band}
+                  onValueChange={(value: CompanyFormData['employee_size_band']) =>
+                    setFormData({ ...formData, employee_size_band: value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Auswählen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1-50">1-50</SelectItem>
-                    <SelectItem value="51-100">51-100</SelectItem>
-                    <SelectItem value="101-250">101-250</SelectItem>
-                    <SelectItem value="251-500">251-500</SelectItem>
-                    <SelectItem value="501-1000">501-1000</SelectItem>
-                    <SelectItem value="1000+">1000+</SelectItem>
+                    <SelectItem value="100-149">100-149 (jährlich ab 2031)</SelectItem>
+                    <SelectItem value="150-249">150-249 (jährlich ab 2027)</SelectItem>
+                    <SelectItem value="250+">250+ (jährlich ab 2027)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

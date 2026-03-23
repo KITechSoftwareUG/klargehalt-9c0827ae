@@ -65,20 +65,33 @@ export default function EuRichtliniePage() {
     return (
         <>
             {/* Hero */}
-            <section className="pt-[72px] bg-white">
+            <section className="pt-[72px] bg-[#071423]">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 lg:pt-36 pb-16">
-                    <div className="max-w-3xl">
-                        <p className="text-xs font-mono font-bold text-slate-400 mb-4">EU-RICHTLINIE 2023/970</p>
-                        <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-[#1E293B] tracking-tight leading-[1.1] mb-6">
-                            Die EU-Entgelttransparenz&shy;richtlinie einfach erklaert.
-                        </h1>
-                        <p className="text-base lg:text-lg text-slate-500 leading-relaxed max-w-[55ch]">
-                            Was muessen Unternehmen tun? Bis wann? Und was passiert, wenn nicht?
-                            Hier steht alles, was Sie wissen muessen — ohne Juristendeutsch.
-                        </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                        <div>
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[var(--ep-yellow)]/20 text-[var(--ep-yellow)] mb-5">
+                                Frist: 7. Juni 2026
+                            </span>
+                            <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+                                Die EU-Entgelttransparenz&shy;richtlinie einfach erklaert.
+                            </h1>
+                            <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
+                                Was muessen Unternehmen tun? Bis wann? Und was passiert, wenn nicht?
+                                Hier steht alles, was Sie wissen muessen — ohne Juristendeutsch.
+                            </p>
+                        </div>
+                        <div className="bg-[var(--ep-yellow)]/10 border border-[var(--ep-yellow)]/20 rounded-2xl p-8">
+                            <p className="text-[var(--ep-yellow)] text-xs font-bold uppercase tracking-wider mb-3">Countdown</p>
+                            <p className="text-4xl font-extrabold text-white mb-1">~3 Monate</p>
+                            <p className="text-sm text-white/50">bis zur Umsetzungsfrist der Richtlinie (EU) 2023/970</p>
+                            <div className="mt-5 h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-[var(--ep-yellow)] rounded-full" style={{ width: '92%' }} />
+                            </div>
+                            <p className="text-[10px] text-white/30 mt-2">92% der Frist verstrichen</p>
+                        </div>
                     </div>
                 </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-24 bg-gradient-to-b from-[#071423] to-white" />
             </section>
 
             {/* What is it */}
@@ -86,18 +99,18 @@ export default function EuRichtliniePage() {
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                         <div>
-                            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-6">
+                            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-6">
                                 Worum geht es?
                             </h2>
                             <div className="space-y-4 text-sm text-slate-500 leading-relaxed">
                                 <p>
-                                    Die <strong className="text-[#1E293B]">Richtlinie (EU) 2023/970</strong> verpflichtet Arbeitgeber in der gesamten EU,
+                                    Die <strong className="text-[#071423]">Richtlinie (EU) 2023/970</strong> verpflichtet Arbeitgeber in der gesamten EU,
                                     ihre Gehaltsstrukturen transparent zu machen. Ziel: Gleiche Bezahlung fuer gleiche oder gleichwertige Arbeit,
                                     unabhaengig vom Geschlecht.
                                 </p>
                                 <p>
                                     Das klingt nach einem Grundsatz, der laengst gelten sollte. In der Praxis zeigt sich aber:
-                                    Der <strong className="text-[#1E293B]">Gender Pay Gap in Deutschland liegt bei 18%</strong> (Statistisches Bundesamt, 2024).
+                                    Der <strong className="text-[#071423]">Gender Pay Gap in Deutschland liegt bei 18%</strong> (Statistisches Bundesamt, 2024).
                                     Auch der bereinigte Gap — also nach Abzug struktureller Unterschiede — liegt bei 6%.
                                 </p>
                                 <p>
@@ -106,7 +119,7 @@ export default function EuRichtliniePage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="bg-[#1E293B] rounded-2xl p-8 lg:p-10 text-white">
+                        <div className="bg-[#071423] rounded-2xl p-8 lg:p-10 text-white">
                             <h3 className="text-sm font-bold text-white mb-6">Die drei Saeulen der Richtlinie</h3>
                             <div className="space-y-6">
                                 {[
@@ -131,19 +144,19 @@ export default function EuRichtliniePage() {
             {/* Timeline */}
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-12">
                         Zeitplan.
                     </h2>
                     <div className="space-y-0">
                         {timeline.map((t, i) => (
                             <div key={t.date} className="flex gap-6 py-8 border-b border-slate-200 last:border-0">
                                 <div className="flex flex-col items-center">
-                                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${i <= 1 ? 'bg-[#1E293B]' : 'bg-slate-300'}`} />
+                                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${i === 0 ? 'bg-[var(--ep-teal)]' : i === 1 ? 'bg-[var(--ep-yellow)]' : 'bg-[var(--ep-gray-3)]'}`} />
                                     {i < timeline.length - 1 && <div className="w-px flex-1 bg-slate-200 mt-2" />}
                                 </div>
                                 <div className="-mt-1">
                                     <span className="text-xs font-mono font-bold text-slate-400 block mb-1">{t.date}</span>
-                                    <h3 className="text-base font-bold text-[#1E293B] mb-2">{t.event}</h3>
+                                    <h3 className="text-base font-bold text-[#071423] mb-2">{t.event}</h3>
                                     <p className="text-sm text-slate-500 leading-relaxed">{t.desc}</p>
                                 </div>
                             </div>
@@ -155,7 +168,7 @@ export default function EuRichtliniePage() {
             {/* Who is affected */}
             <section className="py-20 lg:py-28 bg-white">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-4">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
                         Wer ist betroffen?
                     </h2>
                     <p className="text-base text-slate-500 mb-12 max-w-[55ch]">
@@ -175,7 +188,7 @@ export default function EuRichtliniePage() {
                             <tbody>
                                 {whoIsAffected.map((row) => (
                                     <tr key={row.size} className="border-b border-slate-100">
-                                        <td className="py-4 pr-4 text-sm font-medium text-[#1E293B] whitespace-nowrap">{row.size}</td>
+                                        <td className="py-4 pr-4 text-sm font-medium text-[#071423] whitespace-nowrap">{row.size}</td>
                                         <td className="py-4 pr-4 text-sm text-slate-500">{row.obligation}</td>
                                         <td className="py-4 pr-4 text-sm text-slate-500">{row.reporting}</td>
                                         <td className="py-4 text-sm text-slate-500">{row.deadline}</td>
@@ -190,7 +203,7 @@ export default function EuRichtliniePage() {
             {/* Requirements Detail */}
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-4">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
                         Was muessen Unternehmen konkret tun?
                     </h2>
                     <p className="text-base text-slate-500 mb-12 max-w-[55ch]">
@@ -201,13 +214,13 @@ export default function EuRichtliniePage() {
                         {requirements.map((r) => (
                             <div key={r.article} className="bg-white rounded-xl border border-slate-200 p-6 lg:p-8">
                                 <div className="flex items-start justify-between gap-4 mb-3">
-                                    <h3 className="text-base font-bold text-[#1E293B]">{r.title}</h3>
-                                    <span className="text-xs font-mono font-bold text-slate-400 flex-shrink-0">{r.article}</span>
+                                    <h3 className="text-base font-bold text-[#071423]">{r.title}</h3>
+                                    <span className="inline-block px-2 py-0.5 rounded text-xs font-mono font-bold text-[var(--ep-purple)] bg-[var(--ep-purple-light)] flex-shrink-0">{r.article}</span>
                                 </div>
                                 <p className="text-sm text-slate-500 leading-relaxed mb-4">{r.desc}</p>
                                 <div className="bg-slate-50 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Praktische Auswirkung</p>
-                                    <p className="text-sm text-[#1E293B]">{r.impact}</p>
+                                    <p className="text-sm text-[#071423]">{r.impact}</p>
                                 </div>
                             </div>
                         ))}
@@ -219,7 +232,7 @@ export default function EuRichtliniePage() {
             <section className="py-20 lg:py-28 bg-white">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
                     <div className="max-w-3xl mx-auto text-center mb-14">
-                        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-4">
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
                             Wie KlarGehalt dabei hilft.
                         </h2>
                         <p className="text-base text-slate-500">
@@ -238,7 +251,7 @@ export default function EuRichtliniePage() {
                         ].map((item) => (
                             <div key={item.req} className="bg-slate-50 rounded-xl p-6">
                                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Anforderung</p>
-                                <h3 className="text-sm font-bold text-[#1E293B] mb-2">{item.req}</h3>
+                                <h3 className="text-sm font-bold text-[#071423] mb-2">{item.req}</h3>
                                 <p className="text-sm text-slate-500 leading-relaxed">{item.solution}</p>
                             </div>
                         ))}
@@ -247,7 +260,7 @@ export default function EuRichtliniePage() {
             </section>
 
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#1E293B]">
+            <section className="py-20 lg:py-24 bg-[#071423]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
                         Die Frist laeuft. Handeln Sie jetzt.
@@ -257,7 +270,7 @@ export default function EuRichtliniePage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/kontakt">
-                            <Button className="bg-white text-[#1E293B] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                            <Button className="bg-white text-[#071423] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
                                 Demo anfragen <ArrowRight className="w-4 h-4" />
                             </Button>
                         </Link>

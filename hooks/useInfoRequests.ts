@@ -2,63 +2,39 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
+// Canonical info_requests.request_type values
 export const REQUEST_TYPES = {
-  salary_band_position: {
+  avg_pay_category: {
+    label: 'Durchschnittsvergütung meiner Kategorie',
+    description: 'Anonymisierter Durchschnitt Ihrer Vergleichsgruppe',
+    icon: 'BarChart3',
+  },
+  pay_band: {
     label: 'Position im Entgeltband',
-    description: 'Erfahren Sie, in welchem Quartil des Entgeltbands Sie sich befinden',
-    icon: 'BarChart3'
+    description: 'Erfahren Sie, wo Ihr Gehalt im Band liegt',
+    icon: 'FileText',
   },
-  salary_criteria: {
-    label: 'Kriterien der Gehaltsfestlegung',
-    description: 'Transparente Darstellung der Faktoren für Ihre Gehaltseinstufung',
-    icon: 'FileText'
-  },
-  career_progression: {
-    label: 'Aufstiegsmöglichkeiten',
-    description: 'Übersicht über nächste Karrierestufen und deren Anforderungen',
-    icon: 'TrendingUp'
-  },
-  pay_gap_category: {
-    label: 'Pay Gap in meiner Kategorie',
+  gap_explanation: {
+    label: 'Pay Gap Erklärung',
     description: 'Anonymisierter Gender Pay Gap für Ihre Position',
-    icon: 'Users'
+    icon: 'Users',
   },
-  qualification_requirements: {
-    label: 'Qualifikationsanforderungen',
-    description: 'Anforderungen für den Aufstieg in höhere Levels',
-    icon: 'GraduationCap'
-  }
 } as const;
 
 export type InfoRequestType = keyof typeof REQUEST_TYPES;
 
+// Canonical info_requests columns
 export interface InfoRequest {
   id: string;
+  organization_id: string;
+  employee_id: string | null;
   request_type: InfoRequestType;
-  request_type_label: string;
-  status: string;
-  status_label: string;
-  submitted_at: string;
+  status: 'pending' | 'fulfilled' | 'declined';
+  job_profile_id: string | null;
+  response_data: unknown;
+  processed_by: string | null;
   processed_at: string | null;
-  expires_at: string | null;
-  has_response: boolean;
-  rejection_reason: string | null;
-}
-
-export interface RateLimitInfo {
-  allowed: boolean;
-  current_count: number;
-  max_allowed: number;
-  next_reset: string;
-}
-
-export interface InfoRequestResponse {
-  request_type: InfoRequestType;
-  request_type_label: string;
-  response_data: any;
-  generated_at: string;
-  expires_at: string;
-  anonymization_note: string;
+  created_at: string;
 }
 
 export function useInfoRequests() {
@@ -66,74 +42,70 @@ export function useInfoRequests() {
   const { toast } = useToast();
   const [requests, setRequests] = useState<InfoRequest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [rateLimits, setRateLimits] = useState<Record<InfoRequestType, RateLimitInfo>>({} as any);
 
   const fetchRequests = useCallback(async () => {
     if (!isLoaded || !user || !orgId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_my_info_requests');
+      const { data, error } = await supabase
+        .from('info_requests')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
       setRequests((data || []) as InfoRequest[]);
-    } catch (error: any) {
-      toast({ title: 'Fehler', description: error.message || 'Anfragen konnten nicht geladen werden', variant: 'destructive' });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Anfragen konnten nicht geladen werden';
+      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   }, [isLoaded, user, orgId, toast, supabase]);
 
-  const checkRateLimit = useCallback(async (requestType: InfoRequestType): Promise<RateLimitInfo | null> => {
-    if (!isLoaded || !user || !orgId) return null;
-    try {
-      const { data, error } = await supabase.rpc('check_request_rate_limit', { _request_type: requestType });
-      if (error) throw error;
-      const limitInfo = (data as any[])?.[0] as RateLimitInfo;
-      setRateLimits(prev => ({ ...prev, [requestType]: limitInfo }));
-      return limitInfo;
-    } catch (error: any) {
-      console.error('Rate limit check failed:', error);
-      return null;
-    }
-  }, [isLoaded, user, orgId, supabase]);
-
-  const fetchAllRateLimits = useCallback(async () => {
-    if (!isLoaded || !user || !orgId) return;
-    const types = Object.keys(REQUEST_TYPES) as InfoRequestType[];
-    await Promise.all(types.map(type => checkRateLimit(type)));
-  }, [isLoaded, user, orgId, checkRateLimit]);
-
   const submitRequest = useCallback(async (requestType: InfoRequestType): Promise<boolean> => {
     if (!isLoaded || !user || !orgId) return false;
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('submit_info_request', { _request_type: requestType });
+      const { error } = await supabase
+        .from('info_requests')
+        .insert({
+          organization_id: orgId,
+          request_type: requestType,
+          status: 'pending',
+        });
+
       if (error) throw error;
-      const result = (data as any[])?.[0];
-      if (!result?.success) {
-        toast({ title: 'Anfrage nicht möglich', description: result?.error_message || 'Unbekannter Fehler', variant: 'destructive' });
-        return false;
-      }
-      toast({ title: 'Anfrage eingereicht', description: 'Ihre Auskunftsanfrage wird bearbeitet. Sie erhalten die Antwort in Kürze.' });
-      await Promise.all([fetchRequests(), checkRateLimit(requestType)]);
+
+      toast({
+        title: 'Anfrage eingereicht',
+        description: 'Ihre Auskunftsanfrage wird bearbeitet.',
+      });
+      await fetchRequests();
       return true;
-    } catch (error: any) {
-      toast({ title: 'Fehler', description: error.message || 'Anfrage konnte nicht eingereicht werden', variant: 'destructive' });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Anfrage konnte nicht eingereicht werden';
+      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
       return false;
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, supabase, fetchRequests, checkRateLimit]);
+  }, [isLoaded, user, orgId, toast, supabase, fetchRequests]);
 
-  const getResponse = useCallback(async (requestId: string): Promise<InfoRequestResponse | null> => {
+  const getResponse = useCallback(async (requestId: string): Promise<InfoRequest | null> => {
     if (!isLoaded || !user || !orgId) return null;
     try {
-      const { data, error } = await supabase.rpc('get_info_request_response', { _request_id: requestId });
+      const { data, error } = await supabase
+        .from('info_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
       if (error) throw error;
-      const response = (data as any[])?.[0] as InfoRequestResponse;
-      setRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'viewed', status_label: 'Eingesehen' } : req));
-      return response;
-    } catch (error: any) {
-      toast({ title: 'Fehler', description: error.message || 'Antwort konnte nicht geladen werden', variant: 'destructive' });
+      return data as InfoRequest;
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Antwort konnte nicht geladen werden';
+      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
       return null;
     }
   }, [isLoaded, user, orgId, toast, supabase]);
@@ -141,9 +113,8 @@ export function useInfoRequests() {
   useEffect(() => {
     if (isLoaded && user && orgId) {
       fetchRequests();
-      fetchAllRateLimits();
     }
-  }, [isLoaded, user, orgId, fetchRequests, fetchAllRateLimits]);
+  }, [isLoaded, user, orgId, fetchRequests]);
 
-  return { requests, loading, rateLimits, submitRequest, getResponse, fetchRequests, checkRateLimit };
+  return { requests, loading, submitRequest, getResponse, fetchRequests };
 }

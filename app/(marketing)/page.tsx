@@ -1,257 +1,335 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Scale, FileCheck, BarChart3, Shield, Users, BookOpen } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Shield, Users, TrendingUp, Building2, Briefcase, Heart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getAppUrl, getMarketingUrl } from '@/utils/url';
+import { getMarketingUrl } from '@/utils/url';
 
-const teasers = [
-    {
-        icon: BarChart3,
-        title: 'Gehaltsstrukturen & Pay-Gap',
-        desc: 'Job-Profile, Gehaltsbaender und automatische Median-Berechnung nach Geschlecht.',
-        href: '/funktionen',
-        linkText: 'Alle Funktionen',
-    },
-    {
-        icon: Shield,
-        title: 'Sicherheit & Datenschutz',
-        desc: 'AES-256, Mandantentrennung, EU-Hosting. Gehaltsdaten verdienen besonderen Schutz.',
-        href: '/sicherheit',
-        linkText: 'Sicherheitskonzept',
-    },
-    {
-        icon: Scale,
-        title: 'EU-Richtlinie 2023/970',
-        desc: 'Was muessen Unternehmen tun? Fristen, Pflichten und Bussgelder einfach erklaert.',
-        href: '/eu-richtlinie',
-        linkText: 'Richtlinie verstehen',
-    },
+const highlights = [
+  {
+    tag: 'Plattform',
+    title: 'KI-gestuetzte Gehaltsanalyse',
+    desc: 'Unsere KI erkennt Muster in Ihren Gehaltsdaten und liefert konkrete Handlungsempfehlungen fuer faire Verguetung.',
+    color: 'bg-[var(--ep-teal)]',
+    textColor: 'text-[var(--ep-teal-dark)]',
+    bgColor: 'bg-[var(--ep-teal-light)]',
+  },
+  {
+    tag: 'Compliance',
+    title: 'EU-Richtlinie automatisiert',
+    desc: 'Automatische Berichterstellung gemaess EU-Entgelttransparenzrichtlinie 2023/970. Immer aktuell, immer konform.',
+    color: 'bg-[var(--ep-yellow)]',
+    textColor: 'text-[var(--ep-yellow-dark)]',
+    bgColor: 'bg-[var(--ep-yellow-light)]',
+  },
+  {
+    tag: 'Sicherheit',
+    title: 'Bankgrade Verschluesselung',
+    desc: 'AES-256-Verschluesselung, Mandantentrennung und EU-Hosting. Ihre sensiblen Gehaltsdaten sind bei uns sicher.',
+    color: 'bg-[var(--ep-purple)]',
+    textColor: 'text-[var(--ep-purple-dark)]',
+    bgColor: 'bg-[var(--ep-purple-light)]',
+  },
+];
+
+const partners = [
+  { name: 'SAP', icon: Building2 },
+  { name: 'Personio', icon: Users },
+  { name: 'Workday', icon: Briefcase },
+  { name: 'DATEV', icon: TrendingUp },
 ];
 
 export default function HomePage() {
-    const { isSignedIn, isLoaded } = useAuth();
-    const router = useRouter();
+  return (
+    <>
+      {/* Hero */}
+      <section className="relative bg-[#071423] pt-16 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 sm:pt-24 lg:pt-32 pb-16 lg:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="animate-fade-in">
+              <p className="text-[var(--ep-teal)] text-sm font-semibold tracking-wide uppercase mb-4">
+                Entgelttransparenz fuer Unternehmen
+              </p>
+              <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-white tracking-tight leading-[1.08] mb-6">
+                Faire Gehaelter,
+                <br />
+                <span className="text-white/50">fuer jede Zeit.</span>
+              </h1>
+              <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[48ch] mb-8">
+                Die Plattform fuer Entgelttransparenz. Gehaltsstrukturen erfassen,
+                Pay-Gaps erkennen und EU-konforme Berichte generieren — alles an einem Ort.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href={getMarketingUrl('/kontakt')}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[#071423] hover:bg-white/90 transition-colors cursor-pointer"
+                >
+                  Kostenlose Demo starten
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href={getMarketingUrl('/funktionen')}
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold border border-white/20 text-white hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  Plattform entdecken
+                </Link>
+              </div>
+            </div>
 
-    useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            router.replace('/dashboard');
-        }
-    }, [isLoaded, isSignedIn, router]);
-
-    if (!isLoaded) return null;
-    if (isSignedIn) return null;
-
-    return (
-        <>
-            {/* Hero */}
-            <section className="relative overflow-hidden pt-[72px] bg-white">
-                <div className="relative max-w-7xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 lg:pt-40 pb-20 lg:pb-28">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-                        <div className="lg:col-span-7">
-                            <div className="mb-8">
-                                <Image
-                                    src="/brandname.svg"
-                                    alt="KlarGehalt"
-                                    width={500}
-                                    height={65}
-                                    priority
-                                    className="h-12 sm:h-14 lg:h-16 w-auto"
-                                />
-                            </div>
-
-                            <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-[#1E293B] tracking-tight leading-[1.1] mb-6">
-                                Gehaltsdaten ordnen,
-                                <br />
-                                <span className="text-slate-400">bevor es die Behoerde tut.</span>
-                            </h1>
-
-                            <p className="text-base lg:text-lg text-slate-500 leading-relaxed max-w-[50ch] mb-10">
-                                Ab Juni 2026 muessen Unternehmen ab 100 Mitarbeitern Gehaltsstrukturen offenlegen.
-                                KlarGehalt macht das einfach — Strukturen erfassen, Luecken erkennen,
-                                Berichte generieren.
-                            </p>
-
-                            <div className="flex flex-col sm:flex-row gap-3 mb-12">
-                                <Link href={getMarketingUrl('/kontakt')}>
-                                    <Button className="group bg-[#1E293B] text-white hover:bg-[#0F172A] h-13 px-8 rounded-lg text-sm font-semibold shadow-sm transition-all cursor-pointer w-full sm:w-auto">
-                                        Kostenlose Demo starten
-                                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                                    </Button>
-                                </Link>
-                                <Link href={getMarketingUrl('/funktionen')}>
-                                    <Button
-                                        variant="outline"
-                                        className="h-13 px-8 rounded-lg text-sm font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer w-full sm:w-auto"
-                                    >
-                                        Was kann KlarGehalt?
-                                    </Button>
-                                </Link>
-                            </div>
-
-                            <div className="flex flex-wrap gap-6">
-                                <div className="flex items-center gap-2">
-                                    <Scale className="w-4 h-4 text-slate-400" />
-                                    <span className="text-xs font-medium text-slate-400">EU-Richtlinie 2023/970</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <FileCheck className="w-4 h-4 text-slate-400" />
-                                    <span className="text-xs font-medium text-slate-400">DSGVO-konform</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    <span className="text-xs font-medium text-slate-400">Hosting in Frankfurt</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="lg:col-span-5 lg:mt-8">
-                            <div className="bg-[#1E293B] rounded-2xl p-8 lg:p-10 text-white">
-                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.15em] mb-6">
-                                    EU-Entgelttransparenzrichtlinie
-                                </p>
-                                <div className="space-y-6">
-                                    <div>
-                                        <p className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-1">Juni 2026</p>
-                                        <p className="text-sm text-slate-400">Umsetzungsfrist fuer Unternehmen ab 100 MA</p>
-                                    </div>
-                                    <div className="h-px bg-white/10" />
-                                    <ul className="space-y-3">
-                                        {[
-                                            'Gehaltsstrukturen muessen offengelegt werden',
-                                            'Gender-Pay-Gap Berichte werden Pflicht',
-                                            'Mitarbeiter erhalten Auskunftsrecht',
-                                            'Bussgelder bei Nichterfuellung',
-                                        ].map((item) => (
-                                            <li key={item} className="flex items-start gap-3">
-                                                <span className="w-1 h-1 rounded-full bg-white/40 mt-2 flex-shrink-0" />
-                                                <span className="text-sm text-slate-300">{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <Link href={getMarketingUrl('/eu-richtlinie')} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
-                                        Mehr zur Richtlinie <ArrowRight className="w-3 h-3" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
+            <div className="relative animate-slide-in-right animation-delay-200">
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-gradient-to-br from-[var(--ep-purple)]/20 to-[var(--ep-teal)]/20">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#071423]/60 to-transparent z-10" />
+                <Image
+                  src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80"
+                  alt="Professionelle Frau laechelt"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute bottom-6 left-6 right-6 z-20">
+                  <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+                    <p className="text-white text-sm font-medium">Pay-Gap Analyse</p>
+                    <p className="text-white/60 text-xs mt-1">Bereinigter Gender-Pay-Gap: 3.2%</p>
+                    <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-[var(--ep-teal)] rounded-full" style={{ width: '68%' }} />
                     </div>
+                  </div>
                 </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            </section>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Teaser Grid */}
-            <section className="py-24 lg:py-32 bg-slate-50">
-                <div className="max-w-7xl mx-auto px-5 sm:px-8">
-                    <div className="max-w-2xl mb-14">
-                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight mb-4">
-                            Eine Plattform. Alles drin.
-                        </h2>
-                        <p className="text-base text-slate-500 leading-relaxed">
-                            Von der Gehaltsstruktur bis zum fertigen Bericht — KlarGehalt deckt den gesamten Compliance-Prozess ab.
-                        </p>
-                    </div>
+        {/* Decorative gradient transition */}
+        <div className="h-24 bg-gradient-to-b from-[#071423] to-[var(--ep-gray-1)]" />
+      </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {teasers.map((t) => (
-                            <Link
-                                key={t.href}
-                                href={getMarketingUrl(t.href)}
-                                className="group bg-white rounded-2xl border border-slate-200 p-8 hover:border-slate-300 hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all cursor-pointer"
-                            >
-                                <t.icon className="w-6 h-6 text-slate-400 mb-5 group-hover:text-[#1E293B] transition-colors" />
-                                <h3 className="text-lg font-bold text-[#1E293B] tracking-tight mb-2">{t.title}</h3>
-                                <p className="text-sm text-slate-500 leading-relaxed mb-6">{t.desc}</p>
-                                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1E293B] group-hover:gap-2.5 transition-all">
-                                    {t.linkText} <ArrowRight className="w-3.5 h-3.5" />
-                                </span>
-                            </Link>
-                        ))}
-                    </div>
+      {/* Why KlarGehalt */}
+      <section className="bg-[var(--ep-gray-1)] py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="max-w-2xl mb-14">
+            <p className="text-[var(--ep-purple)] text-sm font-semibold tracking-wide uppercase mb-3">
+              Warum KlarGehalt
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#071423] tracking-tight leading-[1.1] mb-4">
+              Gebaut fuer eine
+              <br />neue Pflicht.
+            </h2>
+            <p className="text-base text-[var(--ep-gray-4)] leading-relaxed">
+              Ab Juni 2026 muessen Unternehmen in der EU Gehaelter offenlegen. KlarGehalt wurde
+              spezifisch fuer diese Anforderung entwickelt — kein umgebautes HR-Tool.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { accent: 'var(--ep-teal)', title: 'Sofort einsatzbereit', desc: 'Kein monatelanges Implementierungsprojekt. Daten importieren, Struktur anlegen, Berichte generieren.' },
+              { accent: 'var(--ep-purple)', title: 'Sicherheit eingebaut', desc: 'Row Level Security, Mandantentrennung, EU-Hosting. Ihre Gehaltsdaten sind auf Datenbankebene geschuetzt.' },
+              { accent: 'var(--ep-yellow)', title: 'Fuer den Mittelstand', desc: 'Enterprise-Features ohne Enterprise-Budget. Ab 199 EUR/Monat fuer bis zu 50 Mitarbeiter.' },
+            ].map((item) => (
+              <div key={item.title} className="bg-white rounded-2xl p-8 border border-[var(--ep-gray-2)] relative overflow-hidden group hover:shadow-lg transition-shadow">
+                <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: item.accent }} />
+                <h3 className="text-lg font-bold text-[#071423] mb-2">{item.title}</h3>
+                <p className="text-sm text-[var(--ep-gray-4)] leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust / Security */}
+      <section className="bg-white py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="max-w-2xl mb-14">
+            <p className="text-[var(--ep-teal)] text-sm font-semibold tracking-wide uppercase mb-3">
+              Vertrauen & Sicherheit
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#071423] tracking-tight leading-[1.1] mb-4">
+              Darueber heisst
+              <br />Sicherheit.
+            </h2>
+            <p className="text-base text-[var(--ep-gray-4)] leading-relaxed">
+              Gehaltsdaten gehoeren zu den sensibelsten Informationen Ihres Unternehmens.
+              Unsere Plattform schuetzt sie mit bankgrade Sicherheitsstandards.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Shield,
+                title: 'DSGVO-konform',
+                desc: 'Vollstaendige Compliance mit der EU-Datenschutzgrundverordnung. Regelmaessige Audits und Zertifizierungen.',
+              },
+              {
+                icon: Building2,
+                title: 'EU-Hosting',
+                desc: 'Alle Daten werden ausschliesslich in deutschen Rechenzentren gespeichert. Frankfurt am Main.',
+              },
+              {
+                icon: Users,
+                title: 'Mandantentrennung',
+                desc: 'Strikte Datenisolierung zwischen Mandanten auf Datenbankebene. Row Level Security.',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-[var(--ep-gray-1)] rounded-2xl p-8 hover:shadow-lg transition-shadow"
+              >
+                <item.icon className="w-8 h-8 text-[var(--ep-purple)] mb-5" />
+                <h3 className="text-lg font-bold text-[#071423] mb-2">{item.title}</h3>
+                <p className="text-sm text-[var(--ep-gray-4)] leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Highlights */}
+      <section className="bg-[var(--ep-gray-1)] py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
+            <div>
+              <p className="text-[var(--ep-purple)] text-sm font-semibold tracking-wide uppercase mb-3">
+                Features
+              </p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#071423] tracking-tight leading-[1.1]">
+                Was euch inspiriert:
+                <br />Unsere Highlights.
+              </h2>
+            </div>
+            <Link
+              href={getMarketingUrl('/funktionen')}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--ep-purple-dark)] hover:gap-2.5 transition-all cursor-pointer"
+            >
+              Alle Features <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {highlights.map((h) => (
+              <div
+                key={h.title}
+                className={`${h.bgColor} rounded-2xl p-8 hover:shadow-lg transition-all group cursor-pointer`}
+              >
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${h.textColor} ${h.color}/20 mb-5`}>
+                  {h.tag}
+                </span>
+                <h3 className={`text-xl font-bold ${h.textColor} mb-3`}>{h.title}</h3>
+                <p className={`text-sm ${h.textColor}/70 leading-relaxed mb-6`}>{h.desc}</p>
+                <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${h.textColor} group-hover:gap-2.5 transition-all`}>
+                  Mehr erfahren <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Digital / Integration */}
+      <section className="bg-[#071423] py-20 lg:py-28">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div>
+              <p className="text-[var(--ep-teal)] text-sm font-semibold tracking-wide uppercase mb-3">
+                Integrationen
+              </p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+                Die KlarGehalt
+                <br />Plattform geht auch
+                <br />digital.
+              </h2>
+              <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[48ch]">
+                Nahtlose Integration in Ihre bestehende HR-Landschaft.
+                Verbinden Sie KlarGehalt mit den Tools, die Sie bereits nutzen.
+              </p>
+              <Link
+                href={getMarketingUrl('/funktionen')}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[#071423] hover:bg-white/90 transition-colors cursor-pointer"
+              >
+                Integrationen entdecken <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {partners.map((p) => (
+                <div
+                  key={p.name}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 hover:bg-white/10 transition-colors"
+                >
+                  <p.icon className="w-8 h-8 text-white/60" />
+                  <p className="text-sm font-medium text-white/80">{p.name}</p>
                 </div>
-            </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Social Proof / Why Section */}
-            <section className="py-24 lg:py-32 bg-white">
-                <div className="max-w-7xl mx-auto px-5 sm:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight mb-6">
-                                Warum jetzt handeln?
-                            </h2>
-                            <div className="space-y-6">
-                                {[
-                                    {
-                                        q: 'Die Frist laeuft.',
-                                        a: 'Bis Juni 2026 muss die EU-Richtlinie in nationales Recht umgesetzt sein. Unternehmen ab 100 Mitarbeitern muessen dann berichten.',
-                                    },
-                                    {
-                                        q: 'Rueckwirkende Daten werden noetig.',
-                                        a: 'Die Richtlinie verlangt historische Vergleiche. Je frueher Sie Daten erfassen, desto besser stehen Sie da.',
-                                    },
-                                    {
-                                        q: 'Mitarbeiter werden fragen.',
-                                        a: 'Das individuelle Auskunftsrecht kommt. Wer keine Struktur hat, muss improvisieren — und riskiert Klagen.',
-                                    },
-                                ].map((item) => (
-                                    <div key={item.q}>
-                                        <h3 className="text-base font-bold text-[#1E293B] mb-1">{item.q}</h3>
-                                        <p className="text-sm text-slate-500 leading-relaxed">{item.a}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+      {/* Career / CTA */}
+      <section className="relative bg-[var(--ep-purple-dark)] py-20 lg:py-28 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--ep-purple-dark)] via-[var(--ep-purple-dark)] to-[var(--ep-purple)]/30" />
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div>
+              <p className="text-[var(--ep-purple-light)] text-sm font-semibold tracking-wide uppercase mb-3">
+                Karriere
+              </p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
+                Neue Rolle?
+                <br />Take it, and
+                <br />make it.
+              </h2>
+              <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[44ch]">
+                Wir suchen Menschen, die mit uns die Zukunft der Entgelttransparenz gestalten.
+                Faire Bezahlung faengt bei uns selbst an.
+              </p>
+              <Link
+                href={getMarketingUrl('/kontakt')}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[var(--ep-purple-dark)] hover:bg-white/90 transition-colors cursor-pointer"
+              >
+                Offene Stellen ansehen <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
 
-                        <div className="bg-slate-50 rounded-2xl p-8 lg:p-10">
-                            <div className="flex items-center gap-3 mb-6">
-                                <Users className="w-5 h-5 text-slate-400" />
-                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">Fuer wen ist KlarGehalt?</p>
-                            </div>
-                            <div className="space-y-5">
-                                {[
-                                    { role: 'HR-Leitung', text: 'Gehaltsbaender pflegen, Pay-Gap analysieren, Berichte generieren.' },
-                                    { role: 'Geschaeftsfuehrung', text: 'Compliance sicherstellen, Bussgelder vermeiden, Ueberblick behalten.' },
-                                    { role: 'Betriebsrat', text: 'Transparente Datengrundlage fuer Verhandlungen und Auskunftsanfragen.' },
-                                    { role: 'Mitarbeiter', text: 'Anonymisierte Einblicke in die eigene Gehaltsgruppe. DSGVO-konform.' },
-                                ].map((item) => (
-                                    <div key={item.role} className="flex gap-4">
-                                        <span className="text-xs font-bold text-[#1E293B] w-28 flex-shrink-0 pt-0.5">{item.role}</span>
-                                        <p className="text-sm text-slate-500">{item.text}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <div className="relative rounded-2xl overflow-hidden aspect-[4/3]">
+              <Image
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80"
+                alt="Team arbeitet zusammen"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--ep-purple-dark)]/40 to-transparent" />
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#1E293B]">
-                <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
-                        Bereit, Klarheit zu schaffen?
-                    </h2>
-                    <p className="text-sm text-slate-400 mb-8 max-w-[45ch] mx-auto">
-                        In 20 Minuten zeigen wir Ihnen, wie KlarGehalt fuer Ihr Unternehmen funktioniert. Unverbindlich.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Link href={getMarketingUrl('/kontakt')}>
-                            <Button className="bg-white text-[#1E293B] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
-                                Demo anfragen <ArrowRight className="w-4 h-4" />
-                            </Button>
-                        </Link>
-                        <Link href={getMarketingUrl('/preise')}>
-                            <Button variant="outline" className="h-12 px-8 rounded-lg text-sm font-semibold border-white/20 text-white hover:bg-white/10 cursor-pointer">
-                                Preise ansehen
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </section>
-        </>
-    );
+      {/* Final CTA */}
+      <section className="bg-white py-20 lg:py-28">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
+          <Heart className="w-8 h-8 text-[var(--ep-purple)] mx-auto mb-6" />
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#071423] tracking-tight mb-4">
+            Bereit fuer faire Gehaelter?
+          </h2>
+          <p className="text-base text-[var(--ep-gray-4)] mb-8 max-w-[45ch] mx-auto">
+            In 20 Minuten zeigen wir Ihnen, wie KlarGehalt Ihr Unternehmen EU-konform macht. Unverbindlich.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href={getMarketingUrl('/kontakt')}
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-[#071423] text-white hover:bg-[#0d1f33] transition-colors cursor-pointer"
+            >
+              Demo anfragen <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href={getMarketingUrl('/preise')}
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold border border-[var(--ep-gray-2)] text-[#071423] hover:bg-[var(--ep-gray-1)] transition-colors cursor-pointer"
+            >
+              Preise ansehen
+            </Link>
+          </div>
+        </div>
+      </section>
+    </>
+  );
 }

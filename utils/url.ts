@@ -9,7 +9,7 @@ const MARKETING_URL = `https://${ROOT_DOMAIN}`;
 export const getAppUrl = (path: string = '') => {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
-    // If we are in development and not using subdomains, return local path
+    if (typeof window === 'undefined') return cleanPath;
     if (process.env.NODE_ENV === 'development' && !window.location.hostname.includes(ROOT_DOMAIN)) {
         return cleanPath;
     }
@@ -20,7 +20,7 @@ export const getAppUrl = (path: string = '') => {
 export const getMarketingUrl = (path: string = '') => {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
-    // In dev, usually root is handled by the same dev server
+    if (typeof window === 'undefined') return cleanPath;
     if (process.env.NODE_ENV === 'development' && !window.location.hostname.includes(ROOT_DOMAIN)) {
         return cleanPath;
     }

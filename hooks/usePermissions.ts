@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
 export interface Permission {
@@ -64,86 +64,81 @@ export const PERMISSIONS = {
 
 export type PermissionCode = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
+type AppRole = 'admin' | 'hr_manager' | 'employee';
+
+// Static role → permission mapping. RLS is the real security boundary;
+// this is purely for UI gating.
+const ROLE_PERMISSION_MAP: Record<AppRole, PermissionCode[]> = {
+  admin: Object.values(PERMISSIONS),
+  hr_manager: [
+    'users.view',
+    'company.view',
+    'company.update',
+    'job_profiles.view', 'job_profiles.create', 'job_profiles.update', 'job_profiles.delete',
+    'pay_bands.view', 'pay_bands.create', 'pay_bands.update', 'pay_bands.delete',
+    'employees.view', 'employees.create', 'employees.update', 'employees.delete', 'employees.view_own',
+    'salaries.view', 'salaries.create', 'salaries.update', 'salaries.view_aggregated',
+    'audit.view', 'audit.export',
+    'reports.view', 'reports.create', 'reports.export',
+    'requests.view_all', 'requests.process', 'requests.create', 'requests.view_own',
+  ],
+  employee: [
+    'company.view',
+    'job_profiles.view',
+    'pay_bands.view',
+    'employees.view_own',
+    'salaries.view_aggregated',
+    'requests.create',
+    'requests.view_own',
+  ],
+};
+
 export function usePermissions() {
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [permissionCodes, setPermissionCodes] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { role, loading: authLoading } = useAuth();
 
-  const fetchPermissions = useCallback(async () => {
-    if (!isLoaded || !user || !orgId) {
-      setPermissions([]);
-      setPermissionCodes(new Set());
-      setLoading(false);
-      return;
-    }
+  const effectiveRole: AppRole = (role as AppRole) ?? 'employee';
 
-    setLoading(true);
+  const permissionCodes = useMemo<Set<string>>(
+    () => new Set(ROLE_PERMISSION_MAP[effectiveRole] ?? ROLE_PERMISSION_MAP.employee),
+    [effectiveRole]
+  );
 
-    try {
-      const { data, error } = await supabase.rpc('get_user_permissions');
+  const permissions = useMemo<Permission[]>(
+    () => Array.from(permissionCodes).map(code => {
+      const [category, action] = code.split('.');
+      return { code, name: action, category };
+    }),
+    [permissionCodes]
+  );
 
-      if (error) throw error;
+  const hasPermission = useCallback(
+    (code: PermissionCode | string): boolean => permissionCodes.has(code),
+    [permissionCodes]
+  );
 
-      // Map the database response to our Permission interface
-      const perms: Permission[] = (data || []).map((row: any) => ({
-        code: row.permission_code,
-        name: row.permission_name,
-        category: row.category,
-      }));
-      setPermissions(perms);
-      setPermissionCodes(new Set(perms.map(p => p.code)));
-    } catch (error: any) {
-      console.error('Error fetching permissions:', error);
-      setPermissions([]);
-      setPermissionCodes(new Set());
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoaded, user, orgId, supabase]);
+  const hasAnyPermission = useCallback(
+    (codes: (PermissionCode | string)[]): boolean => codes.some(c => permissionCodes.has(c)),
+    [permissionCodes]
+  );
 
-  useEffect(() => {
-    fetchPermissions();
-  }, [fetchPermissions]);
+  const hasAllPermissions = useCallback(
+    (codes: (PermissionCode | string)[]): boolean => codes.every(c => permissionCodes.has(c)),
+    [permissionCodes]
+  );
 
-  /**
-   * Check if user has a specific permission
-   * This is a client-side check for UI purposes only!
-   * Server-side RLS enforces the actual security
-   */
-  const hasPermission = useCallback((code: PermissionCode | string): boolean => {
-    return permissionCodes.has(code);
-  }, [permissionCodes]);
-
-  /**
-   * Check if user has ANY of the specified permissions
-   */
-  const hasAnyPermission = useCallback((codes: (PermissionCode | string)[]): boolean => {
-    return codes.some(code => permissionCodes.has(code));
-  }, [permissionCodes]);
-
-  /**
-   * Check if user has ALL of the specified permissions
-   */
-  const hasAllPermissions = useCallback((codes: (PermissionCode | string)[]): boolean => {
-    return codes.every(code => permissionCodes.has(code));
-  }, [permissionCodes]);
-
-  /**
-   * Get permissions by category
-   */
-  const getPermissionsByCategory = useCallback((category: string): Permission[] => {
-    return permissions.filter(p => p.category === category);
-  }, [permissions]);
+  const getPermissionsByCategory = useCallback(
+    (category: string): Permission[] => permissions.filter(p => p.category === category),
+    [permissions]
+  );
 
   return {
     permissions,
-    loading,
+    loading: authLoading,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
     getPermissionsByCategory,
-    refetch: fetchPermissions,
+    refetch: () => {}, // no-op — permissions derived from role, no fetch needed
   };
 }
 
@@ -153,9 +148,7 @@ export function usePermissions() {
 export const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrator',
   hr_manager: 'HR-Manager',
-  legal: 'Legal / Compliance',
   employee: 'Mitarbeiter',
-  auditor: 'Auditor',
 };
 
 /**
@@ -164,9 +157,7 @@ export const ROLE_LABELS: Record<string, string> = {
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
   admin: 'Vollzugriff auf alle Funktionen und Einstellungen',
   hr_manager: 'Verwaltung von Mitarbeitern, Gehältern und Job-Profilen',
-  legal: 'Einsicht in Audit-Logs und Compliance-Berichte',
   employee: 'Einsicht in eigene Daten und Auskunftsanfragen',
-  auditor: 'Zeitlich begrenzter Lesezugriff für externe Prüfer',
 };
 
 /**
@@ -175,7 +166,5 @@ export const ROLE_DESCRIPTIONS: Record<string, string> = {
 export const ROLE_COLORS: Record<string, string> = {
   admin: 'bg-status-action/10 text-status-action',
   hr_manager: 'bg-status-warning/10 text-status-warning',
-  legal: 'bg-primary/10 text-primary',
   employee: 'bg-status-ok/10 text-status-ok',
-  auditor: 'bg-muted text-muted-foreground',
 };

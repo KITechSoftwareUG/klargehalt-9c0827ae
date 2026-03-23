@@ -112,12 +112,12 @@ const faqs = [
 function FeatureCell({ value }: { value: FeatureValue }) {
     if (typeof value === 'boolean') {
         return value ? (
-            <Check className="w-4 h-4 text-[#1E293B]" />
+            <Check className="w-4 h-4 text-[#071423]" />
         ) : (
             <Minus className="w-4 h-4 text-slate-200" />
         );
     }
-    return <span className="text-sm font-medium text-[#1E293B]">{value}</span>;
+    return <span className="text-sm font-medium text-[#071423]">{value}</span>;
 }
 
 export default function PreisePage() {
@@ -126,21 +126,23 @@ export default function PreisePage() {
     return (
         <>
             {/* Hero */}
-            <section className="pt-[72px] bg-white">
+            <section className="pt-[72px] bg-[#071423]">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 lg:pt-36 pb-16">
                     <div className="max-w-3xl">
-                        <p className="text-xs font-mono font-bold text-slate-400 mb-4">PREISE</p>
-                        <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-[#1E293B] tracking-tight leading-[1.1] mb-6">
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[var(--ep-yellow)]/20 text-[var(--ep-yellow)] mb-5">
+                            Transparente Preise
+                        </span>
+                        <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                             Klare Preise.<br />
-                            <span className="text-slate-400">Keine Ueberraschungen.</span>
+                            <span className="text-white/40">Keine Ueberraschungen.</span>
                         </h1>
-                        <p className="text-base lg:text-lg text-slate-500 leading-relaxed max-w-[55ch]">
+                        <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
                             Compliance-Software sollte selbst transparent sein.
                             Waehlen Sie den Plan, der zu Ihrer Unternehmensgroesse passt.
                         </p>
                     </div>
                 </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                <div className="h-24 bg-gradient-to-b from-[#071423] to-[var(--ep-gray-1)]" />
             </section>
 
             {/* Pricing Cards */}
@@ -152,21 +154,21 @@ export default function PreisePage() {
                                 key={p.name}
                                 className={`rounded-2xl p-7 lg:p-9 flex flex-col ${
                                     p.featured
-                                        ? 'bg-[#1E293B] text-white ring-1 ring-[#1E293B] shadow-[0_8px_32px_rgba(30,41,59,0.18)] lg:-my-3'
+                                        ? 'bg-[#071423] text-white ring-2 ring-[var(--ep-purple)] shadow-[0_8px_32px_rgba(148,109,247,0.15)] lg:-my-3'
                                         : 'bg-white border border-slate-200'
                                 }`}
                             >
                                 {p.featured && (
-                                    <span className="self-start px-2.5 py-1 bg-white/10 text-white text-[10px] font-bold rounded-md mb-5 uppercase tracking-wider">
+                                    <span className="self-start px-2.5 py-1 bg-[var(--ep-purple)]/20 text-[var(--ep-purple-light)] text-[10px] font-bold rounded-md mb-5 uppercase tracking-wider">
                                         Beliebteste Wahl
                                     </span>
                                 )}
-                                <h3 className={`text-lg font-bold tracking-tight mb-1 ${p.featured ? 'text-white' : 'text-[#1E293B]'}`}>{p.name}</h3>
+                                <h3 className={`text-lg font-bold tracking-tight mb-1 ${p.featured ? 'text-white' : 'text-[#071423]'}`}>{p.name}</h3>
                                 <p className="text-xs text-slate-400 mb-6">{p.desc}</p>
 
                                 <div className="flex items-baseline gap-1 mb-7">
                                     {p.price !== 'Auf Anfrage' && <span className="text-xs text-slate-400">EUR</span>}
-                                    <span className={`text-3xl font-extrabold tracking-tight ${p.featured ? 'text-white' : 'text-[#1E293B]'}`}>{p.price}</span>
+                                    <span className={`text-3xl font-extrabold tracking-tight ${p.featured ? 'text-white' : 'text-[#071423]'}`}>{p.price}</span>
                                     {p.period && <span className="text-xs text-slate-400">{p.period}</span>}
                                 </div>
 
@@ -174,8 +176,8 @@ export default function PreisePage() {
                                     <Button
                                         className={`w-full h-11 rounded-lg text-sm font-semibold group cursor-pointer ${
                                             p.featured
-                                                ? 'bg-white text-[#1E293B] hover:bg-slate-100'
-                                                : 'bg-slate-50 text-[#1E293B] hover:bg-slate-100 border border-slate-200'
+                                                ? 'bg-white text-[#071423] hover:bg-slate-100'
+                                                : 'bg-slate-50 text-[#071423] hover:bg-slate-100 border border-slate-200'
                                         }`}
                                     >
                                         {p.cta}
@@ -192,7 +194,7 @@ export default function PreisePage() {
             {/* Comparison Table */}
             <section className="py-20 lg:py-28 bg-white">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-12">
                         Feature-Vergleich im Detail.
                     </h2>
 
@@ -201,9 +203,9 @@ export default function PreisePage() {
                             <thead>
                                 <tr className="border-b border-slate-200">
                                     <th className="text-left py-4 pr-4 text-sm font-medium text-slate-400 w-[40%]">Funktion</th>
-                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#1E293B] w-[20%]">Starter</th>
-                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#1E293B] w-[20%] bg-slate-50 rounded-t-lg">Business</th>
-                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#1E293B] w-[20%]">Enterprise</th>
+                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%]">Starter</th>
+                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%] bg-slate-50 rounded-t-lg">Business</th>
+                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%]">Enterprise</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -233,7 +235,7 @@ export default function PreisePage() {
             {/* FAQ */}
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-12">
                         Haeufig gestellte Fragen.
                     </h2>
 
@@ -244,7 +246,7 @@ export default function PreisePage() {
                                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                                     className="flex items-center justify-between w-full py-5 text-left cursor-pointer"
                                 >
-                                    <span className="text-sm font-semibold text-[#1E293B] pr-4">{faq.q}</span>
+                                    <span className="text-sm font-semibold text-[#071423] pr-4">{faq.q}</span>
                                     <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
                                 </button>
                                 {openFaq === i && (
@@ -257,7 +259,7 @@ export default function PreisePage() {
             </section>
 
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#1E293B]">
+            <section className="py-20 lg:py-24 bg-[#071423]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
                         Nicht sicher, welcher Plan passt?
@@ -266,7 +268,7 @@ export default function PreisePage() {
                         Wir beraten Sie gerne. In 20 Minuten finden wir gemeinsam die richtige Loesung.
                     </p>
                     <Link href="/kontakt">
-                        <Button className="bg-white text-[#1E293B] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                        <Button className="bg-white text-[#071423] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
                             Beratungsgespraech buchen <ArrowRight className="w-4 h-4" />
                         </Button>
                     </Link>

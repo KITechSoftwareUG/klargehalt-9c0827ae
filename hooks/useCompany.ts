@@ -4,35 +4,27 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+// Canonical companies columns
 export interface Company {
   id: string;
   organization_id: string;
   name: string;
   legal_name: string | null;
-  tax_id: string | null;
-  address: string | null;
   country: string;
   industry: string | null;
-  employee_count_range: string | null;
-  size: string | null;
-  created_by: string | null;
-  is_active: boolean;
-  settings: unknown;
+  employee_size_band: string | null;
+  reporting_frequency: string | null;
   created_at: string;
   updated_at: string;
-  subscription_tier: 'basis' | 'manager' | 'excellence';
-  trial_ends_at: string | null;
 }
 
 export interface CompanyFormData {
   name: string;
   legal_name?: string;
-  tax_id?: string;
-  address?: string;
   country?: string;
   industry?: string;
-  employee_count_range?: '1-50' | '51-100' | '101-250' | '251-500' | '501-1000' | '1000+';
-  size?: string;
+  employee_size_band?: '100-149' | '150-249' | '250+';
+  reporting_frequency?: 'annual' | 'triennial';
 }
 
 export function useCompany() {

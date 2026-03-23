@@ -2,27 +2,24 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+// Canonical audit_logs columns only
 export interface AuditLog {
   id: string;
   organization_id: string;
   user_id: string;
-  user_email: string;
-  user_role: string;
   action: string;
   entity_type: string;
   entity_id: string | null;
-  entity_name: string | null;
-  old_values: unknown;
-  new_values: unknown;
-  metadata: unknown;
+  before_state: unknown;
+  after_state: unknown;
+  ip_address: string | null;
   created_at: string;
-  record_hash: string;
 }
 
 export interface AuditLogFilters {
   action?: string;
   entity_type?: string;
-  user_email?: string;
+  user_id?: string;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -57,8 +54,8 @@ export function useAuditLogs(filters?: AuditLogFilters) {
       if (filters?.entity_type) {
         query = query.eq('entity_type', filters.entity_type);
       }
-      if (filters?.user_email) {
-        query = query.ilike('user_email', `%${filters.user_email}%`);
+      if (filters?.user_id) {
+        query = query.eq('user_id', filters.user_id);
       }
       if (filters?.dateFrom) {
         query = query.gte('created_at', filters.dateFrom);
@@ -72,7 +69,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
       if (error) throw error;
       setAuditLogs((data || []) as AuditLog[]);
       setTotalCount(count || 0);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching audit logs:', error);
       toast.error('Fehler beim Laden der Audit-Logs');
     } finally {
@@ -93,15 +90,13 @@ export function useAuditLogs(filters?: AuditLogFilters) {
       if (error) throw error;
 
       if (format === 'csv') {
-        const headers = ['Datum', 'Benutzer', 'Rolle', 'Aktion', 'Entität', 'Name', 'Hash'];
-        const rows = (data || []).map(log => [
+        const headers = ['Datum', 'Benutzer-ID', 'Aktion', 'Entitätstyp', 'Entitäts-ID'];
+        const rows = (data || []).map((log: AuditLog) => [
           new Date(log.created_at).toLocaleString('de-DE'),
-          log.user_email,
-          log.user_role,
+          log.user_id,
           log.action,
           log.entity_type,
-          log.entity_name || '',
-          log.record_hash
+          log.entity_id || '',
         ]);
 
         const csvContent = [headers, ...rows]
@@ -114,12 +109,13 @@ export function useAuditLogs(filters?: AuditLogFilters) {
         link.href = url;
         link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
+        URL.revokeObjectURL(url);
 
         toast.success('Audit-Logs exportiert');
         return csvContent;
       }
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Fehler beim Exportieren der Audit-Logs');
       return null;
     }
@@ -129,7 +125,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     if (isLoaded && user && orgId) {
       fetchAuditLogs();
     }
-  }, [isLoaded, user, orgId, filters?.action, filters?.entity_type, filters?.user_email, filters?.dateFrom, filters?.dateTo]);
+  }, [isLoaded, user, orgId, filters?.action, filters?.entity_type, filters?.user_id, filters?.dateFrom, filters?.dateTo]);
 
   return {
     auditLogs,

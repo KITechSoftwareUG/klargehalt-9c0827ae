@@ -1,51 +1,123 @@
 /**
- * Mitarbeiter-View: AI-gestützter Gehaltscheck
+ * Mitarbeiter-View: Gehaltseinordnung
+ * Shows employee's salary position relative to their pay band
+ * Uses canonical employees + pay_bands tables (no dead pay_groups)
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useEmployeeComparison } from '@/hooks/usePayEquity';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
-import { Users, Info } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
+
+interface EmployeePayInfo {
+    base_salary: number;
+    variable_pay: number;
+    pay_band_min: number | null;
+    pay_band_max: number | null;
+    job_profile_title: string | null;
+    job_level_name: string | null;
+    department_name: string | null;
+}
 
 export default function MySalaryComparisonView() {
-    const { user, supabase } = useAuth();
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
+    const { user, orgId, supabase, isSignedIn } = useAuth();
+    const [payInfo, setPayInfo] = useState<EmployeePayInfo | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const { data: comparison, isLoading: comparisonLoading } = useEmployeeComparison(employeeId || '');
-
-    // Hole Employee-ID für aktuellen User
     useEffect(() => {
-        async function fetchEmployeeId() {
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('employees')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (!error && data) {
-                setEmployeeId(data.id);
+        async function fetchPayInfo() {
+            if (!user || !orgId || !isSignedIn) {
+                setLoading(false);
+                return;
             }
-            setLoading(false);
+
+            try {
+                // Get employee record for current user
+                const { data: employee, error: empErr } = await supabase
+                    .from('employees')
+                    .select('base_salary, variable_pay, job_profile_id, job_level_id, department_id, pay_band_id')
+                    .eq('user_id', user.id)
+                    .eq('organization_id', orgId)
+                    .maybeSingle();
+
+                if (empErr || !employee) {
+                    setLoading(false);
+                    return;
+                }
+
+                const info: EmployeePayInfo = {
+                    base_salary: employee.base_salary,
+                    variable_pay: employee.variable_pay || 0,
+                    pay_band_min: null,
+                    pay_band_max: null,
+                    job_profile_title: null,
+                    job_level_name: null,
+                    department_name: null,
+                };
+
+                // Fetch pay band if assigned
+                if (employee.pay_band_id) {
+                    const { data: band } = await supabase
+                        .from('pay_bands')
+                        .select('min_salary, max_salary')
+                        .eq('id', employee.pay_band_id)
+                        .single();
+                    if (band) {
+                        info.pay_band_min = band.min_salary;
+                        info.pay_band_max = band.max_salary;
+                    }
+                }
+
+                // Fetch job profile title
+                if (employee.job_profile_id) {
+                    const { data: profile } = await supabase
+                        .from('job_profiles')
+                        .select('title')
+                        .eq('id', employee.job_profile_id)
+                        .single();
+                    if (profile) info.job_profile_title = profile.title;
+                }
+
+                // Fetch job level name
+                if (employee.job_level_id) {
+                    const { data: level } = await supabase
+                        .from('job_levels')
+                        .select('name')
+                        .eq('id', employee.job_level_id)
+                        .single();
+                    if (level) info.job_level_name = level.name;
+                }
+
+                // Fetch department name
+                if (employee.department_id) {
+                    const { data: dept } = await supabase
+                        .from('departments')
+                        .select('name')
+                        .eq('id', employee.department_id)
+                        .single();
+                    if (dept) info.department_name = dept.name;
+                }
+
+                setPayInfo(info);
+            } catch (error) {
+                console.error('Error fetching pay info:', error);
+            } finally {
+                setLoading(false);
+            }
         }
 
-        fetchEmployeeId();
-    }, [user]);
+        fetchPayInfo();
+    }, [user, orgId, isSignedIn, supabase]);
 
-    if (loading || comparisonLoading) {
+    if (loading) {
         return <LoadingSkeleton />;
     }
 
-    if (!comparison) {
+    if (!payInfo) {
         return (
             <div className="space-y-6">
                 <div>
@@ -57,134 +129,98 @@ export default function MySalaryComparisonView() {
                 <Alert className="bg-slate-50 border-dashed">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                        Für Ihr Profil liegen noch keine Vergleichsdaten vor. Dies kann passieren, wenn Ihr Profil noch nicht vollständig zugeordnet wurde oder zu wenige Vergleichspersonen in Ihrer Gruppe sind.
+                        Für Ihr Profil liegen noch keine Gehaltsdaten vor. Bitte wenden Sie sich an Ihre HR-Abteilung.
                     </AlertDescription>
                 </Alert>
             </div>
         );
     }
 
-    // Chart-Daten vorbereiten
-    const chartData = [
-        { name: 'Min', value: comparison.group_avg_salary * 0.85, type: 'ref' },
-        { name: 'Median', value: comparison.group_median_salary, type: 'median' },
-        { name: 'Ich', value: comparison.employee_salary, type: 'current' },
-        { name: 'Max', value: comparison.group_avg_salary * 1.15, type: 'ref' },
-    ];
+    const bandRange = payInfo.pay_band_min != null && payInfo.pay_band_max != null
+        ? payInfo.pay_band_max - payInfo.pay_band_min
+        : null;
+    const positionInBand = bandRange && bandRange > 0
+        ? ((payInfo.base_salary - payInfo.pay_band_min!) / bandRange) * 100
+        : null;
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Mein Gehaltscheck</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Ihre Gehaltseinordnung im Vergleich zur Peer-Group.
-                    </p>
-                </div>
-                <Badge variant="outline" className="px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
-                    <Users className="h-3 w-3 mr-1.5" />
-                    Vergleichsgruppe: {(comparison as any).pay_group?.employee_count || 0} Personen
-                </Badge>
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight">Mein Gehaltscheck</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Ihre Gehaltseinordnung gemäß EU-Entgelttransparenzrichtlinie.
+                </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Visualisierung */}
-                <Card className="lg:col-span-2 overflow-hidden border-2 shadow-sm">
-                    <CardHeader className="bg-slate-50/50 border-b">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">Benchmark-Vergleich</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Grundgehalt</CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-8">
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis
-                                        dataKey="name"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#64748b', fontSize: 12 }}
-                                    />
-                                    <YAxis
-                                        hide
-                                        domain={[0, (dataMax: any) => dataMax * 1.1]}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: '#f1f5f9', opacity: 0.5 }}
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <div className="bg-white p-3 border rounded-xl shadow-xl">
-                                                        <p className="text-xs font-semibold text-slate-500 mb-1">{payload[0].payload.name}</p>
-                                                        <p className="text-lg font-bold">€{Number(payload[0].value).toLocaleString('de-DE')}</p>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                    />
-                                    <ReferenceLine
-                                        y={comparison.group_median_salary}
-                                        stroke="#cbd5e1"
-                                        strokeDasharray="5 5"
-                                    />
-                                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={50}>
-                                        {chartData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={
-                                                    entry.type === 'current' ? '#0f172a' :
-                                                        entry.type === 'median' ? '#3b82f6' :
-                                                            '#e2e8f0'
-                                                }
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t font-mono">
-                            <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground uppercase">Abweichung Median</p>
-                                <p className={`text-2xl font-bold ${comparison.employee_salary >= comparison.group_median_salary
-                                        ? 'text-emerald-600' : 'text-amber-600'
-                                    }`}>
-                                    {((comparison.employee_salary / comparison.group_median_salary - 1) * 100).toFixed(1)}%
-                                </p>
-                            </div>
-                            <div className="space-y-1 text-right">
-                                <p className="text-xs text-muted-foreground uppercase">Percentile-Rank</p>
-                                <p className="text-2xl font-bold text-slate-900">
-                                    {comparison.percentile_rank?.toFixed(0) || '—'}%
-                                </p>
-                            </div>
-                        </div>
+                    <CardContent>
+                        <p className="text-3xl font-bold">
+                            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(payInfo.base_salary)}
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* Group Info */}
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-semibold uppercase text-slate-500">Ihre Vergleichsgruppe</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Job-Familie</span>
-                                <span className="font-medium">{(comparison as any).pay_group?.job_family || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Level</span>
-                                <span className="font-medium">{(comparison as any).pay_group?.job_level || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Standort</span>
-                                <span className="font-medium">{(comparison as any).pay_group?.location || 'N/A'}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Variable Vergütung</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-3xl font-bold">
+                            {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(payInfo.variable_pay)}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Position im Band</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {positionInBand != null ? (
+                            <>
+                                <p className="text-3xl font-bold">{positionInBand.toFixed(0)}%</p>
+                                <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary rounded-full transition-all"
+                                        style={{ width: `${Math.min(100, Math.max(0, positionInBand))}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                    <span>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(payInfo.pay_band_min!)}</span>
+                                    <span>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(payInfo.pay_band_max!)}</span>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-muted-foreground text-sm">Kein Gehaltsband zugeordnet</p>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
+
+            {/* Profile Info */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-sm font-semibold uppercase text-slate-500">Ihre Zuordnung</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Job-Profil</span>
+                        <span className="font-medium">{payInfo.job_profile_title || 'Nicht zugeordnet'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Karrierestufe</span>
+                        <span className="font-medium">{payInfo.job_level_name || 'Nicht zugeordnet'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Abteilung</span>
+                        <span className="font-medium">{payInfo.department_name || 'Nicht zugeordnet'}</span>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
@@ -194,15 +230,13 @@ function LoadingSkeleton() {
         <div className="space-y-6">
             <div className="flex justify-between">
                 <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-8 w-32" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Skeleton className="h-[400px] lg:col-span-2 w-full" />
-                <div className="space-y-6">
-                    <Skeleton className="h-48 w-full" />
-                    <Skeleton className="h-48 w-full" />
-                </div>
+            <div className="grid grid-cols-3 gap-4">
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
             </div>
+            <Skeleton className="h-40 w-full" />
         </div>
     );
 }

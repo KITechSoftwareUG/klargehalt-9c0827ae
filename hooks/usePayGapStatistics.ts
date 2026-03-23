@@ -2,230 +2,127 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-// Typen für aggregierte Statistiken
-export interface SalaryStatistic {
-  statistic_type: string;
-  value: number | null;
-  group_size: number;
-  is_suppressed: boolean;
-  suppression_reason: string | null;
-}
-
 export interface GenderPayGap {
-  category: string;
+  scope: string;
+  scope_label: string | null;
+  male_mean: number | null;
+  female_mean: number | null;
   male_median: number | null;
   female_median: number | null;
-  gap_percent: number | null;
-  male_count: number | null;
-  female_count: number | null;
-  is_reportable: boolean;
-  suppression_reason: string | null;
-}
-
-export interface DeviationAnalysis {
-  job_profile_id: string;
-  job_profile_title: string;
-  job_level_id: string;
-  job_level_name: string;
-  deviation_type: string;
-  deviation_percent: number | null;
-  affected_count: number;
-  is_critical: boolean;
-  recommendation: string;
+  mean_gap_pct: number | null;
+  median_gap_pct: number | null;
+  male_count: number;
+  female_count: number;
+  gap_status: string | null;
+  is_suppressed: boolean;
 }
 
 export interface DepartmentStatistic {
-  department: string;
+  department_id: string;
+  department_name: string;
   total_employees: number;
-  gender_distribution: {
-    male: number;
-    female: number;
-    other: number;
-  } | null;
-  avg_tenure_years: number | null;
+  male_count: number;
+  female_count: number;
+  diverse_count: number;
   is_suppressed: boolean;
 }
 
-export interface PayEquityReport {
-  generated_at: string;
-  company_id: string;
-  anonymization_threshold: number;
-  overall_gap: {
-    male_median: number | null;
-    female_median: number | null;
-    gap_percent: number | null;
-    male_count: number | null;
-    female_count: number | null;
-    is_reportable: boolean;
-  };
-  by_department: Array<{
-    department: string;
-    male_median: number | null;
-    female_median: number | null;
-    gap_percent: number | null;
-    is_reportable: boolean;
-    reason: string | null;
-  }>;
-  by_level: Array<{
-    level: string;
-    level_id: string;
-    gap_data: GenderPayGap | null;
-  }>;
-  critical_warnings: Array<{
-    profile: string;
-    level: string;
-    deviation: number;
-    recommendation: string;
-  }>;
-  eu_compliance_note: string;
-}
+const MIN_GROUP_SIZE = 5;
 
 export function usePayGapStatistics() {
   const { user, orgId, isLoaded, supabase } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Sichere Gehaltsstatistiken abrufen
-  const getSalaryStatistics = useCallback(async (
-    jobProfileId: string,
-    jobLevelId?: string
-  ): Promise<SalaryStatistic[]> => {
-    if (!isLoaded || !user || !orgId) return [];
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .rpc('get_safe_salary_statistics', {
-          _job_profile_id: jobProfileId,
-          _job_level_id: jobLevelId || null
-        });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Statistiken konnten nicht geladen werden',
-        variant: 'destructive'
-      });
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoaded, user, orgId, toast, supabase]);
-
-  // Gender Pay Gap berechnen
+  // Gender Pay Gap from snapshots
   const calculateGenderPayGap = useCallback(async (
-    jobProfileId?: string,
-    jobLevelId?: string,
-    department?: string
+    scope?: string,
+    scopeId?: string,
   ): Promise<GenderPayGap[]> => {
     if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .rpc('calculate_gender_pay_gap', {
-          _job_profile_id: jobProfileId || null,
-          _job_level_id: jobLevelId || null,
-          _department: department || null
-        });
+      let query = supabase
+        .from('pay_gap_snapshots')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('snapshot_date', { ascending: false });
 
+      if (scope) query = query.eq('scope', scope);
+      if (scopeId) query = query.eq('scope_id', scopeId);
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data || [];
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Pay Gap konnte nicht berechnet werden',
-        variant: 'destructive'
-      });
+
+      return (data || []).map((s): GenderPayGap => ({
+        scope: s.scope,
+        scope_label: s.scope_label,
+        male_mean: s.male_mean_base,
+        female_mean: s.female_mean_base,
+        male_median: s.male_median_base,
+        female_median: s.female_median_base,
+        mean_gap_pct: s.mean_gap_base_pct,
+        median_gap_pct: s.median_gap_base_pct,
+        male_count: s.male_count,
+        female_count: s.female_count,
+        gap_status: s.gap_status,
+        is_suppressed: s.is_suppressed,
+      }));
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Pay Gap konnte nicht berechnet werden';
+      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
       return [];
     } finally {
       setLoading(false);
     }
   }, [isLoaded, user, orgId, toast, supabase]);
 
-  // Abweichungsanalyse
-  const analyzeDeviations = useCallback(async (
-    thresholdPercent: number = 20
-  ): Promise<DeviationAnalysis[]> => {
-    if (!isLoaded || !user || !orgId) return [];
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .rpc('analyze_salary_deviations', {
-          _threshold_percent: thresholdPercent
-        });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Abweichungsanalyse fehlgeschlagen',
-        variant: 'destructive'
-      });
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoaded, user, orgId, toast, supabase]);
-
-  // Abteilungsstatistiken
+  // Department statistics from employees table
   const getDepartmentStatistics = useCallback(async (): Promise<DepartmentStatistic[]> => {
     if (!isLoaded || !user || !orgId) return [];
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .rpc('get_department_statistics');
+      const { data: employees, error } = await supabase
+        .from('employees')
+        .select('department_id, gender')
+        .eq('organization_id', orgId)
+        .eq('is_active', true);
 
       if (error) throw error;
 
-      return (data || []).map((item: any) => ({
-        department: item.department,
-        total_employees: item.total_employees,
-        gender_distribution: item.gender_distribution as DepartmentStatistic['gender_distribution'],
-        avg_tenure_years: item.avg_tenure_years,
-        is_suppressed: item.is_suppressed
+      const { data: departments } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('organization_id', orgId);
+
+      const deptMap = new Map((departments || []).map(d => [d.id, d.name]));
+
+      // Group by department
+      const grouped: Record<string, { male: number; female: number; diverse: number; total: number }> = {};
+      for (const emp of (employees || [])) {
+        const deptId = emp.department_id || 'unassigned';
+        if (!grouped[deptId]) grouped[deptId] = { male: 0, female: 0, diverse: 0, total: 0 };
+        grouped[deptId].total++;
+        if (emp.gender === 'male') grouped[deptId].male++;
+        else if (emp.gender === 'female') grouped[deptId].female++;
+        else grouped[deptId].diverse++;
+      }
+
+      return Object.entries(grouped).map(([deptId, counts]): DepartmentStatistic => ({
+        department_id: deptId,
+        department_name: deptMap.get(deptId) || 'Nicht zugeordnet',
+        total_employees: counts.total,
+        male_count: counts.male,
+        female_count: counts.female,
+        diverse_count: counts.diverse,
+        is_suppressed: counts.total < MIN_GROUP_SIZE,
       }));
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Abteilungsstatistiken konnten nicht geladen werden',
-        variant: 'destructive'
-      });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Abteilungsstatistiken konnten nicht geladen werden';
+      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
       return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoaded, user, orgId, toast, supabase]);
-
-  // Vollständiger Pay Equity Report
-  const generatePayEquityReport = useCallback(async (): Promise<PayEquityReport | null> => {
-    if (!isLoaded || !user || !orgId) return null;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .rpc('generate_pay_equity_report');
-
-      if (error) throw error;
-
-      toast({
-        title: 'Report generiert',
-        description: 'Der Pay Equity Report wurde erfolgreich erstellt',
-      });
-
-      return data as unknown as PayEquityReport;
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Report konnte nicht erstellt werden',
-        variant: 'destructive'
-      });
-      return null;
     } finally {
       setLoading(false);
     }
@@ -233,10 +130,7 @@ export function usePayGapStatistics() {
 
   return {
     loading,
-    getSalaryStatistics,
     calculateGenderPayGap,
-    analyzeDeviations,
     getDepartmentStatistics,
-    generatePayEquityReport
   };
 }
