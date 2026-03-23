@@ -16,7 +16,7 @@ const HeroSection = () => {
             <div className="mb-8">
               <Image
                 src="/brandname.svg"
-                alt="KlarGehalt"
+                alt="klargehalt"
                 width={500}
                 height={65}
                 priority

@@ -257,7 +257,7 @@ export default function OnboardingPage() {
                 return (
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
-                            <Image src="/brandname.svg" alt="KlarGehalt" width={200} height={30} className="h-8 w-auto mx-auto" />
+                            <Image src="/brandname.svg" alt="klargehalt" width={200} height={30} className="h-8 w-auto mx-auto" />
                             <h2 className="text-3xl font-bold">Willkommen bei KlarGehalt</h2>
                             <p className="text-muted-foreground">
                                 Lassen Sie uns Ihr Konto einrichten
@@ -614,7 +614,7 @@ export default function OnboardingPage() {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Image src="/brandname.svg" alt="KlarGehalt" width={100} height={16} className="h-4 w-auto" />
+                            <Image src="/brandname.svg" alt="klargehalt" width={100} height={16} className="h-4 w-auto" />
                             <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V3.1)</span>
                         </div>
                         <div className="flex items-center gap-4">

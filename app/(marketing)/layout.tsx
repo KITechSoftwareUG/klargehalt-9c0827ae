@@ -9,10 +9,17 @@ const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600
 
 export const metadata: Metadata = {
     title: {
-        default: 'KlarGehalt - Entgelttransparenz fuer Unternehmen',
-        template: '%s | KlarGehalt',
+        default: 'klargehalt — Entgelttransparenz für Unternehmen',
+        template: '%s | klargehalt',
     },
-    description: 'Die Compliance-Plattform fuer die EU-Entgelttransparenzrichtlinie 2023/970. Gehaltsstrukturen verwalten, Lohngleichheit nachweisen.',
+    description: 'Die Compliance-Plattform für die EU-Entgelttransparenzrichtlinie 2023/970. Gehaltsstrukturen verwalten, Lohngleichheit nachweisen.',
+    icons: {
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/favicon.png', type: 'image/png' },
+        ],
+        apple: '/apple-touch-icon.png',
+    },
 };
 
 export default function MarketingLayout({

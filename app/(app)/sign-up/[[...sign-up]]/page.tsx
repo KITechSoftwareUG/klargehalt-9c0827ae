@@ -56,7 +56,7 @@ export default function SignUpPage() {
                 <div className="relative z-10">
                     {/* Logo */}
                     <div className="mb-12">
-                        <Image src="/brandname.svg" alt="KlarGehalt" width={200} height={30} className="h-8 w-auto invert" />
+                        <Image src="/brandname.svg" alt="klargehalt" width={200} height={30} className="h-8 w-auto invert" />
                     </div>
 
                     {/* Alert Badge */}
@@ -165,7 +165,7 @@ export default function SignUpPage() {
 
                     {/* Mobile Logo */}
                     <div className="lg:hidden mb-8">
-                        <Image src="/brandname.svg" alt="KlarGehalt" width={160} height={24} className="h-6 w-auto" />
+                        <Image src="/brandname.svg" alt="klargehalt" width={160} height={24} className="h-6 w-auto" />
                     </div>
 
                     <Card className="border-slate-200 shadow-xl">

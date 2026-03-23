@@ -6,12 +6,19 @@ import { Providers } from './providers';
 const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
-    title: 'KlarGehalt App',
+    title: 'klargehalt',
     description: 'Dashboard',
     robots: {
         index: false,
         follow: false,
-    }
+    },
+    icons: {
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/favicon.png', type: 'image/png' },
+        ],
+        apple: '/apple-touch-icon.png',
+    },
 };
 
 export default function AppLayout({
