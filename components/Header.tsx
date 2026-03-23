@@ -1,6 +1,7 @@
 'use client';
 
 import { Menu, X, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,13 +11,13 @@ const navItems = [
   {
     label: 'Plattform',
     children: [
-      { label: 'Funktionen', href: '/funktionen', desc: 'Alle Features im Ueberblick' },
+      { label: 'Funktionen', href: '/funktionen', desc: 'Alle Features im Überblick' },
       { label: 'Sicherheit', href: '/sicherheit', desc: 'Datenschutz & Compliance' },
       { label: 'Preise', href: '/preise', desc: 'Transparente Preisgestaltung' },
     ],
   },
   { label: 'EU-Richtlinie', href: '/eu-richtlinie' },
-  { label: 'Ueber uns', href: '/ueber-uns' },
+  { label: 'Über uns', href: '/ueber-uns' },
   { label: 'Kontakt', href: '/kontakt' },
 ];
 
@@ -67,7 +68,14 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={getMarketingUrl('/')} className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer">
-            <span className="text-white text-xl font-bold tracking-tight">europace</span>
+            <Image
+              src="/brandname.svg"
+              alt="klargehalt"
+              width={160}
+              height={28}
+              priority
+              className="h-8 sm:h-9 w-auto brightness-0 invert"
+            />
           </Link>
 
           {/* Desktop Nav */}

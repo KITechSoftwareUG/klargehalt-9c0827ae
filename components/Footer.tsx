@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getMarketingUrl } from '@/utils/url';
 
@@ -9,7 +10,7 @@ const links = {
     { label: 'Kontakt', href: '/kontakt' },
   ],
   Unternehmen: [
-    { label: 'Ueber uns', href: '/ueber-uns' },
+    { label: 'Über uns', href: '/ueber-uns' },
     { label: 'EU-Richtlinie', href: '/eu-richtlinie' },
     { label: 'Karriere', href: '/kontakt' },
   ],
@@ -27,10 +28,16 @@ const Footer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 mb-10">
           <div className="lg:col-span-4 space-y-4">
             <Link href={getMarketingUrl('/')} className="cursor-pointer">
-              <span className="text-white/50 text-lg font-bold tracking-tight">europace</span>
+              <Image
+                src="/brandname.svg"
+                alt="klargehalt"
+                width={130}
+                height={20}
+                className="h-5 w-auto brightness-0 invert opacity-50"
+              />
             </Link>
             <p className="text-xs text-white/30 leading-relaxed max-w-[32ch]">
-              Die Compliance-Plattform fuer Entgelttransparenz. EU-konform, sicher, einfach.
+              Die Compliance-Plattform für Entgelttransparenz. EU-konform, sicher, einfach.
             </p>
           </div>
 
