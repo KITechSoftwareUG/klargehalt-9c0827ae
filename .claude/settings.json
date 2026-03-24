@@ -12,24 +12,8 @@
       "Bash(git add*)",
       "Bash(git commit*)",
       "Bash(git push*)",
-      "Bash(ls*)",
-      "Bash(systemctl status:*)",
-      "Bash(sudo lsof:*)",
-      "Bash(sudo fuser:*)",
-      "Bash(sudo systemctl:*)",
-      "Bash(sudo ss:*)",
-      "Read(//proc/1688/net/**)",
-      "Bash(netstat -tlnp)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/ --max-time 5)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001)",
-      "Bash(curl -s -o /dev/null -w \" %{http_code}\" http://localhost:3002)",
-      "Bash(docker ps:*)",
-      "Skill(gsd:map-codebase)",
-      "Skill(gsd:map-codebase:*)",
-      "Bash(ls -la /home/deploy/app/app/\\\\\\(marketing\\\\\\)/)"
-    ],
-    "additionalDirectories": [
-      "/home/deploy/app/app"
+      "Bash(npm install*)",
+      "Bash(ls*)"
     ]
   }
 }
