@@ -1,24 +1,23 @@
 'use client';
 
-// Trigger deployment check: 2026-02-25T07:51:18
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Building2, CheckCircle2, ArrowRight, ArrowLeft, Calendar, FileText } from 'lucide-react';
-import Image from 'next/image';
+import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { createSupabaseClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PLANS, TRIAL_DURATION_DAYS, type SubscriptionTier } from '@/lib/subscription';
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+type OnboardingStep = 1 | 2 | 3;
 type UserRole = 'admin' | 'hr_manager';
-type CompanySize = '1-50' | '51-250' | '251-1000' | '1000+';
-type ConsultingOption = 'self-service' | 'guided' | 'full-service';
+type CompanySize = '1-50' | '51-250' | '250+';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -27,35 +26,22 @@ export default function OnboardingPage() {
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
 
-    // Form data
     const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
-    const [companySize, setCompanySize] = useState<CompanySize>('1-50');
-    const [consultingOption, setConsultingOption] = useState<ConsultingOption>('self-service');
+    const [fullName, setFullName] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [industry, setIndustry] = useState('');
-    const [fullName, setFullName] = useState('');
+    const [companySize, setCompanySize] = useState<CompanySize>('1-50');
+    const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
 
-    const totalSteps = 5;
+    const totalSteps = 3;
     const progress = (currentStep / totalSteps) * 100;
 
-    const handleNext = () => {
-        if (currentStep < totalSteps) {
-            setCurrentStep((prev) => (prev + 1) as OnboardingStep);
-        }
-    };
-
-    const handleBack = () => {
-        if (currentStep > 1) {
-            setCurrentStep((prev) => (prev - 1) as OnboardingStep);
-        }
-    };
+    const canProceedStep1 = fullName.trim().length > 0;
+    const canProceedStep2 = companyName.trim().length > 0;
 
     const handleComplete = async () => {
         if (!user) {
-            toast({
-                title: 'Initialisierung...',
-                description: 'Bitte warten Sie kurz, bis das System bereit ist.',
-            });
+            toast({ title: 'Bitte warten...', description: 'Das System wird initialisiert.' });
             return;
         }
 
@@ -65,614 +51,393 @@ export default function OnboardingPage() {
             let organization = organizations[0] ?? null;
 
             if (!organization) {
-                const organizationResponse = await fetch('/api/auth/organizations', {
+                const res = await fetch('/api/auth/organizations', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: companyName || `${fullName}'s Firma`,
-                    }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: companyName || `${fullName}s Unternehmen` }),
                 });
-
-                if (!organizationResponse.ok) {
-                    throw new Error('Organisation konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
-                }
-
-                const organizationData = await organizationResponse.json();
-                organization = organizationData.organization;
+                if (!res.ok) throw new Error('Organisation konnte nicht erstellt werden.');
+                const data = await res.json();
+                organization = data.organization;
             }
 
-            if (!organization) {
-                throw new Error('Organisation konnte nicht erstellt oder gefunden werden.');
-            }
+            if (!organization) throw new Error('Organisation konnte nicht gefunden werden.');
 
             await setActiveOrganization(organization.id);
 
-            // Use a scoped client that re-fetches a fresh token for each request.
-            const supabase = createSupabaseClient(
-                async () => {
-                    const tokenResponse = await fetch('/api/auth/organization-token', {
-                        cache: 'no-store',
-                    });
+            const supabase = createSupabaseClient(async () => {
+                const res = await fetch('/api/auth/organization-token', { cache: 'no-store' });
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data.token as string | null;
+            });
 
-                    if (!tokenResponse.ok) {
-                        return null;
-                    }
+            const trialEndsAt = new Date();
+            trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DURATION_DAYS);
 
-                    const data = await tokenResponse.json();
-                    return data.token as string | null;
-                }
-            );
-
-            // STEP 4: Create Supabase records (IDEMPOTENT / SAFE)
-
-            // 4a. Check existing Company
             const { data: existingCompany } = await supabase
                 .from('companies')
-                .select('*')
+                .select('id')
                 .eq('organization_id', organization.id)
                 .maybeSingle();
 
-            let companyId;
+            let companyId: string;
 
             if (existingCompany) {
-                console.log("Updating existing company...");
-                const { data: updatedCompany, error: updateError } = await supabase
+                const { data, error } = await supabase
                     .from('companies')
                     .update({
                         name: companyName,
                         industry,
                         size: companySize,
-                        // Don't update created_by to preserve history
+                        subscription_tier: selectedPlan,
+                        subscription_status: 'trialing',
+                        trial_ends_at: trialEndsAt.toISOString(),
                     })
                     .eq('id', existingCompany.id)
-                    .select()
+                    .select('id')
                     .single();
-
-                if (updateError) throw updateError;
-                companyId = updatedCompany.id;
+                if (error) throw error;
+                companyId = data.id;
             } else {
-                console.log("Creating new company...");
-                const { data: newCompany, error: insertError } = await supabase
+                const { data, error } = await supabase
                     .from('companies')
                     .insert({
                         name: companyName,
                         industry,
                         size: companySize,
                         organization_id: organization.id,
-                        created_by: user.id
+                        created_by: user.id,
+                        subscription_tier: selectedPlan,
+                        subscription_status: 'trialing',
+                        trial_ends_at: trialEndsAt.toISOString(),
                     })
-                    .select()
+                    .select('id')
                     .single();
-
-                // If RLS blocked it (because role missing), we might have issues.
-                // But generally users can insert companies if they don't have one and RLS allows it (see fix policies)
-                if (insertError) {
-                    // Emergency Fallback: If RLS blocked insert, maybe user has no role yet? 
-                    // The RLS policy "Companies: Insert" allows user to insert if authenticated.
-                    throw insertError;
-                }
-                companyId = newCompany.id;
+                if (error) throw error;
+                companyId = data.id;
             }
 
-
-            // 4b. Sync user profile
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .upsert({
+            await supabase.from('profiles').upsert(
+                {
                     user_id: user.id,
                     full_name: fullName,
                     company_name: companyName,
-                    organization_id: organization.id
-                }, { onConflict: 'user_id' });
+                    organization_id: organization.id,
+                },
+                { onConflict: 'user_id' }
+            );
 
-            if (profileError) console.error('Supabase Profile Error:', profileError);
-
-
-            // 4c. Set user role (Idempotent)
-            const roleToSet = selectedRole || 'admin';
-            console.log('Setting user role:', roleToSet, 'for company:', companyId);
-
-            if (!roleToSet) {
-                console.error("CRITICAL: selectedRole is empty!");
-            }
-
-            // First check if role exists to avoid PK violation if upsert logic is tricky
             const { data: existingRole } = await supabase
                 .from('user_roles')
-                .select('*')
+                .select('id')
                 .eq('user_id', user.id)
                 .eq('organization_id', organization.id)
                 .maybeSingle();
 
             if (!existingRole) {
-                const { error: roleError } = await supabase
-                    .from('user_roles')
-                    .insert({
-                        user_id: user.id,
-                        role: roleToSet,
-                        organization_id: organization.id,
-                        company_id: companyId,
-                    });
-                if (roleError) console.error('User Roles Insert Error:', roleError);
+                await supabase.from('user_roles').insert({
+                    user_id: user.id,
+                    role: selectedRole,
+                    organization_id: organization.id,
+                    company_id: companyId,
+                });
             } else {
-                // Update role if needed
-                const { error: roleError } = await supabase
+                await supabase
                     .from('user_roles')
-                    .update({
-                        role: roleToSet,
-                        company_id: companyId
-                    })
+                    .update({ role: selectedRole, company_id: companyId })
                     .eq('id', existingRole.id);
-                if (roleError) console.error('User Roles Update Error:', roleError);
             }
 
-
-            // 4d. Store onboarding preferences
-            const { error: prefsError } = await supabase
-                .from('onboarding_data')
-                .upsert({
+            await supabase.from('onboarding_data').upsert(
+                {
                     user_id: user.id,
                     organization_id: organization.id,
                     company_id: companyId,
                     company_size: companySize,
-                    consulting_option: consultingOption,
+                    consulting_option: 'self-service',
                     completed_at: new Date().toISOString(),
-                }, { onConflict: 'user_id' }); // Assuming one per user
-
-            if (prefsError) console.error('Onboarding Data Error:', prefsError);
+                },
+                { onConflict: 'user_id' }
+            );
 
             toast({
                 title: 'Willkommen bei KlarGehalt!',
-                description: 'Ihr Onboarding wurde erfolgreich abgeschlossen.',
+                description: `Ihre ${TRIAL_DURATION_DAYS}-tägige Testphase hat begonnen.`,
             });
 
-            // Brief delay to ensure state is clear before redirect
             setTimeout(() => router.push('/dashboard'), 500);
-        } catch (error: any) {
-            console.error('Onboarding error detailed:', error);
-            const errorDetails = error.error_description || error.message || JSON.stringify(error);
-            const errorMessage = error.message || 'Ein technisches Problem ist aufgetreten.';
-            console.log('Full Error JSON:', errorDetails);
-
-            toast({
-                title: 'Fehler beim Abschluss',
-                description: errorMessage.includes('invalid input syntax for type uuid')
-                    ? 'Datenbank-Typfehler (UUID vs. TEXT). Bitte führen Sie die NUCLEAR_UUID_TO_TEXT_FIX Migration in Supabase aus.'
-                    : (errorMessage.includes('role "org:admin"') || errorMessage.includes('role "null"')
-                        ? 'Datenbank-Konfigurationsfehler bei Rollen. Bitte prüfen Sie die Supabase-Rollenmigration.'
-                        : errorMessage),
-                variant: 'destructive',
-            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten.';
+            console.error('Onboarding error:', error);
+            toast({ title: 'Fehler', description: message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
     };
 
+    return (
+        <div className="min-h-screen bg-background">
+            <div className="max-w-2xl mx-auto px-4 py-12">
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <Image src="/brandname.svg" alt="KlarGehalt" width={160} height={24} className="h-6 w-auto mx-auto mb-6" />
+                    <Progress value={progress} className="h-1.5 mb-2" />
+                    <p className="text-xs text-muted-foreground">Schritt {currentStep} von {totalSteps}</p>
+                </div>
 
-    const renderStep = () => {
-        switch (currentStep) {
-            case 1:
-                return (
-                    <div className="space-y-6">
+                {/* Step 1: Role + Name */}
+                {currentStep === 1 && (
+                    <div className="space-y-6 animate-fade-in">
                         <div className="text-center space-y-2">
-                            <Image src="/brandname.svg" alt="klargehalt" width={200} height={30} className="h-8 w-auto mx-auto" />
-                            <h2 className="text-3xl font-bold">Willkommen bei KlarGehalt</h2>
-                            <p className="text-muted-foreground">
-                                Lassen Sie uns Ihr Konto einrichten
-                            </p>
+                            <h1 className="text-2xl font-bold">Willkommen bei KlarGehalt</h1>
+                            <p className="text-muted-foreground">Lassen Sie uns Ihr Konto einrichten</p>
                         </div>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Ihre Rolle im Unternehmen</CardTitle>
-                                <CardDescription>
-                                    Wählen Sie Ihre Position, um die passenden Funktionen freizuschalten
-                                </CardDescription>
+                                <CardTitle className="text-lg">Ihre Rolle</CardTitle>
+                                <CardDescription>Wählen Sie Ihre Position im Unternehmen</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <RadioGroup value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
-                                    <div className="space-y-3">
-                                        <Label
-                                            htmlFor="admin"
-                                            className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                        >
-                                            <RadioGroupItem value="admin" id="admin" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="w-5 h-5 text-primary" />
-                                                    <span className="font-semibold">Geschäftsführer</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                    Voller Zugriff auf alle Funktionen und Einstellungen
-                                                </p>
-                                            </div>
-                                        </Label>
-
-                                        <Label
-                                            htmlFor="hr_manager"
-                                            className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                        >
-                                            <RadioGroupItem value="hr_manager" id="hr_manager" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="w-5 h-5 text-primary" />
-                                                    <span className="font-semibold">HR-Manager</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                    Verwaltung von Mitarbeitern und Gehaltsbändern
-                                                </p>
-                                            </div>
-                                        </Label>
-                                    </div>
+                            <CardContent className="space-y-4">
+                                <RadioGroup value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
+                                    <Label htmlFor="r-admin" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
+                                        <RadioGroupItem value="admin" id="r-admin" />
+                                        <Building2 className="w-5 h-5 text-primary shrink-0" />
+                                        <div>
+                                            <div className="font-semibold">Geschäftsführer / Admin</div>
+                                            <p className="text-sm text-muted-foreground">Voller Zugriff auf alle Funktionen</p>
+                                        </div>
+                                    </Label>
+                                    <Label htmlFor="r-hr" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
+                                        <RadioGroupItem value="hr_manager" id="r-hr" />
+                                        <Users className="w-5 h-5 text-primary shrink-0" />
+                                        <div>
+                                            <div className="font-semibold">HR-Manager</div>
+                                            <p className="text-sm text-muted-foreground">Mitarbeiter- und Gehaltsverwaltung</p>
+                                        </div>
+                                    </Label>
                                 </RadioGroup>
-                            </CardContent>
-                        </Card>
-                    </div>
-                );
 
-            case 2:
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center space-y-2">
-                            <Users className="w-16 h-16 mx-auto text-primary" />
-                            <h2 className="text-3xl font-bold">Unternehmensgröße</h2>
-                            <p className="text-muted-foreground">
-                                Wie viele Mitarbeiter beschäftigt Ihr Unternehmen?
-                            </p>
-                        </div>
-
-                        <Card>
-                            <CardContent className="pt-6">
-                                <RadioGroup value={companySize} onValueChange={(value) => setCompanySize(value as CompanySize)}>
-                                    <div className="space-y-3">
-                                        {[
-                                            { value: '1-50', label: '1-50 Mitarbeiter', description: 'Kleine Unternehmen' },
-                                            { value: '51-250', label: '51-250 Mitarbeiter', description: 'Mittelständische Unternehmen' },
-                                            { value: '251-1000', label: '251-1.000 Mitarbeiter', description: 'Große Unternehmen' },
-                                            { value: '1000+', label: 'Mehr als 1.000', description: 'Konzerne' },
-                                        ].map((option) => (
-                                            <Label
-                                                key={option.value}
-                                                htmlFor={option.value}
-                                                className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                            >
-                                                <RadioGroupItem value={option.value} id={option.value} />
-                                                <div className="flex-1">
-                                                    <span className="font-semibold">{option.label}</span>
-                                                    <p className="text-sm text-muted-foreground">{option.description}</p>
-                                                </div>
-                                            </Label>
-                                        ))}
-                                    </div>
-                                </RadioGroup>
-                            </CardContent>
-                        </Card>
-                    </div>
-                );
-
-            case 3:
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center space-y-2">
-                            <FileText className="w-16 h-16 mx-auto text-primary" />
-                            <h2 className="text-3xl font-bold">Beratung & Vorbereitung</h2>
-                            <p className="text-muted-foreground">
-                                Wie möchten Sie die EU-Entgelttransparenzrichtlinie umsetzen?
-                            </p>
-                        </div>
-
-                        <Card>
-                            <CardContent className="pt-6">
-                                <RadioGroup value={consultingOption} onValueChange={(value) => setConsultingOption(value as ConsultingOption)}>
-                                    <div className="space-y-3">
-                                        <Label
-                                            htmlFor="self-service"
-                                            className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                        >
-                                            <RadioGroupItem value="self-service" id="self-service" className="mt-1" />
-                                            <div className="flex-1">
-                                                <div className="font-semibold">Selbstständig</div>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                    Nutzen Sie unsere Plattform eigenständig mit Hilfe-Center und Dokumentation
-                                                </p>
-                                                <div className="mt-2 text-sm text-primary font-medium">Kostenlos</div>
-                                            </div>
-                                        </Label>
-
-                                        <Label
-                                            htmlFor="guided"
-                                            className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                        >
-                                            <RadioGroupItem value="guided" id="guided" className="mt-1" />
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold">Geführtes Onboarding</span>
-                                                    <span className="px-2 py-0.5 bg-accent/10 text-accent text-xs rounded-full">Empfohlen</span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                    Schritt-für-Schritt Anleitung mit Video-Tutorials und E-Mail-Support
-                                                </p>
-                                                <div className="mt-2 text-sm text-primary font-medium">Inklusive im Standard-Plan</div>
-                                            </div>
-                                        </Label>
-
-                                        <Label
-                                            htmlFor="full-service"
-                                            className="flex items-start space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors"
-                                        >
-                                            <RadioGroupItem value="full-service" id="full-service" className="mt-1" />
-                                            <div className="flex-1">
-                                                <div className="font-semibold">Full-Service Beratung</div>
-                                                <p className="text-sm text-muted-foreground mt-1">
-                                                    Persönlicher Berater hilft bei der Strukturierung und Umsetzung
-                                                </p>
-                                                <ul className="mt-2 text-sm text-muted-foreground space-y-1">
-                                                    <li className="flex items-center gap-2">
-                                                        <CheckCircle2 className="w-4 h-4 text-status-success" />
-                                                        Persönlicher Compliance-Berater
-                                                    </li>
-                                                    <li className="flex items-center gap-2">
-                                                        <CheckCircle2 className="w-4 h-4 text-status-success" />
-                                                        Individuelle Workshops
-                                                    </li>
-                                                    <li className="flex items-center gap-2">
-                                                        <CheckCircle2 className="w-4 h-4 text-status-success" />
-                                                        Prioritäts-Support
-                                                    </li>
-                                                </ul>
-                                                <div className="mt-2 text-sm text-primary font-medium">Ab 499€/Monat</div>
-                                            </div>
-                                        </Label>
-                                    </div>
-                                </RadioGroup>
-                            </CardContent>
-                        </Card>
-
-                        {consultingOption === 'full-service' && (
-                            <Card className="border-accent">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Calendar className="w-5 h-5" />
-                                        Beratungstermin vereinbaren
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Unser Team meldet sich innerhalb von 24 Stunden bei Ihnen
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() => router.push('/book-consulting')}
-                                    >
-                                        <Calendar className="w-4 h-4 mr-2" />
-                                        Termin anfragen
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                );
-
-            case 4:
-                return (
-                    <div className="space-y-6">
-                        <div className="text-center space-y-2">
-                            <Building2 className="w-16 h-16 mx-auto text-primary" />
-                            <h2 className="text-3xl font-bold">Unternehmensdaten</h2>
-                            <p className="text-muted-foreground">
-                                Vervollständigen Sie Ihr Profil
-                            </p>
-                        </div>
-
-                        <Card>
-                            <CardContent className="pt-6 space-y-4">
-                                <div className="space-y-2">
+                                <div className="pt-2">
                                     <Label htmlFor="fullName">Ihr vollständiger Name</Label>
                                     <Input
                                         id="fullName"
                                         placeholder="Max Mustermann"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="companyName">Firmenname</Label>
-                                    <Input
-                                        id="companyName"
-                                        placeholder="Musterfirma GmbH"
-                                        value={companyName}
-                                        onChange={(e) => setCompanyName(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="industry">Branche</Label>
-                                    <Input
-                                        id="industry"
-                                        placeholder="z.B. IT, Handel, Produktion"
-                                        value={industry}
-                                        onChange={(e) => setIndustry(e.target.value)}
+                                        className="mt-1.5"
                                     />
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
-                );
+                )}
 
-            case 5:
-                return (
-                    <div className="space-y-6">
+                {/* Step 2: Company Details */}
+                {currentStep === 2 && (
+                    <div className="space-y-6 animate-fade-in">
                         <div className="text-center space-y-2">
-                            <CheckCircle2 className="w-16 h-16 mx-auto text-status-success" />
-                            <h2 className="text-3xl font-bold">Fast geschafft! (V3.1)</h2>
-                            <p className="text-muted-foreground">
-                                Überprüfen Sie Ihre Angaben
-                            </p>
+                            <h1 className="text-2xl font-bold">Ihr Unternehmen</h1>
+                            <p className="text-muted-foreground">Grunddaten für die EU-Berichterstattung</p>
                         </div>
 
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Zusammenfassung</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Rolle</p>
-                                        <p className="font-medium">
-                                            {selectedRole === 'admin' ? 'Geschäftsführer' : 'HR-Manager'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Mitarbeiteranzahl</p>
-                                        <p className="font-medium">{companySize}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Beratung</p>
-                                        <p className="font-medium">
-                                            {consultingOption === 'self-service' && 'Selbstständig'}
-                                            {consultingOption === 'guided' && 'Geführt'}
-                                            {consultingOption === 'full-service' && 'Full-Service'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Firma</p>
-                                        <p className="font-medium">{companyName || '-'}</p>
-                                    </div>
+                            <CardContent className="pt-6 space-y-4">
+                                <div>
+                                    <Label htmlFor="companyName">Firmenname *</Label>
+                                    <Input
+                                        id="companyName"
+                                        placeholder="Muster GmbH"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        className="mt-1.5"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="industry">Branche</Label>
+                                    <Input
+                                        id="industry"
+                                        placeholder="z.B. Technologie, Fertigung, Dienstleistung"
+                                        value={industry}
+                                        onChange={(e) => setIndustry(e.target.value)}
+                                        className="mt-1.5"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Mitarbeiteranzahl</Label>
+                                    <RadioGroup value={companySize} onValueChange={(v) => setCompanySize(v as CompanySize)} className="mt-1.5">
+                                        {[
+                                            { value: '1-50', label: '1–50', desc: 'Basis-Plan empfohlen' },
+                                            { value: '51-250', label: '51–250', desc: 'Professional-Plan empfohlen' },
+                                            { value: '250+', label: '250+', desc: 'Enterprise — Kontakt aufnehmen' },
+                                        ].map((opt) => (
+                                            <Label key={opt.value} htmlFor={`size-${opt.value}`} className="flex items-center gap-3 border rounded-lg p-3 cursor-pointer hover:bg-secondary transition-colors">
+                                                <RadioGroupItem value={opt.value} id={`size-${opt.value}`} />
+                                                <div>
+                                                    <span className="font-medium">{opt.label} Mitarbeiter</span>
+                                                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                                                </div>
+                                            </Label>
+                                        ))}
+                                    </RadioGroup>
                                 </div>
                             </CardContent>
                         </Card>
-
-                        <Card className="bg-accent/5 border-accent">
-                            <CardHeader>
-                                <CardTitle>Nächste Schritte</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="w-5 h-5 text-status-success mt-0.5" />
-                                        <div>
-                                            <p className="font-medium">Gehaltsbänder definieren</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Legen Sie Ihre Gehaltsstrukturen fest
-                                            </p>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="w-5 h-5 text-status-success mt-0.5" />
-                                        <div>
-                                            <p className="font-medium">Mitarbeiter hinzufügen</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Importieren oder manuell anlegen
-                                            </p>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="w-5 h-5 text-status-success mt-0.5" />
-                                        <div>
-                                            <p className="font-medium">Mitarbeiter einladen</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Geben Sie Ihren Mitarbeitern Zugriff
-                                            </p>
-                                        </div>
-                                    </li>
-                                </ul>
-                            </CardContent>
-                        </Card>
                     </div>
-                );
+                )}
 
-            default:
-                return null;
-        }
-    };
-
-    const canProceed = () => {
-        switch (currentStep) {
-            case 1:
-                return selectedRole !== null;
-            case 2:
-                return companySize !== null;
-            case 3:
-                return consultingOption !== null;
-            case 4:
-                return fullName && companyName && industry;
-            case 5:
-                return true;
-            default:
-                return false;
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Image src="/brandname.svg" alt="klargehalt" width={100} height={16} className="h-4 w-auto" />
-                            <span className="text-lg font-bold lowercase tracking-tight">klargehalt (V3.1)</span>
+                {/* Step 3: Plan Selection */}
+                {currentStep === 3 && (
+                    <div className="space-y-6 animate-fade-in">
+                        <div className="text-center space-y-2">
+                            <h1 className="text-2xl font-bold">Ihren Plan wählen</h1>
+                            <p className="text-muted-foreground">
+                                {TRIAL_DURATION_DAYS} Tage kostenlos testen — keine Kreditkarte nötig
+                            </p>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground">
-                                Schritt {currentStep} von {totalSteps}
-                            </div>
+
+                        <div className="grid gap-4">
+                            {/* Basis */}
+                            <PlanCard
+                                tier="basis"
+                                selected={selectedPlan === 'basis'}
+                                onSelect={() => setSelectedPlan('basis')}
+                                recommended={companySize === '1-50'}
+                            />
+                            {/* Professional */}
+                            <PlanCard
+                                tier="professional"
+                                selected={selectedPlan === 'professional'}
+                                onSelect={() => setSelectedPlan('professional')}
+                                recommended={companySize === '51-250'}
+                                badge="Beliebteste Wahl"
+                            />
+                            {/* Enterprise */}
+                            <Card
+                                className={`cursor-pointer transition-all border-2 ${
+                                    selectedPlan === 'enterprise'
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-transparent hover:border-muted-foreground/20'
+                                }`}
+                                onClick={() => setSelectedPlan('enterprise')}
+                            >
+                                <CardContent className="pt-5 pb-5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-lg">Enterprise</span>
+                                                {companySize === '250+' && (
+                                                    <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">Empfohlen</span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mt-0.5">250+ Mitarbeiter · SSO · SLA · Dedizierter Ansprechpartner</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-sm font-medium">Auf Anfrage</span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Security badges */}
+                        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+                            <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> DSGVO-konform</span>
+                            <span>·</span>
+                            <span>EU-Server</span>
+                            <span>·</span>
+                            <span>Jederzeit kündbar</span>
                         </div>
                     </div>
-                    <Progress value={progress} className="mt-4" />
-                </div>
-            </div>
-
-            {/* Environment Check Warning */}
-            {(!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 50) && (
-                <div className="bg-destructive/10 border-b border-destructive/20 py-2">
-                    <div className="container mx-auto px-4 text-xs text-destructive font-mono flex items-center gap-2">
-                        <span className="font-bold">⚠️ CONFIG ERROR:</span>
-                        Supabase Key is invalid or truncated in Vercel settings.
-                    </div>
-                </div>
-            )}
-
-            {/* Content */}
-            <div className="container mx-auto px-4 py-12 max-w-3xl">
-                {renderStep()}
+                )}
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between mt-8">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="ghost"
-                            onClick={handleBack}
-                            disabled={currentStep === 1}
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Zurück
-                        </Button>
-                    </div>
+                <div className="flex justify-between mt-8">
+                    <Button
+                        variant="ghost"
+                        onClick={() => setCurrentStep((s) => (s - 1) as OnboardingStep)}
+                        disabled={currentStep === 1}
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Zurück
+                    </Button>
 
-                    {currentStep < totalSteps ? (
+                    {currentStep < 3 ? (
                         <Button
-                            onClick={handleNext}
-                            disabled={!canProceed()}
+                            onClick={() => setCurrentStep((s) => (s + 1) as OnboardingStep)}
+                            disabled={currentStep === 1 ? !canProceedStep1 : !canProceedStep2}
                         >
                             Weiter
                             <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                     ) : (
-                        <Button
-                            onClick={handleComplete}
-                            disabled={!canProceed() || loading}
-                        >
-                            {loading ? 'Wird gespeichert...' : 'Abschließen'}
-                            <CheckCircle2 className="w-4 h-4 ml-2" />
+                        <Button onClick={handleComplete} disabled={loading}>
+                            {loading ? 'Wird eingerichtet...' : selectedPlan === 'enterprise' ? 'Kontakt aufnehmen' : `Kostenlos starten`}
+                            {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                         </Button>
                     )}
                 </div>
             </div>
         </div>
+    );
+}
+
+function PlanCard({
+    tier,
+    selected,
+    onSelect,
+    recommended,
+    badge,
+}: {
+    tier: SubscriptionTier;
+    selected: boolean;
+    onSelect: () => void;
+    recommended?: boolean;
+    badge?: string;
+}) {
+    const plan = PLANS[tier];
+
+    return (
+        <Card
+            className={`cursor-pointer transition-all border-2 ${
+                selected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-transparent hover:border-muted-foreground/20'
+            }`}
+            onClick={onSelect}
+        >
+            <CardContent className="pt-5 pb-5">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-lg">{plan.nameDE}</span>
+                            {badge && (
+                                <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" />
+                                    {badge}
+                                </span>
+                            )}
+                            {recommended && !badge && (
+                                <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">Empfohlen</span>
+                            )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{plan.description}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+                            {plan.features.slice(0, 4).map((f) => (
+                                <span key={f} className="flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                    {f}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="text-right shrink-0 pl-4">
+                        <div className="text-2xl font-bold">€{plan.priceMonthly}</div>
+                        <div className="text-xs text-muted-foreground">/Monat</div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

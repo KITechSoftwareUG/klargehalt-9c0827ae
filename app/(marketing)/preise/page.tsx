@@ -8,21 +8,21 @@ import { getAppUrl } from '@/utils/url';
 
 const plans = [
     {
-        name: 'Starter',
+        name: 'Basis',
         desc: 'Bis 50 Mitarbeiter',
-        price: '199',
+        price: '99',
         period: '/mo',
-        cta: 'Demo anfragen',
-        href: '/kontakt',
+        cta: 'Kostenlos testen',
+        href: getAppUrl('/sign-up?plan=basis'),
         featured: false,
     },
     {
-        name: 'Business',
+        name: 'Professional',
         desc: 'Bis 250 Mitarbeiter',
-        price: '499',
+        price: '299',
         period: '/mo',
-        cta: 'Demo anfragen',
-        href: '/kontakt',
+        cta: '14 Tage kostenlos testen',
+        href: getAppUrl('/sign-up?plan=professional'),
         featured: true,
     },
     {
@@ -38,46 +38,46 @@ const plans = [
 
 type FeatureValue = boolean | string;
 
-const comparisonFeatures: { category: string; features: { name: string; starter: FeatureValue; business: FeatureValue; enterprise: FeatureValue }[] }[] = [
+const comparisonFeatures: { category: string; features: { name: string; basis: FeatureValue; professional: FeatureValue; enterprise: FeatureValue }[] }[] = [
     {
         category: 'Kernfunktionen',
         features: [
-            { name: 'Job-Profile & Gehaltsbänder', starter: true, business: true, enterprise: true },
-            { name: 'Mitarbeiterverwaltung', starter: 'Bis 50', business: 'Bis 250', enterprise: 'Unbegrenzt' },
-            { name: 'CSV-Import', starter: true, business: true, enterprise: true },
-            { name: 'Gender-Pay-Gap Analyse', starter: false, business: true, enterprise: true },
-            { name: 'Pay-Gap Berichte (PDF)', starter: false, business: true, enterprise: true },
-            { name: 'Trendanalyse über Zeiträume', starter: false, business: true, enterprise: true },
+            { name: 'Job-Profile & Gehaltsbänder', basis: true, professional: true, enterprise: true },
+            { name: 'Mitarbeiterverwaltung', basis: 'Bis 50', professional: 'Bis 250', enterprise: 'Unbegrenzt' },
+            { name: 'CSV-Import', basis: true, professional: true, enterprise: true },
+            { name: 'Gender-Pay-Gap Analyse', basis: false, professional: true, enterprise: true },
+            { name: 'Pay-Gap Berichte (PDF)', basis: false, professional: true, enterprise: true },
+            { name: 'Trendanalyse über Zeiträume', basis: false, professional: true, enterprise: true },
         ],
     },
     {
         category: 'Zugriff & Rollen',
         features: [
-            { name: 'Admin-Nutzer', starter: '1', business: '5', enterprise: 'Unbegrenzt' },
-            { name: 'HR-Manager Rolle', starter: true, business: true, enterprise: true },
-            { name: 'Mitarbeiter Self-Service', starter: true, business: true, enterprise: true },
-            { name: 'SSO Integration', starter: false, business: true, enterprise: true },
-            { name: 'Prüfer-Zugaenge (read-only)', starter: false, business: false, enterprise: true },
+            { name: 'Admin-Nutzer', basis: '1', professional: '5', enterprise: 'Unbegrenzt' },
+            { name: 'HR-Manager', basis: '1', professional: 'Unbegrenzt', enterprise: 'Unbegrenzt' },
+            { name: 'Mitarbeiter Self-Service', basis: true, professional: true, enterprise: true },
+            { name: 'SSO Integration', basis: false, professional: false, enterprise: true },
+            { name: 'Prüfer-Zugaenge (read-only)', basis: false, professional: false, enterprise: true },
         ],
     },
     {
         category: 'Compliance & Audit',
         features: [
-            { name: 'Basis Audit-Trail', starter: true, business: true, enterprise: true },
-            { name: 'Erweiterter Audit-Trail', starter: false, business: true, enterprise: true },
-            { name: 'Export für Prüfer', starter: false, business: true, enterprise: true },
-            { name: 'DSGVO Auskunfts-Workflow', starter: true, business: true, enterprise: true },
+            { name: 'Basis Audit-Trail', basis: true, professional: true, enterprise: true },
+            { name: 'Erweiterter Audit-Trail', basis: false, professional: true, enterprise: true },
+            { name: 'Export für Prüfer', basis: false, professional: true, enterprise: true },
+            { name: 'DSGVO Auskunfts-Workflow', basis: true, professional: true, enterprise: true },
         ],
     },
     {
         category: 'Support & Service',
         features: [
-            { name: 'E-Mail Support', starter: true, business: true, enterprise: true },
-            { name: 'Priority Support', starter: false, business: true, enterprise: true },
-            { name: 'Dedizierter Ansprechpartner', starter: false, business: false, enterprise: true },
-            { name: 'Onboarding-Begleitung', starter: false, business: true, enterprise: true },
-            { name: 'SLA', starter: false, business: false, enterprise: true },
-            { name: 'Custom Integrationen', starter: false, business: false, enterprise: true },
+            { name: 'E-Mail Support', basis: true, professional: true, enterprise: true },
+            { name: 'Priority Support', basis: false, professional: true, enterprise: true },
+            { name: 'Dedizierter Ansprechpartner', basis: false, professional: false, enterprise: true },
+            { name: 'Onboarding-Begleitung', basis: false, professional: true, enterprise: true },
+            { name: 'SLA', basis: false, professional: false, enterprise: true },
+            { name: 'Custom Integrationen', basis: false, professional: false, enterprise: true },
         ],
     },
 ];
@@ -85,7 +85,7 @@ const comparisonFeatures: { category: string; features: { name: string; starter:
 const faqs = [
     {
         q: 'Gibt es eine kostenlose Testphase?',
-        a: 'Ja. Wir bieten eine 14-taegige kostenlose Testphase für alle Plaene an. Keine Kreditkarte noetig. Sprechen Sie uns an für den Zugang.',
+        a: 'Ja! 14 Tage kostenlos mit allen Professional-Funktionen. Keine Kreditkarte nötig. Einfach registrieren und sofort loslegen.',
     },
     {
         q: 'Was passiert, wenn wir mehr als 250 Mitarbeiter haben?',
@@ -105,7 +105,7 @@ const faqs = [
     },
     {
         q: 'Was ist im Onboarding enthalten?',
-        a: 'Im Business- und Enterprise-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams. Beim Starter-Plan stehen Ihnen ausführliche Dokumentation und E-Mail-Support zur Verfügung.',
+        a: 'Im Professional- und Enterprise-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams. Im Basis-Plan stehen Ihnen Dokumentation und E-Mail-Support zur Verfügung.',
     },
 ];
 
@@ -203,8 +203,8 @@ export default function PreisePage() {
                             <thead>
                                 <tr className="border-b border-slate-200">
                                     <th className="text-left py-4 pr-4 text-sm font-medium text-slate-400 w-[40%]">Funktion</th>
-                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%]">Starter</th>
-                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%] bg-slate-50 rounded-t-lg">Business</th>
+                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%]">Basis</th>
+                                    <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%] bg-slate-50 rounded-t-lg">Professional</th>
                                     <th className="text-center py-4 px-4 text-sm font-bold text-[#071423] w-[20%]">Enterprise</th>
                                 </tr>
                             </thead>
@@ -219,8 +219,8 @@ export default function PreisePage() {
                                         {cat.features.map((f) => (
                                             <tr key={f.name} className="border-b border-slate-100">
                                                 <td className="py-3.5 pr-4 text-sm text-slate-600">{f.name}</td>
-                                                <td className="py-3.5 px-4 text-center"><div className="flex justify-center"><FeatureCell value={f.starter} /></div></td>
-                                                <td className="py-3.5 px-4 text-center bg-slate-50"><div className="flex justify-center"><FeatureCell value={f.business} /></div></td>
+                                                <td className="py-3.5 px-4 text-center"><div className="flex justify-center"><FeatureCell value={f.basis} /></div></td>
+                                                <td className="py-3.5 px-4 text-center bg-slate-50"><div className="flex justify-center"><FeatureCell value={f.professional} /></div></td>
                                                 <td className="py-3.5 px-4 text-center"><div className="flex justify-center"><FeatureCell value={f.enterprise} /></div></td>
                                             </tr>
                                         ))}

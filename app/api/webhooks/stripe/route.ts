@@ -1,0 +1,142 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getStripe } from '@/lib/stripe';
+import { createClient } from '@supabase/supabase-js';
+import type { SubscriptionTier } from '@/lib/subscription';
+
+const supabaseAdmin = () =>
+  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+function mapPriceToTier(priceId: string): SubscriptionTier {
+  const mapping: Record<string, SubscriptionTier> = {};
+
+  const envPairs: [string, SubscriptionTier][] = [
+    ['STRIPE_PRICE_BASIS_MONTHLY', 'basis'],
+    ['STRIPE_PRICE_BASIS_YEARLY', 'basis'],
+    ['STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'professional'],
+    ['STRIPE_PRICE_PROFESSIONAL_YEARLY', 'professional'],
+    ['STRIPE_PRICE_ENTERPRISE_MONTHLY', 'enterprise'],
+    ['STRIPE_PRICE_ENTERPRISE_YEARLY', 'enterprise'],
+  ];
+
+  for (const [envKey, tier] of envPairs) {
+    const val = process.env[envKey];
+    if (val) mapping[val] = tier;
+  }
+
+  return mapping[priceId] ?? 'basis';
+}
+
+export async function POST(request: NextRequest) {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error('Stripe webhook: STRIPE_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  const body = await request.text();
+  const signature = request.headers.get('stripe-signature');
+
+  if (!signature) {
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  }
+
+  const stripe = getStripe();
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.error('Stripe webhook: Signature verification failed', err);
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  const supabase = supabaseAdmin();
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const customerId = session.customer as string;
+        const subscriptionId = session.subscription as string;
+        const tier = (session.metadata?.tier as SubscriptionTier) ?? 'basis';
+
+        await supabase
+          .from('companies')
+          .update({
+            stripe_subscription_id: subscriptionId,
+            subscription_tier: tier,
+            subscription_status: 'active',
+            trial_ends_at: null,
+          })
+          .eq('stripe_customer_id', customerId);
+
+        console.log(`Stripe webhook: checkout.session.completed for ${customerId}, tier=${tier}`);
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        const customerId = subscription.customer as string;
+        const priceId = subscription.items.data[0]?.price?.id;
+        const tier = priceId ? mapPriceToTier(priceId) : 'basis';
+        const status = subscription.status === 'active' ? 'active'
+          : subscription.status === 'past_due' ? 'past_due'
+          : subscription.status === 'trialing' ? 'trialing'
+          : 'incomplete';
+
+        await supabase
+          .from('companies')
+          .update({
+            subscription_tier: tier,
+            subscription_status: status,
+            current_period_end: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : null,
+          })
+          .eq('stripe_customer_id', customerId);
+
+        console.log(`Stripe webhook: subscription.updated for ${customerId}, tier=${tier}, status=${status}`);
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object;
+        const customerId = subscription.customer as string;
+
+        await supabase
+          .from('companies')
+          .update({
+            subscription_tier: 'basis',
+            subscription_status: 'canceled',
+            stripe_subscription_id: null,
+            current_period_end: null,
+          })
+          .eq('stripe_customer_id', customerId);
+
+        console.log(`Stripe webhook: subscription.deleted for ${customerId}`);
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        const customerId = invoice.customer as string;
+
+        await supabase
+          .from('companies')
+          .update({ subscription_status: 'past_due' })
+          .eq('stripe_customer_id', customerId);
+
+        console.log(`Stripe webhook: invoice.payment_failed for ${customerId}`);
+        break;
+      }
+
+      default:
+        console.log(`Stripe webhook: unhandled event ${event.type}`);
+    }
+  } catch (error) {
+    console.error(`Stripe webhook: error processing ${event.type}`, error);
+    return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ received: true });
+}
