@@ -63,7 +63,7 @@ const HR_ADMIN_NAV = [
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, role, loading, isLoaded, signOut } = useAuth();
+    const { user, role, loading, isLoaded, orgId, signOut } = useAuth();
     const [activeView, setActiveView] = useState<HRView>('overview');
 
     const handleSignOut = async () => {
@@ -73,6 +73,16 @@ export default function DashboardPage() {
 
     // Loading state
     if (!isLoaded || loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+        );
+    }
+
+    // No org → user hasn't completed onboarding yet
+    if (!orgId) {
+        router.push('/onboarding');
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />

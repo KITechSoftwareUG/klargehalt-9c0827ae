@@ -185,20 +185,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (roleData) {
           setRole(roleData.role as AppRole);
         } else {
-          setRole('employee');
-
+          // No role found — only set a default if user has an active org
+          // (new users without orgs should go through onboarding first)
           if (activeOrganization?.id) {
-            await supabase
-              .from('user_roles')
-              .upsert(
-                {
-                  user_id: authState.user.id,
-                  role: 'employee',
-                  organization_id: activeOrganization.id,
-                },
-                { onConflict: 'user_id' }
-              )
-              .select();
+            setRole('employee');
+          } else {
+            setRole(null);
           }
         }
       } catch (error) {
