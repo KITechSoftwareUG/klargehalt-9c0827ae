@@ -5,33 +5,36 @@ import { getAppUrl } from "@/utils/url";
 
 const plans = [
   {
-    name: "Starter",
+    name: "Basis",
     desc: "Bis 50 Mitarbeiter",
-    price: "199",
+    price: "99",
+    yearlyPrice: "83",
     period: "/mo",
-    features: ["Gehaltsstruktur-Verwaltung", "Mitarbeiter-Auskunftsportal", "Basis Audit-Trail", "E-Mail Support", "1 Admin-Nutzer"],
-    cta: "Demo anfragen",
-    href: "#contact",
+    features: ["Gehaltsbänder & Job-Profile", "Mitarbeiter-Selbstauskunft", "CSV-Import", "Basis Audit-Trail", "E-Mail Support", "1 Admin + 1 HR-Manager"],
+    cta: "Kostenlos testen",
+    href: getAppUrl("/sign-up?plan=basis"),
     featured: false,
   },
   {
-    name: "Business",
+    name: "Professional",
     desc: "Bis 250 Mitarbeiter",
-    price: "499",
+    price: "299",
+    yearlyPrice: "249",
     period: "/mo",
-    features: ["Alles aus Starter", "Gender-Pay-Gap Berichte", "Erweiterter Audit-Trail", "Priority Support", "5 Admin-Nutzer", "SSO Integration", "Export fuer Pruefer"],
-    cta: "Demo anfragen",
-    href: "/sign-up",
+    features: ["Alles aus Basis", "Gender-Pay-Gap-Analyse", "PDF-Berichte & Export", "Trend-Analyse über Zeit", "5 Admins, unbegrenzt HR", "Prioritäts-Support", "Onboarding-Begleitung"],
+    cta: "14 Tage kostenlos testen",
+    href: getAppUrl("/sign-up?plan=professional"),
     featured: true,
   },
   {
     name: "Enterprise",
     desc: "Ab 250 Mitarbeiter",
     price: "Auf Anfrage",
+    yearlyPrice: "Auf Anfrage",
     period: "",
-    features: ["Alles aus Business", "Dedizierter Ansprechpartner", "Custom Integrationen", "Unbegrenzte Nutzer", "Pruefer-Zugaenge", "SLA"],
+    features: ["Alles aus Professional", "Single Sign-On (SSO)", "Auditor-Zugang (read-only)", "Dedizierter Ansprechpartner", "Custom Integrationen", "SLA & Unbegrenzte Nutzer"],
     cta: "Kontakt aufnehmen",
-    href: "#contact",
+    href: "/kontakt",
     featured: false,
   },
 ];
@@ -42,10 +45,10 @@ const PricingSection = () => {
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         <div className="max-w-2xl mb-14 lg:mb-20">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight mb-4">
-            Klare Preise. Keine Ueberraschungen.
+            Klare Preise. Keine Überraschungen.
           </h2>
           <p className="text-base text-slate-500 leading-relaxed">
-            Compliance-Software sollte selbst transparent sein.
+            14 Tage kostenlos testen — keine Kreditkarte nötig.
           </p>
         </div>
 
@@ -65,7 +68,7 @@ const PricingSection = () => {
                 </span>
               )}
               <h3 className={`text-lg font-bold tracking-tight mb-1 ${p.featured ? "text-white" : "text-[#1E293B]"}`}>{p.name}</h3>
-              <p className={`text-xs mb-6 text-slate-400`}>{p.desc}</p>
+              <p className="text-xs mb-6 text-slate-400">{p.desc}</p>
 
               <div className="flex items-baseline gap-1 mb-7">
                 {p.price !== "Auf Anfrage" && <span className="text-xs text-slate-400">EUR</span>}
@@ -84,7 +87,7 @@ const PricingSection = () => {
                 ))}
               </ul>
 
-              <Link href={p.featured ? getAppUrl(p.href) : p.href}>
+              <Link href={p.href}>
                 <Button
                   className={`w-full h-11 rounded-lg text-sm font-semibold group cursor-pointer ${
                     p.featured
@@ -100,7 +103,7 @@ const PricingSection = () => {
           ))}
         </div>
 
-        <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. MwSt. Jaehrliche Abrechnung moeglich.</p>
+        <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. MwSt. Jährliche Abrechnung verfügbar — 2 Monate sparen.</p>
       </div>
     </section>
   );

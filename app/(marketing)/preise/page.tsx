@@ -1,38 +1,43 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Check, ArrowRight, Minus, ChevronDown } from 'lucide-react';
+import { Check, ArrowRight, Minus, ChevronDown, Shield, Building2, Users, FileText, Scale } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { getAppUrl } from '@/utils/url';
 
+type Interval = 'monthly' | 'yearly';
+
 const plans = [
     {
         name: 'Basis',
-        desc: 'Bis 50 Mitarbeiter',
-        price: '99',
-        period: '/mo',
+        desc: 'Für kleine Unternehmen bis 50 Mitarbeiter',
+        priceMonthly: 99,
+        priceYearly: 83,
         cta: 'Kostenlos testen',
         href: getAppUrl('/sign-up?plan=basis'),
         featured: false,
+        highlights: ['1 Admin + 1 HR-Manager', 'Bis 50 Mitarbeiter', 'E-Mail Support'],
     },
     {
         name: 'Professional',
-        desc: 'Bis 250 Mitarbeiter',
-        price: '299',
-        period: '/mo',
+        desc: 'Für wachsende Unternehmen mit EU-Berichtspflicht',
+        priceMonthly: 299,
+        priceYearly: 249,
         cta: '14 Tage kostenlos testen',
         href: getAppUrl('/sign-up?plan=professional'),
         featured: true,
+        highlights: ['5 Admins, unbegrenzt HR', 'Bis 250 Mitarbeiter', 'Prioritäts-Support'],
     },
     {
         name: 'Enterprise',
-        desc: 'Ab 250 Mitarbeiter',
-        price: 'Auf Anfrage',
-        period: '',
+        desc: 'Für Großunternehmen mit individuellen Anforderungen',
+        priceMonthly: null,
+        priceYearly: null,
         cta: 'Kontakt aufnehmen',
         href: '/kontakt',
         featured: false,
+        highlights: ['Unbegrenzte Nutzer', '250+ Mitarbeiter', 'SLA & SSO'],
     },
 ];
 
@@ -44,10 +49,12 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
         features: [
             { name: 'Job-Profile & Gehaltsbänder', basis: true, professional: true, enterprise: true },
             { name: 'Mitarbeiterverwaltung', basis: 'Bis 50', professional: 'Bis 250', enterprise: 'Unbegrenzt' },
-            { name: 'CSV-Import', basis: true, professional: true, enterprise: true },
+            { name: 'CSV/Excel-Import', basis: true, professional: true, enterprise: true },
+            { name: 'Abteilungen & Karrierestufen', basis: true, professional: true, enterprise: true },
             { name: 'Gender-Pay-Gap Analyse', basis: false, professional: true, enterprise: true },
             { name: 'Pay-Gap Berichte (PDF)', basis: false, professional: true, enterprise: true },
             { name: 'Trendanalyse über Zeiträume', basis: false, professional: true, enterprise: true },
+            { name: 'KI-gestützte Handlungsempfehlungen', basis: false, professional: true, enterprise: true },
         ],
     },
     {
@@ -55,29 +62,43 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
         features: [
             { name: 'Admin-Nutzer', basis: '1', professional: '5', enterprise: 'Unbegrenzt' },
             { name: 'HR-Manager', basis: '1', professional: 'Unbegrenzt', enterprise: 'Unbegrenzt' },
-            { name: 'Mitarbeiter Self-Service', basis: true, professional: true, enterprise: true },
-            { name: 'SSO Integration', basis: false, professional: false, enterprise: true },
-            { name: 'Prüfer-Zugaenge (read-only)', basis: false, professional: false, enterprise: true },
+            { name: 'Mitarbeiter Self-Service (EntgTranspG)', basis: true, professional: true, enterprise: true },
+            { name: 'Multi-Faktor-Authentifizierung (TOTP)', basis: true, professional: true, enterprise: true },
+            { name: 'Single Sign-On (SSO/SAML)', basis: false, professional: false, enterprise: true },
+            { name: 'Auditor-Zugang (read-only)', basis: false, professional: false, enterprise: true },
         ],
     },
     {
         category: 'Compliance & Audit',
         features: [
             { name: 'Basis Audit-Trail', basis: true, professional: true, enterprise: true },
-            { name: 'Erweiterter Audit-Trail', basis: false, professional: true, enterprise: true },
-            { name: 'Export für Prüfer', basis: false, professional: true, enterprise: true },
-            { name: 'DSGVO Auskunfts-Workflow', basis: true, professional: true, enterprise: true },
+            { name: 'Erweiterter Audit-Trail (IP, Timestamps)', basis: false, professional: true, enterprise: true },
+            { name: 'Prüfer-Export (CSV/PDF)', basis: false, professional: true, enterprise: true },
+            { name: 'DSGVO Auskunfts-Workflow (§ 10 EntgTranspG)', basis: true, professional: true, enterprise: true },
+            { name: 'EU-Richtlinie 2023/970 Compliance-Report', basis: false, professional: true, enterprise: true },
+        ],
+    },
+    {
+        category: 'Datenschutz & Sicherheit',
+        features: [
+            { name: 'Ende-zu-Ende-Verschlüsselung', basis: true, professional: true, enterprise: true },
+            { name: 'EU-Rechenzentrum (Frankfurt)', basis: true, professional: true, enterprise: true },
+            { name: 'DSGVO-konforme Datenverarbeitung', basis: true, professional: true, enterprise: true },
+            { name: 'AV-Vertrag (Art. 28 DSGVO)', basis: true, professional: true, enterprise: true },
+            { name: 'BSI-konforme Passwortrichtlinie', basis: true, professional: true, enterprise: true },
+            { name: 'Eigener Tenant (Datenisolierung)', basis: true, professional: true, enterprise: true },
         ],
     },
     {
         category: 'Support & Service',
         features: [
+            { name: 'Dokumentation & Hilfe-Center', basis: true, professional: true, enterprise: true },
             { name: 'E-Mail Support', basis: true, professional: true, enterprise: true },
-            { name: 'Priority Support', basis: false, professional: true, enterprise: true },
-            { name: 'Dedizierter Ansprechpartner', basis: false, professional: false, enterprise: true },
+            { name: 'Prioritäts-Support (< 4h Reaktionszeit)', basis: false, professional: true, enterprise: true },
             { name: 'Onboarding-Begleitung', basis: false, professional: true, enterprise: true },
-            { name: 'SLA', basis: false, professional: false, enterprise: true },
-            { name: 'Custom Integrationen', basis: false, professional: false, enterprise: true },
+            { name: 'Dedizierter Ansprechpartner', basis: false, professional: false, enterprise: true },
+            { name: 'SLA (99,9% Uptime)', basis: false, professional: false, enterprise: true },
+            { name: 'Custom Integrationen (API)', basis: false, professional: false, enterprise: true },
         ],
     },
 ];
@@ -85,27 +106,35 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
 const faqs = [
     {
         q: 'Gibt es eine kostenlose Testphase?',
-        a: 'Ja! 14 Tage kostenlos mit allen Professional-Funktionen. Keine Kreditkarte nötig. Einfach registrieren und sofort loslegen.',
+        a: 'Ja — 14 Tage kostenlos mit allen Professional-Funktionen. Keine Kreditkarte nötig. Nach Ablauf der Testphase wählen Sie Ihren Plan oder nutzen den kostenlosen Basis-Funktionsumfang weiter.',
     },
     {
-        q: 'Was passiert, wenn wir mehr als 250 Mitarbeiter haben?',
-        a: 'Ab 250 Mitarbeitern empfehlen wir den Enterprise-Plan. Dieser wird individuell auf Ihre Anforderungen zugeschnitten — inkl. SLA, dediziertem Ansprechpartner und Custom Integrationen.',
+        q: 'Wie funktioniert die Abrechnung?',
+        a: 'Monatlich oder jährlich per Kreditkarte, SEPA-Lastschrift oder Rechnung. Bei jährlicher Abrechnung sparen Sie 2 Monate. Alle Preise verstehen sich zzgl. der gesetzlichen MwSt. (19%). Sie erhalten eine ordnungsgemäße Rechnung mit ausgewiesener Umsatzsteuer.',
     },
     {
-        q: 'Können wir später upgraden?',
-        a: 'Jederzeit. Ein Upgrade ist innerhalb weniger Minuten möglich. Alle Daten bleiben erhalten. Downgrades sind zum naechsten Abrechnungszeitraum möglich.',
+        q: 'Können wir jederzeit kündigen?',
+        a: 'Ja. Bei monatlicher Abrechnung ist die Kündigung zum Ende des laufenden Monats möglich. Bei jährlicher Abrechnung zum Ende der Laufzeit. Ihre Daten bleiben nach Kündigung 90 Tage gespeichert, bevor sie unwiderruflich gelöscht werden.',
     },
     {
-        q: 'Wie wird abgerechnet?',
-        a: 'Monatlich oder jaehrlich. Bei jaehrlicher Abrechnung sparen Sie zwei Monatsgebuehren. Alle Preise verstehen sich zzgl. MwSt.',
+        q: 'Können wir später upgraden oder downgraden?',
+        a: 'Jederzeit. Upgrades werden sofort wirksam, Sie zahlen nur den anteiligen Differenzbetrag. Downgrades werden zum nächsten Abrechnungszeitraum wirksam. Alle Daten bleiben bei einem Planwechsel vollständig erhalten.',
     },
     {
-        q: 'Gibt es Rabatte für gemeinnuetzige Organisationen?',
-        a: 'Ja. Kontaktieren Sie uns für ein individuelles Angebot.',
+        q: 'Wo werden unsere Gehaltsdaten gespeichert?',
+        a: 'Ausschließlich auf EU-Servern in Frankfurt am Main (AWS eu-central-1). Die Datenverarbeitung erfolgt vollständig DSGVO-konform. Jedes Unternehmen erhält einen eigenen, isolierten Tenant — Ihre Daten sind physisch von anderen Kunden getrennt.',
+    },
+    {
+        q: 'Gibt es einen Auftragsverarbeitungsvertrag (AV-Vertrag)?',
+        a: 'Ja. Einen AV-Vertrag gemäß Art. 28 DSGVO stellen wir allen Kunden kostenlos zur Verfügung. Für Enterprise-Kunden bieten wir individuelle Datenschutzvereinbarungen an.',
     },
     {
         q: 'Was ist im Onboarding enthalten?',
-        a: 'Im Professional- und Enterprise-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams. Im Basis-Plan stehen Ihnen Dokumentation und E-Mail-Support zur Verfügung.',
+        a: 'Im Professional-Plan begleiten wir Sie beim Setup: Datenimport, Konfiguration der Gehaltsstruktur und Schulung Ihres HR-Teams (bis zu 2 Stunden). Im Enterprise-Plan erhalten Sie ein umfassendes Onboarding mit dediziertem Ansprechpartner.',
+    },
+    {
+        q: 'Welche gesetzliche Grundlage deckt KlarGehalt ab?',
+        a: 'KlarGehalt unterstützt die vollständige Umsetzung der EU-Entgelttransparenzrichtlinie 2023/970 (umzusetzen bis 7. Juni 2026) sowie des deutschen Entgelttransparenzgesetzes (EntgTranspG). Dies umfasst: Gehaltsbandtransparenz, Auskunftsansprüche nach § 10 EntgTranspG, Gender-Pay-Gap-Berichte und Dokumentationspflichten.',
     },
 ];
 
@@ -122,6 +151,7 @@ function FeatureCell({ value }: { value: FeatureValue }) {
 
 export default function PreisePage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [interval, setInterval] = useState<Interval>('monthly');
 
     return (
         <>
@@ -134,11 +164,11 @@ export default function PreisePage() {
                         </span>
                         <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                             Klare Preise.<br />
-                            <span className="text-white/40">Keine Ueberraschungen.</span>
+                            <span className="text-white/40">Keine Überraschungen.</span>
                         </h1>
                         <p className="text-base lg:text-lg text-white/60 leading-relaxed max-w-[55ch]">
-                            Compliance-Software sollte selbst transparent sein.
-                            Waehlen Sie den Plan, der zu Ihrer Unternehmensgroesse passt.
+                            14 Tage kostenlos testen — keine Kreditkarte nötig.
+                            Wählen Sie den Plan, der zu Ihrer Unternehmensgröße passt.
                         </p>
                     </div>
                 </div>
@@ -148,46 +178,187 @@ export default function PreisePage() {
             {/* Pricing Cards */}
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
+                    {/* Interval Toggle */}
+                    <div className="flex items-center justify-center gap-3 mb-12">
+                        <button
+                            onClick={() => setInterval('monthly')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                interval === 'monthly' ? 'bg-[#071423] text-white' : 'bg-white text-slate-600 border border-slate-200'
+                            }`}
+                        >
+                            Monatlich
+                        </button>
+                        <button
+                            onClick={() => setInterval('yearly')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors relative ${
+                                interval === 'yearly' ? 'bg-[#071423] text-white' : 'bg-white text-slate-600 border border-slate-200'
+                            }`}
+                        >
+                            Jährlich
+                            <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full">
+                                -17%
+                            </span>
+                        </button>
+                    </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                        {plans.map((p) => (
-                            <div
-                                key={p.name}
-                                className={`rounded-2xl p-7 lg:p-9 flex flex-col ${
-                                    p.featured
-                                        ? 'bg-[#071423] text-white ring-2 ring-[var(--ep-purple)] shadow-[0_8px_32px_rgba(148,109,247,0.15)] lg:-my-3'
-                                        : 'bg-white border border-slate-200'
-                                }`}
-                            >
-                                {p.featured && (
-                                    <span className="self-start px-2.5 py-1 bg-[var(--ep-purple)]/20 text-[var(--ep-purple-light)] text-[10px] font-bold rounded-md mb-5 uppercase tracking-wider">
-                                        Beliebteste Wahl
-                                    </span>
-                                )}
-                                <h3 className={`text-lg font-bold tracking-tight mb-1 ${p.featured ? 'text-white' : 'text-[#071423]'}`}>{p.name}</h3>
-                                <p className="text-xs text-slate-400 mb-6">{p.desc}</p>
+                        {plans.map((p) => {
+                            const price = interval === 'monthly' ? p.priceMonthly : p.priceYearly;
+                            const isCustom = price === null;
 
-                                <div className="flex items-baseline gap-1 mb-7">
-                                    {p.price !== 'Auf Anfrage' && <span className="text-xs text-slate-400">EUR</span>}
-                                    <span className={`text-3xl font-extrabold tracking-tight ${p.featured ? 'text-white' : 'text-[#071423]'}`}>{p.price}</span>
-                                    {p.period && <span className="text-xs text-slate-400">{p.period}</span>}
+                            return (
+                                <div
+                                    key={p.name}
+                                    className={`rounded-2xl p-7 lg:p-9 flex flex-col ${
+                                        p.featured
+                                            ? 'bg-[#071423] text-white ring-2 ring-[var(--ep-purple)] shadow-[0_8px_32px_rgba(148,109,247,0.15)] lg:-my-3'
+                                            : 'bg-white border border-slate-200'
+                                    }`}
+                                >
+                                    {p.featured && (
+                                        <span className="self-start px-2.5 py-1 bg-[var(--ep-purple)]/20 text-[var(--ep-purple-light)] text-[10px] font-bold rounded-md mb-5 uppercase tracking-wider">
+                                            Beliebteste Wahl
+                                        </span>
+                                    )}
+                                    <h3 className={`text-lg font-bold tracking-tight mb-1 ${p.featured ? 'text-white' : 'text-[#071423]'}`}>{p.name}</h3>
+                                    <p className="text-xs text-slate-400 mb-6">{p.desc}</p>
+
+                                    <div className="flex items-baseline gap-1 mb-2">
+                                        {!isCustom && <span className="text-xs text-slate-400">EUR</span>}
+                                        <span className={`text-3xl font-extrabold tracking-tight ${p.featured ? 'text-white' : 'text-[#071423]'}`}>
+                                            {isCustom ? 'Auf Anfrage' : price}
+                                        </span>
+                                        {!isCustom && <span className="text-xs text-slate-400">/mo</span>}
+                                    </div>
+                                    {!isCustom && interval === 'yearly' && (
+                                        <p className="text-xs text-slate-400 mb-5">
+                                            EUR {(price ?? 0) * 12}/Jahr · <span className="text-green-500 font-medium">2 Monate gespart</span>
+                                        </p>
+                                    )}
+                                    {!isCustom && interval === 'monthly' && (
+                                        <p className="text-xs text-slate-400 mb-5">&nbsp;</p>
+                                    )}
+                                    {isCustom && <p className="text-xs text-slate-400 mb-5">&nbsp;</p>}
+
+                                    <div className={`h-px mb-6 ${p.featured ? 'bg-white/10' : 'bg-slate-100'}`} />
+
+                                    <ul className="space-y-2.5 mb-8 flex-1">
+                                        {p.highlights.map((h) => (
+                                            <li key={h} className="flex items-start gap-2.5">
+                                                <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${p.featured ? 'text-white/40' : 'text-slate-300'}`} />
+                                                <span className={`text-sm ${p.featured ? 'text-slate-300' : 'text-slate-500'}`}>{h}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <Link href={p.href}>
+                                        <Button
+                                            className={`w-full h-11 rounded-lg text-sm font-semibold group cursor-pointer ${
+                                                p.featured
+                                                    ? 'bg-white text-[#071423] hover:bg-slate-100'
+                                                    : 'bg-slate-50 text-[#071423] hover:bg-slate-100 border border-slate-200'
+                                            }`}
+                                        >
+                                            {p.cta}
+                                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                                        </Button>
+                                    </Link>
                                 </div>
+                            );
+                        })}
+                    </div>
+                    <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. der gesetzlichen MwSt. (19%). Zahlung per Kreditkarte, SEPA-Lastschrift oder Rechnung.</p>
+                </div>
+            </section>
 
-                                <Link href={p.href}>
-                                    <Button
-                                        className={`w-full h-11 rounded-lg text-sm font-semibold group cursor-pointer ${
-                                            p.featured
-                                                ? 'bg-white text-[#071423] hover:bg-slate-100'
-                                                : 'bg-slate-50 text-[#071423] hover:bg-slate-100 border border-slate-200'
-                                        }`}
-                                    >
-                                        {p.cta}
-                                        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                                    </Button>
-                                </Link>
+            {/* Trust & Compliance Badges */}
+            <section className="py-16 bg-white border-b border-slate-100">
+                <div className="max-w-5xl mx-auto px-5 sm:px-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {[
+                            { icon: Shield, title: 'DSGVO-konform', desc: 'Vollständige Compliance nach EU-Datenschutzrecht' },
+                            { icon: Building2, title: 'EU-Rechenzentrum', desc: 'Daten ausschließlich in Frankfurt (eu-central-1)' },
+                            { icon: Scale, title: 'EU-Richtlinie 2023/970', desc: 'Entgelttransparenzrichtlinie vollständig abgedeckt' },
+                            { icon: FileText, title: 'AV-Vertrag inklusive', desc: 'Auftragsverarbeitung nach Art. 28 DSGVO' },
+                        ].map(({ icon: Icon, title, desc }) => (
+                            <div key={title} className="text-center">
+                                <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto mb-3">
+                                    <Icon className="w-5 h-5 text-[#071423]" />
+                                </div>
+                                <h3 className="text-sm font-bold text-[#071423] mb-1">{title}</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
                             </div>
                         ))}
                     </div>
-                    <p className="text-[11px] text-slate-300 text-center mt-8">Alle Preise zzgl. MwSt. Jaehrliche Abrechnung möglich.</p>
+                </div>
+            </section>
+
+            {/* Nutzungsrechte & Vertragsbedingungen */}
+            <section className="py-20 lg:py-28 bg-slate-50">
+                <div className="max-w-4xl mx-auto px-5 sm:px-8">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
+                        Nutzungsrechte & Vertragsbedingungen.
+                    </h2>
+                    <p className="text-sm text-slate-500 mb-12 max-w-[60ch]">
+                        Transparente Konditionen — wie es sich für eine Transparenz-Software gehört.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {[
+                            {
+                                title: 'Lizenzmodell',
+                                items: [
+                                    'SaaS-Mietlizenz pro Organisation (Tenant)',
+                                    'Nutzungsrecht für die Vertragslaufzeit',
+                                    'Keine Einrichtungsgebühr oder versteckte Kosten',
+                                    'Inklusive aller Updates und Wartung',
+                                ],
+                            },
+                            {
+                                title: 'Vertragslaufzeit',
+                                items: [
+                                    'Monatlich: Kündigung zum Monatsende',
+                                    'Jährlich: Kündigung zum Laufzeitende',
+                                    '14 Tage kostenlose Testphase',
+                                    'Automatische Verlängerung (kündbar)',
+                                ],
+                            },
+                            {
+                                title: 'Datenhoheit',
+                                items: [
+                                    'Sie bleiben Eigentümer aller Ihrer Daten',
+                                    'Vollständiger Datenexport jederzeit möglich (CSV/JSON)',
+                                    'Datenlöschung 90 Tage nach Vertragsende',
+                                    'Auf Wunsch sofortige Löschung nach Kündigung',
+                                ],
+                            },
+                            {
+                                title: 'Datenschutz & Sicherheit',
+                                items: [
+                                    'AV-Vertrag nach Art. 28 DSGVO inklusive',
+                                    'Verarbeitung ausschließlich in der EU (Frankfurt)',
+                                    'Verschlüsselung in Transit (TLS 1.3) und at Rest (AES-256)',
+                                    'Regelmäßige Sicherheitsaudits und Penetrationstests',
+                                ],
+                            },
+                        ].map((block) => (
+                            <div key={block.title} className="bg-white rounded-xl border border-slate-200 p-6">
+                                <h3 className="text-sm font-bold text-[#071423] mb-4">{block.title}</h3>
+                                <ul className="space-y-2.5">
+                                    {block.items.map((item) => (
+                                        <li key={item} className="flex items-start gap-2.5">
+                                            <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                            <span className="text-sm text-slate-600">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+
+                    <p className="text-xs text-slate-400 text-center mt-8">
+                        Es gelten unsere <Link href="/agb" className="underline hover:text-slate-600">Allgemeinen Geschäftsbedingungen</Link> und die <Link href="/datenschutz" className="underline hover:text-slate-600">Datenschutzerklärung</Link>.
+                    </p>
                 </div>
             </section>
 
@@ -236,7 +407,7 @@ export default function PreisePage() {
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-12">
-                        Haeufig gestellte Fragen.
+                        Häufig gestellte Fragen.
                     </h2>
 
                     <div className="space-y-0">
@@ -265,13 +436,20 @@ export default function PreisePage() {
                         Nicht sicher, welcher Plan passt?
                     </h2>
                     <p className="text-sm text-slate-400 mb-8 max-w-[45ch] mx-auto">
-                        Wir beraten Sie gerne. In 20 Minuten finden wir gemeinsam die richtige Loesung.
+                        Wir beraten Sie gerne. In 20 Minuten finden wir gemeinsam die richtige Lösung für Ihr Unternehmen.
                     </p>
-                    <Link href="/kontakt">
-                        <Button className="bg-white text-[#071423] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
-                            Beratungsgespraech buchen <ArrowRight className="w-4 h-4" />
-                        </Button>
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link href="/kontakt">
+                            <Button className="bg-white text-[#071423] hover:bg-slate-100 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                                Beratungsgespräch buchen <ArrowRight className="w-4 h-4" />
+                            </Button>
+                        </Link>
+                        <Link href={getAppUrl('/sign-up')}>
+                            <Button variant="outline" className="h-12 px-8 rounded-lg text-sm font-semibold border-white/20 text-white hover:bg-white/10 cursor-pointer">
+                                Direkt kostenlos starten
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </section>
         </>

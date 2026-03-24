@@ -39,7 +39,7 @@ const HeroSection = () => {
             <div className="flex flex-col sm:flex-row gap-3 mb-12">
               <Link href={getAppUrl("/sign-up")}>
                 <Button className="group bg-[#1E293B] text-white hover:bg-[#0F172A] h-13 px-8 rounded-lg text-sm font-semibold shadow-sm transition-all cursor-pointer w-full sm:w-auto">
-                  Kostenlose Demo starten
+                  14 Tage kostenlos testen
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
