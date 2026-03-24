@@ -6,12 +6,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import {
-    Shield, Users, Settings, LogOut,
+    Shield, Users, Settings, LogOut, CreditCard,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
     LayoutDashboard, Target, Briefcase, User, Building, Layers
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
+import { TrialBanner } from '@/components/TrialBanner';
+import { SubscriptionGate } from '@/components/SubscriptionGate';
+import { useSubscription } from '@/hooks/useSubscription';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import EmployeesView from '@/components/dashboard/EmployeesView';
 import JobProfilesView from '@/components/dashboard/JobProfilesView';
@@ -30,7 +33,7 @@ import JobLevelsView from '@/components/dashboard/JobLevelsView';
 // ── Role definitions ──────────────────────────────────────────────────────────
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
-type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels';
+type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing';
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     admin: { label: 'Administrator', color: 'bg-red-50 border-red-200 text-red-700' },
@@ -52,6 +55,7 @@ const HR_ADMIN_NAV = [
     { label: 'Berichte', icon: TrendingUp, view: 'reports' as HRView },
     { label: 'Anfragen', icon: MessageSquare, view: 'requests' as HRView },
     { label: 'Audit-Log', icon: Shield, view: 'audit' as HRView, adminOnly: true },
+    { label: 'Abrechnung', icon: CreditCard, view: 'billing' as HRView, adminOnly: true },
     { label: 'Einstellungen', icon: Settings, view: 'settings' as HRView, adminOnly: true },
 ] as const;
 
@@ -96,15 +100,16 @@ export default function DashboardPage() {
             case 'overview': return <DashboardOverview onNavigate={(v) => setActiveView(v as HRView)} />;
             case 'employees': return <EmployeesView />;
             case 'my-salary': return <MySalaryComparisonView />;
-            case 'pay-equity-hr': return <PayEquityHRView />;
-            case 'pay-equity-mgmt': return <PayEquityManagementView />;
+            case 'pay-equity-hr': return <SubscriptionGate feature="pay_gap_analysis"><PayEquityHRView /></SubscriptionGate>;
+            case 'pay-equity-mgmt': return <SubscriptionGate feature="pay_gap_analysis"><PayEquityManagementView /></SubscriptionGate>;
             case 'departments': return <DepartmentsView />;
             case 'job-levels': return <JobLevelsView />;
             case 'job-profiles': return <JobProfilesView />;
             case 'pay-bands': return <PayBandsView />;
-            case 'reports': return <PayGapReportView />;
+            case 'reports': return <SubscriptionGate feature="pdf_reports"><PayGapReportView /></SubscriptionGate>;
             case 'requests': return <InfoRequestsView />;
             case 'audit': return role === 'admin' ? <AuditLogsView /> : <AccessDenied />;
+            case 'billing': return role === 'admin' ? <BillingView /> : <AccessDenied />;
             case 'settings': return role === 'admin' ? <CompanySetup onComplete={() => setActiveView('overview')} /> : <AccessDenied />;
             default: return <DashboardOverview onNavigate={(v) => setActiveView(v as HRView)} />;
         }
@@ -187,6 +192,7 @@ export default function DashboardPage() {
 
             {/* Main Content */}
             <main className="pl-72 transition-all duration-300">
+                <TrialBanner />
                 {/* Top Header */}
                 <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-8 py-4">
                     <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -229,6 +235,113 @@ function AccessDenied() {
             <Shield className="h-16 w-16 text-slate-200 mb-4" />
             <h2 className="text-xl font-semibold text-slate-700">Kein Zugriff</h2>
             <p className="text-slate-400 mt-2 text-sm">Sie haben keine Berechtigung für diesen Bereich.</p>
+        </div>
+    );
+}
+
+function BillingView() {
+    const sub = useSubscription();
+    const [portalLoading, setPortalLoading] = useState(false);
+
+    const openPortal = async () => {
+        setPortalLoading(true);
+        try {
+            const res = await fetch('/api/stripe/portal', { method: 'POST' });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+        } catch {
+            console.error('Failed to open billing portal');
+        } finally {
+            setPortalLoading(false);
+        }
+    };
+
+    const startCheckout = async (tier: string) => {
+        try {
+            const res = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier, interval: 'monthly' }),
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+        } catch {
+            console.error('Failed to start checkout');
+        }
+    };
+
+    if (sub.loading) {
+        return <div className="flex justify-center py-24"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+    }
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-lg font-bold text-slate-900">Abrechnung & Plan</h2>
+                <p className="text-sm text-slate-500">Verwalten Sie Ihren Plan und Ihre Zahlungsinformationen.</p>
+            </div>
+
+            {/* Current Plan */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 className="font-semibold text-slate-900">Aktueller Plan: {sub.plan.nameDE}</h3>
+                        <p className="text-sm text-slate-500">
+                            {sub.isTrialing
+                                ? `Testphase — noch ${sub.trialDaysRemaining} Tage`
+                                : sub.status === 'active'
+                                ? 'Aktives Abonnement'
+                                : sub.status === 'past_due'
+                                ? 'Zahlung ausstehend'
+                                : sub.status === 'canceled'
+                                ? 'Gekündigt'
+                                : 'Inaktiv'}
+                        </p>
+                    </div>
+                    <Badge variant="outline" className={
+                        sub.status === 'active' ? 'border-green-200 text-green-700 bg-green-50' :
+                        sub.isTrialing ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                        sub.status === 'past_due' ? 'border-amber-200 text-amber-700 bg-amber-50' :
+                        'border-slate-200 text-slate-600'
+                    }>
+                        {sub.isTrialing ? 'Testphase' : sub.status === 'active' ? 'Aktiv' : sub.status === 'past_due' ? 'Überfällig' : sub.status}
+                    </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 text-sm mb-6">
+                    <div className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-slate-500 text-xs">Mitarbeiter-Limit</p>
+                        <p className="font-semibold">{sub.limits.maxEmployees === -1 ? 'Unbegrenzt' : sub.limits.maxEmployees}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-slate-500 text-xs">Admin-Nutzer</p>
+                        <p className="font-semibold">{sub.limits.maxAdmins === -1 ? 'Unbegrenzt' : sub.limits.maxAdmins}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-slate-500 text-xs">HR-Manager</p>
+                        <p className="font-semibold">{sub.limits.maxHRManagers === -1 ? 'Unbegrenzt' : sub.limits.maxHRManagers}</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-3">
+                    {sub.stripeCustomerId ? (
+                        <Button onClick={openPortal} disabled={portalLoading} variant="outline">
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            {portalLoading ? 'Wird geöffnet...' : 'Rechnungen & Zahlungsmethoden'}
+                        </Button>
+                    ) : null}
+                    {sub.tier !== 'professional' && sub.tier !== 'enterprise' && (
+                        <Button onClick={() => startCheckout('professional')}>
+                            Auf Professional upgraden
+                        </Button>
+                    )}
+                    {sub.tier === 'basis' && (
+                        <Button variant="outline" onClick={() => startCheckout('basis')}>
+                            Basis-Plan aktivieren
+                        </Button>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
