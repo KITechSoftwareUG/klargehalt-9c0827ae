@@ -1,6 +1,7 @@
 import { ArrowRight, Shield, BarChart3, Scale, Building2, Users, Mail } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getAppUrl } from '@/utils/url';
 
 const pages = [
   {
@@ -75,10 +76,10 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/kontakt"
+                  href={getAppUrl('/sign-up')}
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[#071423] hover:bg-white/90 transition-colors cursor-pointer"
                 >
-                  Kostenlose Demo starten
+                  Kostenlos starten — 14 Tage gratis
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link

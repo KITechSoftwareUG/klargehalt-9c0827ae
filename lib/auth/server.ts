@@ -68,11 +68,44 @@ export const getActiveOrganizationIdFromCookies = async () => {
   return cookieStore.get(ACTIVE_ORG_COOKIE)?.value ?? null;
 };
 
+const UNAUTHENTICATED_CONTEXT = {
+  isAuthenticated: false as const,
+  claims: undefined,
+  userInfo: undefined,
+  user: null,
+  organizations: [] as AppOrganization[],
+  activeOrganizationId: null,
+  activeOrganization: null,
+};
+
 export const getServerAuthContext = async () => {
-  const context = await getLogtoContext(getLogtoConfig(), { fetchUserInfo: true });
+  let context: Awaited<ReturnType<typeof getLogtoContext>>;
+
+  try {
+    context = await getLogtoContext(getLogtoConfig(), { fetchUserInfo: true });
+  } catch (error) {
+    // invalid_grant = stale/broken session (deleted user, expired refresh token).
+    // Do NOT fallback to reading stale ID token claims — treat as unauthenticated.
+    // The client will redirect to /auth/sign-in for a fresh session.
+    console.error('Auth context error (treating as unauthenticated):', error instanceof Error ? error.message : error);
+    return UNAUTHENTICATED_CONTEXT;
+  }
+
+  if (!context.isAuthenticated) {
+    return UNAUTHENTICATED_CONTEXT;
+  }
+
   const user = mapLogtoUser(context.claims, context.userInfo);
-  const organizations = getOrganizationsFromClaims(context.claims);
+  const jwtOrganizations = getOrganizationsFromClaims(context.claims);
   const activeOrganizationId = await getActiveOrganizationIdFromCookies();
+
+  // JWT may not contain the org yet (Logto updates it on next login).
+  // If the cookie has an org that's not in the JWT, include it so the app works
+  // immediately after onboarding. Real enforcement is via Supabase RLS.
+  const organizations =
+    activeOrganizationId && !jwtOrganizations.some(({ id }) => id === activeOrganizationId)
+      ? [...jwtOrganizations, { id: activeOrganizationId, name: null }]
+      : jwtOrganizations;
 
   return {
     ...context,

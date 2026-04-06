@@ -10,6 +10,8 @@ import {
   getPlanLimits,
   getEffectiveTier,
   getTrialDaysRemaining,
+  getDaysSinceTrialExpired,
+  GRACE_PERIOD_DAYS,
   PLANS,
 } from '@/lib/subscription';
 
@@ -20,6 +22,9 @@ interface SubscriptionState {
   isTrialing: boolean;
   trialEndsAt: Date | null;
   trialDaysRemaining: number | null;
+  isExpired: boolean;
+  isInGracePeriod: boolean;
+  gracePeriodDaysRemaining: number | null;
   currentPeriodEnd: Date | null;
   stripeCustomerId: string | null;
   limits: PlanLimits;
@@ -34,6 +39,7 @@ export interface UseSubscriptionReturn extends SubscriptionState {
   canAddHRManager: (currentCount: number) => boolean;
   refresh: () => Promise<void>;
 }
+
 
 export const useSubscription = (): UseSubscriptionReturn => {
   const { supabase, orgId, loading: authLoading } = useAuth();
@@ -84,6 +90,17 @@ export const useSubscription = (): UseSubscriptionReturn => {
 
   const isTrialing = status === 'trialing' && trialEndsAt !== null && trialEndsAt > new Date();
   const trialDaysRemaining = getTrialDaysRemaining(trialEndsAt?.toISOString() ?? null);
+
+  const daysSinceExpired = getDaysSinceTrialExpired(trialEndsAt?.toISOString() ?? null);
+  const isExpired =
+    status === 'trialing' &&
+    trialEndsAt !== null &&
+    trialEndsAt <= new Date();
+  const isInGracePeriod = isExpired && daysSinceExpired < GRACE_PERIOD_DAYS;
+  const gracePeriodDaysRemaining = isInGracePeriod
+    ? Math.max(0, GRACE_PERIOD_DAYS - daysSinceExpired)
+    : null;
+
   const limits = getPlanLimits(tier);
   const plan = PLANS[tier];
 
@@ -111,6 +128,9 @@ export const useSubscription = (): UseSubscriptionReturn => {
     isTrialing,
     trialEndsAt,
     trialDaysRemaining,
+    isExpired,
+    isInGracePeriod,
+    gracePeriodDaysRemaining,
     currentPeriodEnd,
     stripeCustomerId,
     limits,

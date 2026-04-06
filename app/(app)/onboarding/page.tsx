@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,11 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles } from 'lucide-react';
+import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { createSupabaseClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { PLANS, TRIAL_DURATION_DAYS, type SubscriptionTier } from '@/lib/subscription';
+import { PLANS, TRIAL_DURATION_DAYS, TRIAL_TIER, type SubscriptionTier } from '@/lib/subscription';
 
 type OnboardingStep = 1 | 2 | 3;
 type UserRole = 'admin' | 'hr_manager';
@@ -21,7 +21,7 @@ type CompanySize = '1-50' | '51-250' | '250+';
 
 export default function OnboardingPage() {
     const router = useRouter();
-    const { user, organizations, setActiveOrganization } = useAuth();
+    const { user, isLoaded, isSignedIn, organizations, setActiveOrganization, refreshAuth } = useAuth();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -33,17 +33,47 @@ export default function OnboardingPage() {
     const [companySize, setCompanySize] = useState<CompanySize>('1-50');
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
 
+    // If auth loaded and user already has an org, skip to dashboard
+    useEffect(() => {
+        if (isLoaded && isSignedIn && organizations.length > 0) {
+            router.replace('/dashboard');
+        }
+    }, [isLoaded, isSignedIn, organizations, router]);
+
+    // Pre-fill name from auth if available
+    useEffect(() => {
+        if (user?.fullName && !fullName) {
+            setFullName(user.fullName);
+        }
+    }, [user?.fullName, fullName]);
+
     const totalSteps = 3;
     const progress = (currentStep / totalSteps) * 100;
 
     const canProceedStep1 = fullName.trim().length > 0;
     const canProceedStep2 = companyName.trim().length > 0;
 
+    // Show loading while auth is initializing
+    if (!isLoaded) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                    <p className="text-sm text-muted-foreground">Konto wird vorbereitet...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If not signed in (broken session or not logged in),
+    // redirect to /auth/sign-in (route handler) to bypass middleware and get fresh session
+    if (!isSignedIn) {
+        window.location.assign('/auth/sign-in');
+        return null;
+    }
+
     const handleComplete = async () => {
-        if (!user) {
-            toast({ title: 'Bitte warten...', description: 'Das System wird initialisiert.' });
-            return;
-        }
+        if (!user) return;
 
         setLoading(true);
 
@@ -56,14 +86,27 @@ export default function OnboardingPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: companyName || `${fullName}s Unternehmen` }),
                 });
-                if (!res.ok) throw new Error('Organisation konnte nicht erstellt werden.');
                 const data = await res.json();
+                if (!res.ok) {
+                    // Session broken → force re-authentication
+                    if (data.reauth || res.status === 401) {
+                        toast({
+                            title: 'Sitzung abgelaufen',
+                            description: 'Sie werden zur Anmeldung weitergeleitet...',
+                            variant: 'destructive',
+                        });
+                        setTimeout(() => window.location.assign('/auth/sign-in'), 1500);
+                        return;
+                    }
+                    throw new Error(data.error || 'Organisation konnte nicht erstellt werden.');
+                }
                 organization = data.organization;
             }
 
             if (!organization) throw new Error('Organisation konnte nicht gefunden werden.');
 
             await setActiveOrganization(organization.id);
+            await refreshAuth();
 
             const supabase = createSupabaseClient(async () => {
                 const res = await fetch('/api/auth/organization-token', { cache: 'no-store' });
@@ -83,6 +126,10 @@ export default function OnboardingPage() {
 
             let companyId: string;
 
+            // During trial, everyone gets Professional features.
+            // selectedPlan is stored in onboarding_data for post-trial conversion.
+            const trialTier = TRIAL_TIER;
+
             if (existingCompany) {
                 const { data, error } = await supabase
                     .from('companies')
@@ -90,7 +137,7 @@ export default function OnboardingPage() {
                         name: companyName,
                         industry,
                         size: companySize,
-                        subscription_tier: selectedPlan,
+                        subscription_tier: trialTier,
                         subscription_status: 'trialing',
                         trial_ends_at: trialEndsAt.toISOString(),
                     })
@@ -108,7 +155,7 @@ export default function OnboardingPage() {
                         size: companySize,
                         organization_id: organization.id,
                         created_by: user.id,
-                        subscription_tier: selectedPlan,
+                        subscription_tier: trialTier,
                         subscription_status: 'trialing',
                         trial_ends_at: trialEndsAt.toISOString(),
                     })
@@ -136,17 +183,18 @@ export default function OnboardingPage() {
                 .maybeSingle();
 
             if (!existingRole) {
-                await supabase.from('user_roles').insert({
+                const { error: roleError } = await supabase.from('user_roles').insert({
                     user_id: user.id,
-                    role: selectedRole,
+                    role: 'admin',
                     organization_id: organization.id,
-                    company_id: companyId,
                 });
+                if (roleError) console.error('user_roles insert failed:', roleError);
             } else {
-                await supabase
+                const { error: roleError } = await supabase
                     .from('user_roles')
-                    .update({ role: selectedRole, company_id: companyId })
+                    .update({ role: 'admin' })
                     .eq('id', existingRole.id);
+                if (roleError) console.error('user_roles update failed:', roleError);
             }
 
             await supabase.from('onboarding_data').upsert(
@@ -155,6 +203,8 @@ export default function OnboardingPage() {
                     organization_id: organization.id,
                     company_id: companyId,
                     company_size: companySize,
+                    selected_plan: selectedPlan,
+                    self_reported_role: selectedRole,
                     consulting_option: 'self-service',
                     completed_at: new Date().toISOString(),
                 },
@@ -166,7 +216,7 @@ export default function OnboardingPage() {
                 description: `Ihre ${TRIAL_DURATION_DAYS}-tägige Testphase hat begonnen.`,
             });
 
-            setTimeout(() => router.push('/dashboard'), 500);
+            router.push('/dashboard');
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten.';
             console.error('Onboarding error:', error);

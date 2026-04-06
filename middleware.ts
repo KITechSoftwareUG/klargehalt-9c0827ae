@@ -24,68 +24,48 @@ export default async function middleware(request: Request) {
       return NextResponse.redirect(new URL('/dashboard', nextRequest.url));
     }
 
-    // Skip auth check for auth flow routes (callback, sign-out, etc.)
-    if (isSkipAuthCheck(pathname)) {
+    // Skip auth check for auth flow routes (callback, sign-out, sign-in, sign-up, etc.)
+    // Auth routes are always accessible — the server-side auth context (/api/auth/me)
+    // is the source of truth, not the edge middleware's cookie check.
+    if (isSkipAuthCheck(pathname) || isAuthRoute(pathname)) {
       return NextResponse.next();
     }
 
     const context = await client.getLogtoContext(nextRequest);
-
-    // Authenticated user on sign-in/sign-up → redirect to dashboard
-    if (isAuthRoute(pathname)) {
-      if (context.isAuthenticated) {
-        return NextResponse.redirect(new URL('/dashboard', nextRequest.url));
-      }
-      return NextResponse.next();
-    }
 
     // Protected routes: require authentication
     if (!context.isAuthenticated) {
       return NextResponse.redirect(new URL('/sign-in', nextRequest.url));
     }
 
-    const organizations = context.claims?.organizations ?? [];
+    const jwtOrganizations = context.claims?.organizations ?? [];
     const activeOrganizationId = nextRequest.cookies.get(ACTIVE_ORG_COOKIE)?.value;
 
-    // Validate cookie: if the stored org is not in the user's actual orgs, clear it
-    const isValidOrg = activeOrganizationId && organizations.includes(activeOrganizationId);
-
-    if (isValidOrg) {
+    // Trust the cookie if it exists — the org was set by our server-side API
+    // (JWT may lag behind after org creation since Logto only updates it on re-login)
+    // Real security enforcement happens via Supabase RLS, not middleware
+    if (activeOrganizationId) {
       return NextResponse.next();
     }
 
-    // User has orgs but no (valid) cookie → set cookie to first org
-    if (organizations.length > 0) {
+    // No cookie but JWT has orgs → set cookie to first org
+    if (jwtOrganizations.length > 0) {
       const response = NextResponse.next();
-      response.cookies.set(ACTIVE_ORG_COOKIE, organizations[0], {
+      response.cookies.set(ACTIVE_ORG_COOKIE, jwtOrganizations[0], {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
         path: '/',
       });
-      // Clear stale cookie if it was invalid
-      if (activeOrganizationId && !isValidOrg) {
-        response.cookies.set(ACTIVE_ORG_COOKIE, organizations[0], {
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
-          path: '/',
-        });
-      }
       return response;
     }
 
-    // No orgs at all → must go through onboarding
+    // No org cookie AND no JWT orgs → onboarding required
     if (pathname.startsWith('/onboarding')) {
       return NextResponse.next();
     }
 
-    // Clear any stale cookie and redirect to onboarding
-    const response = NextResponse.redirect(new URL('/onboarding', nextRequest.url));
-    if (activeOrganizationId) {
-      response.cookies.delete(ACTIVE_ORG_COOKIE);
-    }
-    return response;
+    return NextResponse.redirect(new URL('/onboarding', nextRequest.url));
   }
 
   return NextResponse.next();

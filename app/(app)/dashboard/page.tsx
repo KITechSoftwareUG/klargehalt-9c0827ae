@@ -8,7 +8,7 @@ import Image from 'next/image';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
-    LayoutDashboard, Target, Briefcase, User, Building, Layers
+    LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -64,6 +64,7 @@ const HR_ADMIN_NAV = [
 export default function DashboardPage() {
     const router = useRouter();
     const { user, role, loading, isLoaded, orgId, signOut } = useAuth();
+    const { isExpired } = useSubscription();
     const [activeView, setActiveView] = useState<HRView>('overview');
 
     const handleSignOut = async () => {
@@ -203,6 +204,7 @@ export default function DashboardPage() {
             {/* Main Content */}
             <main className="pl-72 transition-all duration-300">
                 <TrialBanner />
+                {isExpired && <TrialExpiredOverlay />}
                 {/* Top Header */}
                 <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-8 py-4">
                     <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -235,6 +237,48 @@ export default function DashboardPage() {
                     {renderContent()}
                 </div>
             </main>
+        </div>
+    );
+}
+
+function TrialExpiredOverlay() {
+    const [loading, setLoading] = useState(false);
+
+    const startCheckout = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier: 'professional', interval: 'monthly' }),
+            });
+            const data = await res.json() as { url?: string };
+            if (data.url) window.location.href = data.url;
+        } catch {
+            console.error('Failed to start checkout');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Clock className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Testphase abgelaufen</h2>
+                <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+                    Ihre 14-tägige kostenlose Testphase ist beendet. Um weiterhin alle Funktionen
+                    nutzen zu können, wählen Sie jetzt einen Plan.
+                </p>
+                <Button onClick={startCheckout} disabled={loading} className="w-full mb-3" size="lg">
+                    {loading ? 'Wird weitergeleitet...' : 'Jetzt upgraden — ab €99/Monat'}
+                </Button>
+                <p className="text-xs text-slate-400">
+                    Ihre Daten bleiben 30 Tage nach Ablauf erhalten.
+                </p>
+            </div>
         </div>
     );
 }

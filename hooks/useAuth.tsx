@@ -185,13 +185,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (roleData) {
           setRole(roleData.role as AppRole);
         } else {
-          // No role found — only set a default if user has an active org
-          // (new users without orgs should go through onboarding first)
-          if (activeOrganization?.id) {
-            setRole('employee');
-          } else {
-            setRole(null);
-          }
+          // No role found — this should not happen after onboarding.
+          // Do not default to 'employee'; leave null so the dashboard redirects to onboarding.
+          setRole(null);
         }
       } catch (error) {
         console.error('Error fetching global auth data:', error);

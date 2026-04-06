@@ -140,6 +140,12 @@ export default function Header() {
           {/* Desktop Auth */}
           <div className="hidden lg:flex items-center gap-3">
             <Link
+              href={getAppUrl('/sign-up')}
+              className="px-5 py-2 rounded-full text-sm font-semibold text-[#071423] bg-[#52e0de] hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              Kostenlos starten
+            </Link>
+            <Link
               href={getAppUrl('/sign-in')}
               className="px-5 py-2 rounded-full text-sm font-medium text-[#071423] bg-white hover:bg-white/90 transition-colors cursor-pointer"
             >
@@ -191,6 +197,13 @@ export default function Header() {
               )}
             </nav>
             <div className="pt-4 mt-2 border-t border-white/10">
+              <Link
+                href={getAppUrl('/sign-up')}
+                onClick={() => setMenuOpen(false)}
+                className="block text-center mb-2 px-5 py-2.5 rounded-full text-sm font-semibold text-[#071423] bg-[#52e0de] hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                Kostenlos starten
+              </Link>
               <Link
                 href={getAppUrl('/sign-in')}
                 onClick={() => setMenuOpen(false)}

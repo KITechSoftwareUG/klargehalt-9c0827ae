@@ -132,3 +132,15 @@ export function getStripePriceId(tier: SubscriptionTier, interval: 'monthly' | '
   const envKey = `STRIPE_PRICE_${tier.toUpperCase()}_${interval.toUpperCase()}`;
   return process.env[envKey] ?? null;
 }
+
+// Returns days since trial ended (positive = trial is over)
+export function getDaysSinceTrialExpired(trialEndsAt: string | Date | null): number {
+  if (!trialEndsAt) return 999;
+  const end = new Date(trialEndsAt);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - end.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
+// Hard delete threshold: 30 days after trial ends
+export const GRACE_PERIOD_DAYS = 30;
