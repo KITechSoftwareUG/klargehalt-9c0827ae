@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { createSupabaseClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PLANS, TRIAL_DURATION_DAYS, TRIAL_TIER, type SubscriptionTier } from '@/lib/subscription';
 
@@ -21,7 +20,7 @@ type CompanySize = '1-50' | '51-250' | '251-1000';
 
 export default function OnboardingPage() {
     const router = useRouter();
-    const { user, isLoaded, isSignedIn, organizations, setActiveOrganization, refreshAuth } = useAuth();
+    const { user, isLoaded, isSignedIn, organizations, setActiveOrganization, refreshAuth, supabase } = useAuth();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -34,19 +33,21 @@ export default function OnboardingPage() {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
     const [consultingOption, setConsultingOption] = useState<'self-service' | 'guided'>('self-service');
 
+    const hasOrg = organizations.length > 0;
+
     // If auth loaded and user already has an org, skip to dashboard
     useEffect(() => {
-        if (isLoaded && isSignedIn && organizations.length > 0) {
+        if (isLoaded && isSignedIn && hasOrg) {
             router.replace('/dashboard');
         }
-    }, [isLoaded, isSignedIn, organizations, router]);
+    }, [isLoaded, isSignedIn, hasOrg, router]);
 
     // Pre-fill name from auth if available
     useEffect(() => {
-        if (user?.fullName && !fullName) {
-            setFullName(user.fullName);
+        if (user?.fullName) {
+            setFullName((prev) => prev || user.fullName!);
         }
-    }, [user?.fullName, fullName]);
+    }, [user?.fullName]);
 
     const totalSteps = 3;
     const progress = (currentStep / totalSteps) * 100;
@@ -108,13 +109,6 @@ export default function OnboardingPage() {
 
             await setActiveOrganization(organization.id);
             await refreshAuth();
-
-            const supabase = createSupabaseClient(async () => {
-                const res = await fetch('/api/auth/organization-token', { cache: 'no-store' });
-                if (!res.ok) return null;
-                const data = await res.json();
-                return data.token as string | null;
-            });
 
             const trialEndsAt = new Date();
             trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DURATION_DAYS);
