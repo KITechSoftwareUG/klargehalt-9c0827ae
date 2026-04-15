@@ -39,7 +39,7 @@ export function useJobLevels() {
       if (error) throw error;
       setJobLevels(data || []);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      const message = error instanceof Error ? error.message : (error as { message?: string })?.message ?? 'Unbekannter Fehler';
       console.error('Error fetching job levels:', error);
       toast.error(`Fehler beim Laden der Karrierestufen: ${message}`);
     } finally {

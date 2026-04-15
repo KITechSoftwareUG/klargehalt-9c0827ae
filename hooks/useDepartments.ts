@@ -40,7 +40,7 @@ export function useDepartments() {
       if (error) throw error;
       setDepartments(data || []);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      const message = error instanceof Error ? error.message : (error as { message?: string })?.message ?? 'Unbekannter Fehler';
       console.error('Error fetching departments:', error);
       toast.error(`Fehler beim Laden der Abteilungen: ${message}`);
     } finally {

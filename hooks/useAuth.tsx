@@ -184,9 +184,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (roleData) {
           setRole(roleData.role as AppRole);
+        } else if (activeOrganization?.id) {
+          // No role found but user has an active org — the client-side insert in onboarding
+          // may have failed due to JWT-lag. Attempt server-side repair.
+          try {
+            const res = await fetch('/api/auth/repair-role', { method: 'POST' });
+            if (res.ok) {
+              const repaired = await res.json() as { role: string };
+              setRole(repaired.role as AppRole);
+            } else {
+              setRole(null);
+            }
+          } catch {
+            setRole(null);
+          }
         } else {
-          // No role found — this should not happen after onboarding.
-          // Do not default to 'employee'; leave null so the dashboard redirects to onboarding.
           setRole(null);
         }
       } catch (error) {

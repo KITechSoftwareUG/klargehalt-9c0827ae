@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { ACTIVE_ORG_COOKIE } from '@/lib/logto';
 import { createOrganizationWithMembership } from '@/lib/logto-management';
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -33,6 +34,29 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
     });
+
+    // Insert admin role for org creator using service role (bypasses RLS / JWT-lag)
+    const adminClient = createSupabaseAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+    const { data: existingRole } = await adminClient
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', context.user.id)
+      .eq('organization_id', organization.id)
+      .maybeSingle();
+
+    if (!existingRole) {
+      const { error: roleError } = await adminClient.from('user_roles').insert({
+        user_id: context.user.id,
+        organization_id: organization.id,
+        role: 'admin',
+      });
+      if (roleError) {
+        console.error('Failed to insert admin role for new org creator:', roleError);
+      }
+    }
 
     return NextResponse.json({ organization });
   } catch (error) {
