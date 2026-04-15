@@ -33,6 +33,7 @@ import {
   AlertTriangle,
   Info,
   Circle,
+  ChevronDown,
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -40,17 +41,31 @@ interface DashboardOverviewProps {
 }
 
 const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
-  const { role, profile } = useAuth();
+  const { role, profile, supabase, orgId } = useAuth();
   const { jobProfiles, loading: profilesLoading } = useJobProfiles();
   const { payBands, loading: bandsLoading } = usePayBands();
   const { employees, loading: employeesLoading } = useEmployees();
   const { hasPermission } = usePermissions();
   const { calculateGenderPayGap } = usePayGapStatistics();
   const [hasSnapshots, setHasSnapshots] = React.useState<boolean | null>(null);
+  const [hasHRManager, setHasHRManager] = React.useState<boolean | null>(null);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   React.useEffect(() => {
     calculateGenderPayGap().then((gaps) => setHasSnapshots(gaps.length > 0));
   }, [calculateGenderPayGap]);
+
+  React.useEffect(() => {
+    if (!supabase || !orgId) return;
+    supabase
+      .from('user_roles')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('role', 'hr_manager')
+      .then(({ count, error }) => {
+        if (!error) setHasHRManager((count ?? 0) > 0);
+      });
+  }, [supabase, orgId]);
 
   const welcome = getWelcomeMessage(role as any, profile?.full_name || undefined);
   const navItems = getNavigationForRole(role as any);
@@ -61,20 +76,23 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
     {
       id: 'company',
       label: 'Unternehmen eingerichtet',
-      done: true, // if they're here, company is set up
+      done: true,
       view: 'settings' as const,
+      timeHint: undefined,
     },
     {
       id: 'job_profiles',
       label: `Job-Profile definiert (${jobProfiles.length})`,
       done: jobProfiles.length > 0,
       view: 'job-profiles' as const,
+      timeHint: '~10 Min',
     },
     {
       id: 'pay_bands',
       label: `Entgeltbänder festgelegt (${payBands.length})`,
       done: payBands.length > 0,
       view: 'pay-bands' as const,
+      timeHint: '~5 Min',
     },
     {
       id: 'employees',
@@ -82,12 +100,21 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
       done: employees.length >= 5,
       subLabel: employees.length > 0 && employees.length < 5 ? `${employees.length}/5 — mind. 5 für anonymisierte Analysen` : undefined,
       view: 'employees' as const,
+      timeHint: '~15 Min',
+    },
+    {
+      id: 'hr_manager',
+      label: 'HR-Manager eingeladen',
+      done: hasHRManager === true,
+      view: 'employees' as const,
+      timeHint: '~5 Min',
     },
     {
       id: 'analysis',
-      label: 'Erste Pay-Gap-Analyse durchgeführt',
+      label: 'Erste Gender-Pay-Gap-Analyse durchgeführt',
       done: hasSnapshots === true,
-      view: 'reports' as const,
+      view: 'hr-analytics' as const,
+      timeHint: '~2 Min',
     },
   ];
 
@@ -148,14 +175,26 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
                     : `${completedCount} von ${setupSteps.length} Schritten abgeschlossen`}
                 </CardDescription>
               </div>
-              <div className="text-right">
+              <div className="text-right flex items-center gap-3">
                 <span className={`text-2xl font-bold ${isSetupComplete ? 'text-green-600' : 'text-amber-600'}`}>
                   {progressPct}%
                 </span>
+                {isSetupComplete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCollapsed((c) => !c)}
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
+                  >
+                    {isCollapsed ? 'Anzeigen' : 'Ausblenden'}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                  </Button>
+                )}
               </div>
             </div>
             <Progress value={progressPct} className="h-2 mt-2" />
           </CardHeader>
+          {!isCollapsed && (
           <CardContent className="pt-0">
             <div className="space-y-2">
               {setupSteps.map((step) => (
@@ -177,6 +216,9 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
                     {step.subLabel && (
                       <p className="text-xs text-amber-600">{step.subLabel}</p>
                     )}
+                    {!step.done && step.timeHint && (
+                      <p className="text-xs text-muted-foreground/70">{step.timeHint}</p>
+                    )}
                   </div>
                   {!step.done && (
                     <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -185,6 +227,7 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
               ))}
             </div>
           </CardContent>
+          )}
         </Card>
       )}
 

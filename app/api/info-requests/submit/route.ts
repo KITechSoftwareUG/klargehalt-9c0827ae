@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type RequestType = 'pay_band' | 'avg_pay_category' | 'gap_explanation';
 
@@ -34,6 +35,11 @@ export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
   if (!context.isAuthenticated || !context.activeOrganizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rateLimitKey = `info-request:${context.user?.id}`;
+  if (!checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   const { request_type } = (await request.json().catch(() => ({}))) as {
@@ -201,7 +207,7 @@ export async function POST(request: NextRequest) {
         .from('pay_gap_snapshots')
         .select('mean_gap_base_pct, is_suppressed')
         .eq('organization_id', orgId)
-        .eq('scope', 'organization')
+        .eq('scope', 'company')
         .eq('is_suppressed', false)
         .order('snapshot_date', { ascending: false })
         .maybeSingle();

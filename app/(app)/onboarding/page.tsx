@@ -17,7 +17,7 @@ import { PLANS, TRIAL_DURATION_DAYS, TRIAL_TIER, type SubscriptionTier } from '@
 
 type OnboardingStep = 1 | 2 | 3;
 type UserRole = 'admin' | 'hr_manager';
-type CompanySize = '1-50' | '51-250' | '250+';
+type CompanySize = '1-50' | '51-250' | '251-1000';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -32,6 +32,7 @@ export default function OnboardingPage() {
     const [industry, setIndustry] = useState('');
     const [companySize, setCompanySize] = useState<CompanySize>('1-50');
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
+    const [consultingOption, setConsultingOption] = useState<'self-service' | 'guided'>('self-service');
 
     // If auth loaded and user already has an org, skip to dashboard
     useEffect(() => {
@@ -205,7 +206,7 @@ export default function OnboardingPage() {
                     company_size: companySize,
                     selected_plan: selectedPlan,
                     self_reported_role: selectedRole,
-                    consulting_option: 'self-service',
+                    consulting_option: consultingOption,
                     completed_at: new Date().toISOString(),
                 },
                 { onConflict: 'user_id' }
@@ -216,7 +217,11 @@ export default function OnboardingPage() {
                 description: `Ihre ${TRIAL_DURATION_DAYS}-tägige Testphase hat begonnen.`,
             });
 
-            router.push('/dashboard');
+            if (selectedPlan === 'enterprise') {
+                router.push('/book-consulting');
+            } else {
+                router.push(consultingOption === 'guided' ? '/book-consulting' : '/dashboard');
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten.';
             console.error('Onboarding error:', error);
@@ -320,7 +325,7 @@ export default function OnboardingPage() {
                                         {[
                                             { value: '1-50', label: '1–50', desc: 'Basis-Plan empfohlen' },
                                             { value: '51-250', label: '51–250', desc: 'Professional-Plan empfohlen' },
-                                            { value: '250+', label: '250+', desc: 'Enterprise — Kontakt aufnehmen' },
+                                            { value: '251-1000', label: '251+', desc: 'Enterprise — Kontakt aufnehmen' },
                                         ].map((opt) => (
                                             <Label key={opt.value} htmlFor={`size-${opt.value}`} className="flex items-center gap-3 border rounded-lg p-3 cursor-pointer hover:bg-secondary transition-colors">
                                                 <RadioGroupItem value={opt.value} id={`size-${opt.value}`} />
@@ -341,11 +346,36 @@ export default function OnboardingPage() {
                 {currentStep === 3 && (
                     <div className="space-y-6 animate-fade-in">
                         <div className="text-center space-y-2">
-                            <h1 className="text-2xl font-bold">Ihren Plan wählen</h1>
+                            <h1 className="text-2xl font-bold">Ihre {TRIAL_DURATION_DAYS}-tägige Testphase aktivieren</h1>
                             <p className="text-muted-foreground">
-                                {TRIAL_DURATION_DAYS} Tage kostenlos testen — keine Kreditkarte nötig
+                                Sie erhalten Professional kostenlos — wählen Sie Ihren Plan für nach dem Test
                             </p>
                         </div>
+
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">Wie möchten Sie starten?</CardTitle>
+                                <CardDescription>Beide Optionen sind kostenlos während des Tests</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <RadioGroup value={consultingOption} onValueChange={(v) => setConsultingOption(v as 'self-service' | 'guided')} className="space-y-2">
+                                    <Label htmlFor="opt-self" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
+                                        <RadioGroupItem value="self-service" id="opt-self" />
+                                        <div>
+                                            <div className="font-semibold">Selbst einrichten</div>
+                                            <p className="text-sm text-muted-foreground">Guided Checklist im Dashboard — in ca. 20 Minuten startklar</p>
+                                        </div>
+                                    </Label>
+                                    <Label htmlFor="opt-guided" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
+                                        <RadioGroupItem value="guided" id="opt-guided" />
+                                        <div>
+                                            <div className="font-semibold">Kostenloses Einführungsgespräch buchen</div>
+                                            <p className="text-sm text-muted-foreground">30 Minuten mit unserem Team — wir richten alles gemeinsam ein</p>
+                                        </div>
+                                    </Label>
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
 
                         <div className="grid gap-4">
                             {/* Basis */}
@@ -377,7 +407,7 @@ export default function OnboardingPage() {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-lg">Enterprise</span>
-                                                {companySize === '250+' && (
+                                                {companySize === '251-1000' && (
                                                     <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">Empfohlen</span>
                                                 )}
                                             </div>

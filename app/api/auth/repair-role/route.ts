@@ -20,6 +20,17 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Verify the user is actually a Logto member of this org (not a forged cookie)
+  const isMember = context.organizations.some(
+    (org) => org.id === context.activeOrganizationId
+  );
+  if (!isMember) {
+    return NextResponse.json(
+      { error: 'Forbidden: not a member of this organization' },
+      { status: 403 }
+    );
+  }
+
   const adminClient = createSupabaseAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

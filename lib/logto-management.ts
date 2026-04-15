@@ -16,7 +16,14 @@ type LogtoUserResponse = {
   name?: string | null;
 };
 
+let _tokenCache: { token: string; expiresAt: number } | null = null;
+
 const getManagementToken = async () => {
+  const now = Date.now();
+  if (_tokenCache && _tokenCache.expiresAt > now) {
+    return _tokenCache.token;
+  }
+
   const endpoint = getRequiredEnv('LOGTO_ENDPOINT');
   const clientId = getRequiredEnv('LOGTO_M2M_APP_ID');
   const clientSecret = getRequiredEnv('LOGTO_M2M_APP_SECRET');
@@ -41,7 +48,10 @@ const getManagementToken = async () => {
   }
 
   const data = await response.json();
-  return data.access_token as string;
+  const token = data.access_token as string;
+  const ttl = ((data.expires_in as number) ?? 3600) - 60;
+  _tokenCache = { token, expiresAt: now + ttl * 1000 };
+  return token;
 };
 
 const callManagementApi = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -110,7 +120,7 @@ export const inviteEmployeeToOrg = async (params: {
       body: JSON.stringify({
         primaryEmail: params.email,
         name: `${params.firstName} ${params.lastName}`,
-        username: params.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') + '_' + Math.random().toString(36).slice(2, 6),
+        username: params.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') + '_' + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, '0')).join(''),
       }),
     });
     logtoUserId = newUser.id;
@@ -158,14 +168,10 @@ export const inviteEmployeeToOrg = async (params: {
 };
 
 function generateTempPassword(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  const special = '!@#$';
-  let pass = '';
-  for (let i = 0; i < 10; i++) {
-    pass += chars[Math.floor(Math.random() * chars.length)];
-  }
-  pass += special[Math.floor(Math.random() * special.length)];
-  return pass;
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => chars[b % chars.length]).join('');
 }
 
 export const createOrganizationWithMembership = async (params: {

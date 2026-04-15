@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         const subscriptionId = session.subscription as string;
         const tier = (session.metadata?.tier as SubscriptionTier) ?? 'basis';
 
-        await supabase
+        const { data: updated1, error: err1 } = await supabase
           .from('companies')
           .update({
             stripe_subscription_id: subscriptionId,
@@ -68,7 +68,13 @@ export async function POST(request: NextRequest) {
             subscription_status: 'active',
             trial_ends_at: null,
           })
-          .eq('stripe_customer_id', customerId);
+          .eq('stripe_customer_id', customerId)
+          .select('id');
+
+        if (err1) throw err1;
+        if (!updated1 || updated1.length === 0) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
 
         console.log(`Stripe webhook: checkout.session.completed for ${customerId}, tier=${tier}`);
         break;
@@ -84,7 +90,7 @@ export async function POST(request: NextRequest) {
           : subscription.status === 'trialing' ? 'trialing'
           : 'incomplete';
 
-        await supabase
+        const { data: updated2, error: err2 } = await supabase
           .from('companies')
           .update({
             subscription_tier: tier,
@@ -93,7 +99,13 @@ export async function POST(request: NextRequest) {
               ? new Date(subscription.current_period_end * 1000).toISOString()
               : null,
           })
-          .eq('stripe_customer_id', customerId);
+          .eq('stripe_customer_id', customerId)
+          .select('id');
+
+        if (err2) throw err2;
+        if (!updated2 || updated2.length === 0) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
 
         console.log(`Stripe webhook: subscription.updated for ${customerId}, tier=${tier}, status=${status}`);
         break;
@@ -103,7 +115,7 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object;
         const customerId = subscription.customer as string;
 
-        await supabase
+        const { data: updated3, error: err3 } = await supabase
           .from('companies')
           .update({
             subscription_tier: 'basis',
@@ -111,7 +123,13 @@ export async function POST(request: NextRequest) {
             stripe_subscription_id: null,
             current_period_end: null,
           })
-          .eq('stripe_customer_id', customerId);
+          .eq('stripe_customer_id', customerId)
+          .select('id');
+
+        if (err3) throw err3;
+        if (!updated3 || updated3.length === 0) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
 
         console.log(`Stripe webhook: subscription.deleted for ${customerId}`);
         break;
@@ -121,10 +139,16 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object;
         const customerId = invoice.customer as string;
 
-        await supabase
+        const { data: updated4, error: err4 } = await supabase
           .from('companies')
           .update({ subscription_status: 'past_due' })
-          .eq('stripe_customer_id', customerId);
+          .eq('stripe_customer_id', customerId)
+          .select('id');
+
+        if (err4) throw err4;
+        if (!updated4 || updated4.length === 0) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
 
         console.log(`Stripe webhook: invoice.payment_failed for ${customerId}`);
         break;

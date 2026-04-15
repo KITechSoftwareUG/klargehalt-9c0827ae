@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { inviteEmployeeToOrg } from '@/lib/logto-management';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const supabaseAdmin = () =>
   createSupabaseAdmin(
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
 
   if (!roleRow || !['admin', 'hr_manager'].includes(roleRow.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const rateLimitKey = `employee-invite:${context.activeOrganizationId}`;
+  if (!checkRateLimit(rateLimitKey, 20, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   const { employeeId } = (await request.json().catch(() => ({}))) as { employeeId?: string };
@@ -67,7 +73,6 @@ export async function POST(request: NextRequest) {
       success: true,
       alreadyExists: result.alreadyExists,
       email: employee.email,
-      tempPassword: result.tempPassword,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Einladung fehlgeschlagen';

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -39,7 +40,17 @@ function verifyWebhookSecret(request: NextRequest): boolean {
     return false;
   }
 
-  return secret === expected;
+  if (!secret) {
+    return false;
+  }
+
+  try {
+    const a = Buffer.from(secret);
+    const b = Buffer.from(expected);
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 function extractUserData(payload: LogtoWebhookPayload): LogtoUserData | null {
