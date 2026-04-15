@@ -67,19 +67,23 @@ export function useInfoRequests() {
     if (!isLoaded || !user || !orgId) return false;
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('info_requests')
-        .insert({
-          organization_id: orgId,
-          request_type: requestType,
-          status: 'pending',
-        });
+      const res = await fetch('/api/info-requests/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_type: requestType }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(err.error ?? 'Anfrage fehlgeschlagen');
+      }
 
+      const result = await res.json() as { status: string };
       toast({
         title: 'Anfrage eingereicht',
-        description: 'Ihre Auskunftsanfrage wird bearbeitet.',
+        description: result.status === 'fulfilled'
+          ? 'Ihre Auskunft wurde sofort berechnet und steht bereit.'
+          : 'Ihre Anfrage wurde eingereicht und wird bearbeitet.',
       });
       await fetchRequests();
       return true;
@@ -90,7 +94,7 @@ export function useInfoRequests() {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, supabase, fetchRequests]);
+  }, [isLoaded, user, orgId, toast, fetchRequests]);
 
   const getResponse = useCallback(async (requestId: string): Promise<InfoRequest | null> => {
     if (!isLoaded || !user || !orgId) return null;

@@ -210,7 +210,7 @@ export default function FunktionenPage() {
             </section>
 
             {/* CTA */}
-            <section className="py-20 lg:py-24 bg-[#f9f9f9]">
+            <section className="py-20 lg:py-24 bg-[#071423]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
                         Alle Funktionen live erleben.
@@ -219,7 +219,7 @@ export default function FunktionenPage() {
                         Wir zeigen Ihnen KlarGehalt mit Ihren eigenen Daten. 20 Minuten, unverbindlich.
                     </p>
                     <Link href="/kontakt">
-                        <Button className="bg-white text-[#071423] hover:bg-white/90 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
+                        <Button className="bg-[#52e0de] text-[#071423] hover:brightness-95 h-12 px-8 rounded-lg text-sm font-semibold cursor-pointer">
                             Demo anfragen <ArrowRight className="w-4 h-4" />
                         </Button>
                     </Link>

@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 const ContactSection = () => {
   return (
@@ -10,10 +10,10 @@ const ContactSection = () => {
           <div className="lg:col-span-5 space-y-8">
             <div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1E293B] tracking-tight leading-tight mb-4">
-                Sprechen wir drueber.
+                Sprechen wir darüber.
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed max-w-[40ch]">
-                Wir zeigen Ihnen in 20 Minuten, wie KlarGehalt fuer Ihr Unternehmen funktioniert.
+                Wir zeigen Ihnen in 20 Minuten, wie KlarGehalt für Ihr Unternehmen funktioniert.
               </p>
             </div>
 
@@ -40,16 +40,16 @@ const ContactSection = () => {
                   <Field label="Vorname" id="fn" placeholder="Max" />
                   <Field label="Nachname" id="ln" placeholder="Mustermann" />
                 </div>
-                <Field label="Geschaeftliche E-Mail" id="email" type="email" placeholder="m.mustermann@firma.de" />
+                <Field label="Geschäftliche E-Mail" id="email" type="email" placeholder="m.mustermann@firma.de" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Unternehmen" id="co" placeholder="Unternehmen GmbH" />
                   <div>
                     <label htmlFor="size" className="block text-xs font-medium text-slate-600 mb-1.5">Mitarbeiteranzahl</label>
                     <select id="size" className="w-full h-11 px-3.5 rounded-lg border border-slate-200 bg-white text-[#1E293B] text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]/40 transition-all cursor-pointer">
-                      <option value="">Bitte waehlen</option>
-                      <option value="1-50">1 - 50</option>
-                      <option value="51-250">51 - 250</option>
-                      <option value="251-1000">251 - 1.000</option>
+                      <option value="">Bitte wählen</option>
+                      <option value="1-50">1 – 50</option>
+                      <option value="51-250">51 – 250</option>
+                      <option value="251-1000">251 – 1.000</option>
                       <option value="1000+">1.000+</option>
                     </select>
                   </div>
@@ -60,14 +60,14 @@ const ContactSection = () => {
                     id="msg"
                     rows={3}
                     className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 bg-white text-[#1E293B] placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]/40 transition-all resize-none"
-                    placeholder="Wie koennen wir helfen?"
+                    placeholder="Wie können wir helfen?"
                   />
                 </div>
                 <Button className="w-full h-11 bg-[#2563EB] text-white hover:bg-[#1D4ED8] rounded-lg text-sm font-semibold shadow-sm group cursor-pointer">
                   Demo anfragen
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Button>
-                <p className="text-[10px] text-slate-300 text-center">Mit dem Absenden stimmen Sie unserer Datenschutzerklaerung zu.</p>
+                <p className="text-[10px] text-slate-300 text-center">Mit dem Absenden stimmen Sie unserer Datenschutzerklärung zu.</p>
               </form>
             </div>
           </div>
@@ -86,7 +86,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Field({ label, id, type = "text", placeholder }: { label: string; id: string; type?: string; placeholder: string }) {
+function Field({ label, id, type = 'text', placeholder }: { label: string; id: string; type?: string; placeholder: string }) {
   return (
     <div>
       <label htmlFor={id} className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>

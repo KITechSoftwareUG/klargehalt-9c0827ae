@@ -296,6 +296,7 @@ function AccessDenied() {
 function BillingView() {
     const sub = useSubscription();
     const [portalLoading, setPortalLoading] = useState(false);
+    const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
 
     const openPortal = async () => {
         setPortalLoading(true);
@@ -315,7 +316,7 @@ function BillingView() {
             const res = await fetch('/api/stripe/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tier, interval: 'monthly' }),
+                body: JSON.stringify({ tier, interval: billingInterval }),
             });
             const data = await res.json();
             if (data.url) window.location.href = data.url;
@@ -327,6 +328,9 @@ function BillingView() {
     if (sub.loading) {
         return <div className="flex justify-center py-24"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
     }
+
+    const yearlyBasis = 990;
+    const yearlyPro = 2990;
 
     return (
         <div className="space-y-6">
@@ -384,18 +388,106 @@ function BillingView() {
                             {portalLoading ? 'Wird geöffnet...' : 'Rechnungen & Zahlungsmethoden'}
                         </Button>
                     ) : null}
-                    {sub.tier !== 'professional' && sub.tier !== 'enterprise' && (
-                        <Button onClick={() => startCheckout('professional')}>
-                            Auf Professional upgraden
-                        </Button>
-                    )}
-                    {sub.tier === 'basis' && (
-                        <Button variant="outline" onClick={() => startCheckout('basis')}>
-                            Basis-Plan aktivieren
-                        </Button>
-                    )}
                 </div>
             </div>
+
+            {/* Upgrade Options with billing interval toggle */}
+            {sub.tier !== 'enterprise' && (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-semibold text-slate-900">Plan upgraden</h3>
+                            <p className="text-sm text-slate-500">Jährliche Zahlung spart bis zu 17%</p>
+                        </div>
+                        {/* Billing interval toggle */}
+                        <div className="flex items-center bg-slate-100 rounded-full p-1 gap-1">
+                            <button
+                                onClick={() => setBillingInterval('monthly')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                    billingInterval === 'monthly'
+                                        ? 'bg-white shadow-sm text-slate-900'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                Monatlich
+                            </button>
+                            <button
+                                onClick={() => setBillingInterval('yearly')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                    billingInterval === 'yearly'
+                                        ? 'bg-white shadow-sm text-slate-900'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                Jährlich
+                                <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">−17%</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {sub.tier !== 'professional' && (
+                            <>
+                                <div className="border border-slate-200 rounded-xl p-5 space-y-3">
+                                    <div>
+                                        <p className="font-semibold text-slate-900">Basis</p>
+                                        <p className="text-2xl font-bold mt-1">
+                                            {billingInterval === 'monthly' ? '€99' : `€${Math.round(yearlyBasis / 12)}`}
+                                            <span className="text-sm font-normal text-slate-500">/Monat</span>
+                                        </p>
+                                        {billingInterval === 'yearly' && (
+                                            <p className="text-xs text-slate-500">€{yearlyBasis}/Jahr — eine Jahresrechnung</p>
+                                        )}
+                                    </div>
+                                    <ul className="text-sm text-slate-600 space-y-1">
+                                        <li>✓ Bis 50 Mitarbeiter</li>
+                                        <li>✓ Gehaltsbänder & Job-Profile</li>
+                                        <li>✓ CSV-Import</li>
+                                    </ul>
+                                    <Button variant="outline" className="w-full" onClick={() => startCheckout('basis')}>
+                                        Basis wählen
+                                    </Button>
+                                </div>
+
+                                <div className="border-2 border-primary rounded-xl p-5 space-y-3 relative">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                        <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">Empfohlen</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900">Professional</p>
+                                        <p className="text-2xl font-bold mt-1">
+                                            {billingInterval === 'monthly' ? '€299' : `€${Math.round(yearlyPro / 12)}`}
+                                            <span className="text-sm font-normal text-slate-500">/Monat</span>
+                                        </p>
+                                        {billingInterval === 'yearly' && (
+                                            <p className="text-xs text-slate-500">€{yearlyPro}/Jahr — eine Jahresrechnung</p>
+                                        )}
+                                    </div>
+                                    <ul className="text-sm text-slate-600 space-y-1">
+                                        <li>✓ Bis 250 Mitarbeiter</li>
+                                        <li>✓ Gender-Pay-Gap Analyse</li>
+                                        <li>✓ PDF-Berichte (EU-konform)</li>
+                                        <li>✓ Unbegrenzte HR-Manager</li>
+                                    </ul>
+                                    <Button className="w-full" onClick={() => startCheckout('professional')}>
+                                        Professional wählen
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+
+                        {sub.tier === 'professional' && (
+                            <div className="border border-slate-200 rounded-xl p-5 space-y-3 col-span-2">
+                                <p className="font-semibold text-slate-900">Enterprise — ab 250 Mitarbeiter</p>
+                                <p className="text-sm text-slate-500">SSO, Auditor-Zugang, dedizierter Support, individuelle SLA. Preise auf Anfrage.</p>
+                                <Button variant="outline" asChild>
+                                    <a href="mailto:sales@klargehalt.de">Kontakt aufnehmen</a>
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

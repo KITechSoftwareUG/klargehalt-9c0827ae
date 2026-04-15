@@ -81,6 +81,93 @@ export const verifyUserExists = async (userId: string): Promise<boolean> => {
   }
 };
 
+export const inviteEmployeeToOrg = async (params: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  orgId: string;
+}): Promise<{ logtoUserId: string; tempPassword: string; alreadyExists: boolean }> => {
+  // Try to find existing Logto user by email first
+  let logtoUserId: string | null = null;
+  let alreadyExists = false;
+
+  try {
+    const existing = await callManagementApi<LogtoUserResponse[]>(
+      `/api/users?search=${encodeURIComponent(params.email)}&searchFields=primaryEmail&limit=1`
+    );
+    if (existing && existing.length > 0 && existing[0].primaryEmail === params.email) {
+      logtoUserId = existing[0].id;
+      alreadyExists = true;
+    }
+  } catch {
+    // ignore search errors, will try to create
+  }
+
+  // Create user if they don't exist
+  if (!logtoUserId) {
+    const newUser = await callManagementApi<LogtoUserResponse>('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        primaryEmail: params.email,
+        name: `${params.firstName} ${params.lastName}`,
+        username: params.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') + '_' + Math.random().toString(36).slice(2, 6),
+      }),
+    });
+    logtoUserId = newUser.id;
+  }
+
+  // Add user to org (idempotent — ignore if already member)
+  try {
+    await callManagementApi<null>(`/api/organizations/${params.orgId}/users`, {
+      method: 'POST',
+      body: JSON.stringify({ userIds: [logtoUserId] }),
+    });
+  } catch {
+    // May already be a member — that's fine
+  }
+
+  // Assign 'employee' org role (look up role ID by name)
+  try {
+    const roles = await callManagementApi<Array<{ id: string; name: string }>>(
+      `/api/organizations/${params.orgId}/roles`
+    );
+    const employeeRole = roles?.find((r) => r.name === 'employee');
+    if (employeeRole) {
+      await callManagementApi<null>(
+        `/api/organizations/${params.orgId}/users/${logtoUserId}/roles`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ organizationRoleIds: [employeeRole.id] }),
+        }
+      );
+    }
+  } catch {
+    // Role assignment failure is non-fatal
+  }
+
+  // Generate a temporary password
+  const tempPassword = generateTempPassword();
+
+  // Set the temporary password so the user can log in immediately
+  await callManagementApi<null>(`/api/users/${logtoUserId}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ password: tempPassword }),
+  });
+
+  return { logtoUserId, tempPassword, alreadyExists };
+};
+
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const special = '!@#$';
+  let pass = '';
+  for (let i = 0; i < 10; i++) {
+    pass += chars[Math.floor(Math.random() * chars.length)];
+  }
+  pass += special[Math.floor(Math.random() * special.length)];
+  return pass;
+}
+
 export const createOrganizationWithMembership = async (params: {
   name: string;
   userId: string;

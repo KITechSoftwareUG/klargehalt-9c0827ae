@@ -33,6 +33,7 @@ export function PayGapReportView() {
 
   const [deptStats, setDeptStats] = useState<DepartmentStatistic[]>([]);
   const [gapData, setGapData] = useState<GenderPayGap[]>([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const canViewReport = hasPermission('reports.view') || hasPermission('audit.view');
 
@@ -41,6 +42,26 @@ export function PayGapReportView() {
       loadData();
     }
   }, [canViewReport]);
+
+  const handlePdfExport = async () => {
+    setPdfLoading(true);
+    try {
+      const res = await fetch('/api/reports/pay-gap/pdf');
+      if (!res.ok) throw new Error('PDF-Generierung fehlgeschlagen');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `KlarGehalt_PayGap_Report_${new Date().getFullYear()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // toast is not imported here — use alert as fallback
+      alert('PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const loadData = async () => {
     const [stats, gaps] = await Promise.all([
@@ -123,9 +144,14 @@ export function PayGapReportView() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Aktualisieren
           </Button>
-          <Button variant="default" size="sm" disabled={gapData.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handlePdfExport}
+            disabled={pdfLoading}
+          >
+            <Download className={`h-4 w-4 mr-2 ${pdfLoading ? 'animate-pulse' : ''}`} />
+            {pdfLoading ? 'Wird erstellt…' : 'Export PDF'}
           </Button>
         </div>
       </div>

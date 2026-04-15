@@ -39,7 +39,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const genderLabels: Record<string, string> = {
   male: 'Männlich',
@@ -93,8 +94,114 @@ const EmployeesView = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<EmployeeFormData>({ ...defaultFormData });
 
+  // Invite state
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ email: string; tempPassword: string; alreadyExists: boolean } | null>(null);
+
+  // CSV import state
+  const [csvImporting, setCsvImporting] = useState(false);
+
   const resetForm = () => {
     setFormData({ ...defaultFormData });
+  };
+
+  const handleInvite = async (employee: Employee) => {
+    if (!employee.email) {
+      toast.error('Keine E-Mail-Adresse für diesen Mitarbeiter hinterlegt.');
+      return;
+    }
+    setInviteLoading(employee.id);
+    try {
+      const res = await fetch('/api/employees/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId: employee.id }),
+      });
+      const data = await res.json() as { success?: boolean; email?: string; tempPassword?: string; alreadyExists?: boolean; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Einladung fehlgeschlagen');
+      setInviteResult({
+        email: data.email ?? employee.email,
+        tempPassword: data.tempPassword ?? '',
+        alreadyExists: data.alreadyExists ?? false,
+      });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Einladung fehlgeschlagen');
+    } finally {
+      setInviteLoading(null);
+    }
+  };
+
+  const handleCsvImport = async (file: File) => {
+    setCsvImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter((l) => l.trim());
+      if (lines.length < 2) {
+        toast.error('CSV-Datei enthält keine Daten.');
+        return;
+      }
+
+      const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
+      const rows = lines.slice(1);
+
+      const genderMap: Record<string, Employee['gender']> = {
+        male: 'male', männlich: 'male', m: 'male',
+        female: 'female', weiblich: 'female', w: 'female', f: 'female',
+        diverse: 'diverse', divers: 'diverse', d: 'diverse',
+      };
+
+      const employmentMap: Record<string, Employee['employment_type']> = {
+        full_time: 'full_time', vollzeit: 'full_time', fulltime: 'full_time',
+        part_time: 'part_time', teilzeit: 'part_time', parttime: 'part_time',
+        contract: 'contract', vertrag: 'contract',
+      };
+
+      let imported = 0;
+      let failed = 0;
+
+      for (const row of rows) {
+        const cols = row.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+        const get = (name: string) => cols[headers.indexOf(name)] ?? '';
+
+        const firstName = get('first_name') || get('vorname');
+        const lastName = get('last_name') || get('nachname');
+        const salary = parseFloat(get('base_salary') || get('grundgehalt') || get('salary') || '0');
+
+        if (!firstName || !lastName || salary <= 0) { failed++; continue; }
+
+        const genderRaw = (get('gender') || get('geschlecht') || 'not_specified').toLowerCase();
+        const employmentRaw = (get('employment_type') || get('beschaeftigungsart') || 'full_time').toLowerCase();
+
+        const employeeData: EmployeeFormData = {
+          first_name: firstName,
+          last_name: lastName,
+          email: get('email') || undefined,
+          employee_number: get('employee_number') || get('personalnummer') || undefined,
+          gender: genderMap[genderRaw] ?? 'not_specified',
+          hire_date: get('hire_date') || get('eintrittsdatum') || new Date().toISOString().split('T')[0],
+          employment_type: employmentMap[employmentRaw] ?? 'full_time',
+          base_salary: salary,
+          variable_pay: parseFloat(get('variable_pay') || get('variable') || '0') || 0,
+          weekly_hours: parseFloat(get('weekly_hours') || get('wochenstunden') || '40') || 40,
+          currency: get('currency') || 'EUR',
+          location: get('location') || get('standort') || undefined,
+          is_active: true,
+        };
+
+        try {
+          await createEmployee(employeeData);
+          imported++;
+        } catch {
+          failed++;
+        }
+      }
+
+      toast.success(`Import abgeschlossen: ${imported} importiert${failed > 0 ? `, ${failed} Fehler` : ''}.`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Import fehlgeschlagen');
+    } finally {
+      setCsvImporting(false);
+    }
   };
 
   const handleCreate = async () => {
@@ -388,6 +495,28 @@ const EmployeesView = () => {
           <h2 className="text-2xl font-bold text-foreground">Mitarbeiter</h2>
           <p className="text-muted-foreground">Verwalten Sie die Mitarbeiterdaten Ihres Unternehmens</p>
         </div>
+        <div className="flex items-center gap-2">
+          {/* CSV Import */}
+          <label htmlFor="csv-import" className="cursor-pointer">
+            <div className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
+              {csvImporting
+                ? <><span className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" /> Importiere…</>
+                : <><Upload className="w-4 h-4" /> CSV importieren</>
+              }
+            </div>
+            <input
+              id="csv-import"
+              type="file"
+              accept=".csv"
+              className="hidden"
+              disabled={csvImporting}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { handleCsvImport(file); e.target.value = ''; }
+              }}
+            />
+          </label>
+
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button variant="hero" onClick={resetForm}>
@@ -407,6 +536,7 @@ const EmployeesView = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {employees.length === 0 ? (
@@ -473,6 +603,20 @@ const EmployeesView = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {employee.email && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleInvite(employee)}
+                          disabled={inviteLoading === employee.id}
+                          title={employee.user_id ? 'Erneut einladen' : 'Zum Portal einladen'}
+                          className={employee.user_id ? 'text-green-600' : 'text-blue-600'}
+                        >
+                          {inviteLoading === employee.id
+                            ? <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                            : <Mail className="w-4 h-4" />}
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(employee)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -526,6 +670,55 @@ const EmployeesView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invite Result Dialog */}
+      <Dialog open={inviteResult !== null} onOpenChange={() => setInviteResult(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Zugangsdaten bereit
+            </DialogTitle>
+            <DialogDescription>
+              {inviteResult?.alreadyExists
+                ? 'Der Nutzer existierte bereits. Das Passwort wurde zurückgesetzt.'
+                : 'Das Mitarbeiterkonto wurde erstellt.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg bg-muted p-4 space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Login-URL</p>
+                <p className="text-sm font-mono font-medium">{process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.klargehalt.de'}/sign-in</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">E-Mail</p>
+                <p className="text-sm font-mono font-medium">{inviteResult?.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Temporäres Passwort</p>
+                <p className="text-lg font-mono font-bold tracking-widest text-primary">{inviteResult?.tempPassword}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>Teilen Sie diese Zugangsdaten sicher mit dem Mitarbeiter. Das Passwort sollte nach dem ersten Login geändert werden.</p>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setInviteResult(null)}>Schließen</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import help dialog */}
+      <Dialog open={false}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>CSV-Format</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

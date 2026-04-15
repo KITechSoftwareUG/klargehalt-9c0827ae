@@ -145,31 +145,103 @@ export default function UeberUnsPage() {
                 </div>
             </section>
 
-            {/* Team Placeholder */}
+            {/* Team — KI-Agenten */}
             <section className="py-20 lg:py-28 bg-slate-50">
                 <div className="max-w-7xl mx-auto px-5 sm:px-8">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight mb-4">
                         Das Team.
                     </h2>
-                    <p className="text-base text-slate-500 mb-12 max-w-[50ch]">
-                        KlarGehalt wird von einem kleinen Team in Berlin entwickelt.
-                        Wir sind Entwickler, keine Berater.
+                    <p className="text-base text-slate-500 mb-3 max-w-[55ch]">
+                        KlarGehalt wird von einem menschlichen Gründer und einem Team aus
+                        spezialisierten KI-Agenten entwickelt.
                     </p>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#52e0de]/10 border border-[#52e0de]/20 mb-12">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#52e0de] animate-pulse" />
+                        <span className="text-[#19514a] text-xs font-semibold">
+                            Offen kommuniziert: Diese Software wurde zu großen Teilen von KI-Agenten gebaut.
+                        </span>
+                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {[
-                            { name: 'Gründer & Entwicklung', desc: 'Architektur, Backend, Security. Verantwortlich für die technische Vision und Umsetzung.' },
-                            { name: 'Product & UX', desc: 'Nutzererfahrung, Interviews, Feature-Priorisierung. Stellt sicher, dass das Tool im Alltag funktioniert.' },
-                            { name: 'Compliance & Recht', desc: 'EU-Richtlinie, DSGVO, Arbeitsrecht. Übersetzt juristische Anforderungen in Produktfeatures.' },
+                            {
+                                role: 'Gründer & Produktvision',
+                                type: 'Mensch',
+                                desc: 'Strategische Entscheidungen, Produktrichtung, Kundenbeziehungen und die Verantwortung für das Gesamtprodukt.',
+                                color: '#946df7',
+                                bg: '#e0d4fd',
+                                badge: '👤 Human',
+                            },
+                            {
+                                role: 'Software-Architekt Agent',
+                                type: 'KI-Agent',
+                                desc: 'Systemarchitektur, Datenbankdesign, API-Struktur, Sicherheitskonzept und technische Entscheidungen.',
+                                color: '#52e0de',
+                                bg: '#bdf9f7',
+                                badge: '🤖 Claude Sonnet',
+                            },
+                            {
+                                role: 'Frontend-Entwicklung Agent',
+                                type: 'KI-Agent',
+                                desc: 'React-Komponenten, UI-Design, Tailwind-Styles, Barrierefreiheit und alle sichtbaren Nutzerinterfaces.',
+                                color: '#52e0de',
+                                bg: '#bdf9f7',
+                                badge: '🤖 Claude Sonnet',
+                            },
+                            {
+                                role: 'Security-Reviewer Agent',
+                                type: 'KI-Agent',
+                                desc: 'Code-Reviews auf Sicherheitslücken, OWASP-Checks, DSGVO-Compliance-Prüfung und RLS-Audit.',
+                                color: '#fbcd56',
+                                bg: '#fef1c2',
+                                badge: '🤖 Claude Opus',
+                            },
+                            {
+                                role: 'Compliance & Recht',
+                                type: 'KI-Agent + Review',
+                                desc: 'Interpretation der EU-Richtlinie 2023/970, DSGVO-Anforderungen und Umsetzung in Produktfeatures. Menschlich gegengecheckt.',
+                                color: '#fbcd56',
+                                bg: '#fef1c2',
+                                badge: '🤖 + 👤 Review',
+                            },
+                            {
+                                role: 'QA & Testing Agent',
+                                type: 'KI-Agent',
+                                desc: 'TypeScript-Typchecks, Lint-Validierung, End-to-End-Testszenarien und Regressionsverhinderung.',
+                                color: '#946df7',
+                                bg: '#e0d4fd',
+                                badge: '🤖 Claude Haiku',
+                            },
                         ].map((member) => (
-                            <div key={member.name} className="bg-white rounded-xl border border-slate-200 p-6">
-                                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                                    <span className="text-lg font-bold text-slate-300">{member.name.charAt(0)}</span>
+                            <div key={member.role} className="bg-white rounded-2xl border border-slate-200 p-6">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div
+                                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                                        style={{ backgroundColor: member.bg }}
+                                    >
+                                        {member.badge.startsWith('👤') ? '👤' : '🤖'}
+                                    </div>
+                                    <span
+                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                                        style={{ backgroundColor: member.bg, color: member.color }}
+                                    >
+                                        {member.badge}
+                                    </span>
                                 </div>
-                                <h3 className="text-sm font-bold text-[#071423] mb-2">{member.name}</h3>
+                                <h3 className="text-sm font-bold text-[#071423] mb-2">{member.role}</h3>
                                 <p className="text-sm text-slate-500 leading-relaxed">{member.desc}</p>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="mt-10 bg-white rounded-2xl border border-slate-200 p-6 lg:p-8">
+                        <h3 className="text-sm font-bold text-[#071423] mb-3">Warum wir das offen kommunizieren</h3>
+                        <p className="text-sm text-slate-500 leading-relaxed max-w-[70ch]">
+                            Wir glauben an Ehrlichkeit vor Marketing. KI-Agenten ermöglichen uns, ein
+                            hochwertiges Compliance-Tool zu bauen, das für den Mittelstand erschwinglich bleibt.
+                            Die Architektur, die Sicherheitskonzepte und alle kritischen Entscheidungen
+                            werden menschlich geprüft. Das Ergebnis spricht für sich.
+                        </p>
                     </div>
                 </div>
             </section>

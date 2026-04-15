@@ -1,10 +1,10 @@
 const layers = [
-  { value: "AES-256", label: "Verschluesselung at rest und in transit" },
-  { value: "Frankfurt", label: "EU-only Hosting, kein Transfer in Drittlaender" },
-  { value: "2FA + SSO", label: "Multi-Faktor-Authentifizierung" },
-  { value: "RLS", label: "Mandantentrennung auf Datenbankebene" },
-  { value: "Art. 15/17", label: "DSGVO-Auskunft und Loeschung" },
-  { value: "Audit-Trail", label: "Jede Aenderung protokolliert und exportierbar" },
+  { value: 'AES-256', label: 'Verschlüsselung at rest und in transit' },
+  { value: 'Frankfurt', label: 'EU-only Hosting, kein Transfer in Drittländer' },
+  { value: '2FA + SSO', label: 'Multi-Faktor-Authentifizierung' },
+  { value: 'RLS', label: 'Mandantentrennung auf Datenbankebene' },
+  { value: 'Art. 15/17', label: 'DSGVO-Auskunft und Löschung' },
+  { value: 'Audit-Trail', label: 'Jede Änderung protokolliert und exportierbar' },
 ];
 
 const SecuritySection = () => {
@@ -19,8 +19,8 @@ const SecuritySection = () => {
           </div>
           <div className="flex items-end">
             <p className="text-sm text-slate-400 leading-relaxed max-w-[46ch]">
-              Verschluesselung, Mandantentrennung, EU-Hosting.
-              Kein Marketing-Sprech — das ist die technische Realitaet.
+              Verschlüsselung, Mandantentrennung, EU-Hosting.
+              Kein Marketing-Sprech — das ist die technische Realität.
             </p>
           </div>
         </div>
@@ -42,7 +42,7 @@ const SecuritySection = () => {
         </div>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          {["DSGVO", "TLS 1.3", "Mandantentrennung", "Audit-Logs", "EU-Hosting"].map((c) => (
+          {['DSGVO', 'TLS 1.3', 'Mandantentrennung', 'Audit-Logs', 'EU-Hosting'].map((c) => (
             <span
               key={c}
               className="px-3 py-1.5 border border-white/[0.08] rounded-lg text-[11px] font-medium text-slate-500"

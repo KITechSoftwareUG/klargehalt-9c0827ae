@@ -5,6 +5,7 @@ import { Providers } from './providers';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CookieBanner from '@/components/CookieBanner';
+import CountdownBanner from '@/components/CountdownBanner';
 
 const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
@@ -34,6 +35,7 @@ export default function MarketingLayout({
                 <Providers>
                     <div className="min-h-screen flex flex-col">
                         <Header />
+                        <CountdownBanner />
                         <main className="flex-1">{children}</main>
                         <Footer />
                     </div>

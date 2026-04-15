@@ -1,26 +1,29 @@
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useJobProfiles, usePayBands } from '@/hooks/useJobProfiles';
 import { useEmployees } from '@/hooks/useEmployees';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePayGapStatistics } from '@/hooks/usePayGapStatistics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  StatusBadge, 
-  StatusIndicator, 
-  InfoBox, 
+import { Progress } from '@/components/ui/progress';
+import {
+  StatusBadge,
+  StatusIndicator,
+  InfoBox,
   DataValue,
   LEGAL_TEXTS
 } from '@/components/ui/status-components';
-import { 
-  getWelcomeMessage, 
+import {
+  getWelcomeMessage,
   getNavigationForRole,
   ROLE_STYLES,
-  RoleBadge 
+  RoleBadge
 } from '@/components/ui/role-components';
-import { 
-  Shield, 
-  Users, 
-  FileText, 
+import {
+  Shield,
+  Users,
+  FileText,
   Building2,
   Scale,
   TrendingUp,
@@ -28,7 +31,8 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  Info
+  Info,
+  Circle,
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -41,24 +45,61 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
   const { payBands, loading: bandsLoading } = usePayBands();
   const { employees, loading: employeesLoading } = useEmployees();
   const { hasPermission } = usePermissions();
+  const { calculateGenderPayGap } = usePayGapStatistics();
+  const [hasSnapshots, setHasSnapshots] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    calculateGenderPayGap().then((gaps) => setHasSnapshots(gaps.length > 0));
+  }, [calculateGenderPayGap]);
 
   const welcome = getWelcomeMessage(role as any, profile?.full_name || undefined);
   const navItems = getNavigationForRole(role as any);
   const isLoading = profilesLoading || bandsLoading || employeesLoading;
 
-  // Berechne Compliance-Status
+  // Setup checklist steps
+  const setupSteps = [
+    {
+      id: 'company',
+      label: 'Unternehmen eingerichtet',
+      done: true, // if they're here, company is set up
+      view: 'settings' as const,
+    },
+    {
+      id: 'job_profiles',
+      label: `Job-Profile definiert (${jobProfiles.length})`,
+      done: jobProfiles.length > 0,
+      view: 'job-profiles' as const,
+    },
+    {
+      id: 'pay_bands',
+      label: `Entgeltbänder festgelegt (${payBands.length})`,
+      done: payBands.length > 0,
+      view: 'pay-bands' as const,
+    },
+    {
+      id: 'employees',
+      label: `Mitarbeiter erfasst (${employees.length})`,
+      done: employees.length >= 5,
+      subLabel: employees.length > 0 && employees.length < 5 ? `${employees.length}/5 — mind. 5 für anonymisierte Analysen` : undefined,
+      view: 'employees' as const,
+    },
+    {
+      id: 'analysis',
+      label: 'Erste Pay-Gap-Analyse durchgeführt',
+      done: hasSnapshots === true,
+      view: 'reports' as const,
+    },
+  ];
+
+  const completedCount = setupSteps.filter((s) => s.done).length;
+  const progressPct = Math.round((completedCount / setupSteps.length) * 100);
+  const isSetupComplete = completedCount === setupSteps.length;
+
+  // Berechne Compliance-Status (kept for backwards compat)
   const getComplianceStatus = () => {
     if (isLoading) return { status: 'neutral' as const, label: 'Wird geprüft...' };
-    
-    const hasProfiles = jobProfiles.length > 0;
-    const hasBands = payBands.length > 0;
-    const hasEmployees = employees.length > 0;
-    
-    if (hasProfiles && hasBands && hasEmployees) {
-      return { status: 'success' as const, label: 'Grundstruktur vollständig' };
-    } else if (hasProfiles || hasBands) {
-      return { status: 'warning' as const, label: 'Setup unvollständig' };
-    }
+    if (isSetupComplete) return { status: 'success' as const, label: 'Vollständig eingerichtet' };
+    if (completedCount >= 3) return { status: 'warning' as const, label: 'Setup unvollständig' };
     return { status: 'danger' as const, label: 'Ersteinrichtung erforderlich' };
   };
 
@@ -88,71 +129,65 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
         </CardContent>
       </Card>
 
-      {/* Compliance-Status für Admin/HR - mit Kontext */}
+      {/* Setup-Checklist für Admin/HR */}
       {(role === 'admin' || role === 'hr_manager') && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <DataValue 
-                label="Mitarbeiter"
-                value={employees.length}
-                format="number"
-                status={employees.length > 0 ? 'success' : 'warning'}
-                context={employees.length === 0 ? 'Noch keine Mitarbeiter erfasst' : undefined}
-              />
-            </CardContent>
-          </Card>
-          
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <DataValue 
-                label="Job-Profile"
-                value={jobProfiles.length}
-                format="number"
-                status={jobProfiles.length > 0 ? 'success' : 'warning'}
-                helpText="Stellenprofile definieren die Anforderungen und Qualifikationen für Positionen."
-              />
-            </CardContent>
-          </Card>
-          
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <DataValue 
-                label="Entgeltbänder"
-                value={payBands.length}
-                format="number"
-                status={payBands.length > 0 ? 'success' : 'warning'}
-                helpText="Entgeltbänder legen Gehaltsspannen pro Job-Profil und Level fest."
-              />
-            </CardContent>
-          </Card>
-          
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <div className="space-y-1">
-                <span className="text-sm text-muted-foreground">Compliance-Status</span>
-                <div className="flex items-center gap-2 mt-2">
-                  <StatusBadge status={compliance.status} label={compliance.label} />
-                </div>
+        <Card className={`border ${isSetupComplete ? 'border-green-200 bg-green-50/50' : 'border-border/50'}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  {isSetupComplete
+                    ? <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    : <Clock className="h-5 w-5 text-amber-500" />
+                  }
+                  Einrichtungs-Checkliste
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {isSetupComplete
+                    ? 'Ihr System ist vollständig eingerichtet und EU-konform.'
+                    : `${completedCount} von ${setupSteps.length} Schritten abgeschlossen`}
+                </CardDescription>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="text-right">
+                <span className={`text-2xl font-bold ${isSetupComplete ? 'text-green-600' : 'text-amber-600'}`}>
+                  {progressPct}%
+                </span>
+              </div>
+            </div>
+            <Progress value={progressPct} className="h-2 mt-2" />
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {setupSteps.map((step) => (
+                <div
+                  key={step.id}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    step.done ? 'bg-green-50/80' : 'bg-muted/40 cursor-pointer hover:bg-muted/60'
+                  }`}
+                  onClick={() => !step.done && onNavigate(step.view)}
+                >
+                  {step.done
+                    ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    : <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${step.done ? 'text-green-800 line-through decoration-green-400/60' : 'text-foreground'}`}>
+                      {step.label}
+                    </p>
+                    {step.subLabel && (
+                      <p className="text-xs text-amber-600">{step.subLabel}</p>
+                    )}
+                  </div>
+                  {!step.done && (
+                    <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Kontextuelle Hinweise - keine Angst erzeugen */}
-      {(role === 'admin' || role === 'hr_manager') && compliance.status !== 'success' && (
-        <InfoBox variant="info" title="Nächste Schritte">
-          <p>
-            Zur vollständigen Einrichtung des Entgelttransparenz-Systems empfehlen wir:
-          </p>
-          <ul className="mt-2 space-y-1 list-disc list-inside">
-            {employees.length === 0 && <li>Mitarbeiter im System erfassen</li>}
-            {jobProfiles.length === 0 && <li>Job-Profile mit Anforderungen definieren</li>}
-            {payBands.length === 0 && <li>Entgeltbänder pro Job-Profil festlegen</li>}
-          </ul>
-        </InfoBox>
-      )}
 
       {/* EU-Hinweis für Mitarbeiter - beruhigend, nicht bedrohlich */}
       {role === 'employee' && (
