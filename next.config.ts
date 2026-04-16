@@ -5,13 +5,11 @@ const nextConfig: NextConfig = {
   // Trigger rebuild: 2026-02-19T10:06:04
   reactStrictMode: true,
 
-  // Expose server env vars to Edge Runtime (middleware)
+  // Expose non-secret env vars to Edge Runtime (middleware)
   env: {
     APP_BASE_URL: process.env.APP_BASE_URL,
     LOGTO_ENDPOINT: process.env.LOGTO_ENDPOINT,
     LOGTO_APP_ID: process.env.LOGTO_APP_ID,
-    LOGTO_APP_SECRET: process.env.LOGTO_APP_SECRET,
-    LOGTO_COOKIE_SECRET: process.env.LOGTO_COOKIE_SECRET,
   },
 
   // Optimize images

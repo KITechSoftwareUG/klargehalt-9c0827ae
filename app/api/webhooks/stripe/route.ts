@@ -23,7 +23,12 @@ function mapPriceToTier(priceId: string): SubscriptionTier {
     if (val) mapping[val] = tier;
   }
 
-  return mapping[priceId] ?? 'basis';
+  const tier = mapping[priceId];
+  if (!tier) {
+    console.error(`Stripe webhook: UNMAPPED price ID "${priceId}" — defaulting to 'basis'. Check STRIPE_PRICE_* env vars.`);
+    return 'basis';
+  }
+  return tier;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +58,23 @@ export async function POST(request: NextRequest) {
   const supabase = supabaseAdmin();
 
   try {
+    // Idempotency: skip already-processed events
+    const { data: alreadyProcessed } = await supabase
+      .from('processed_stripe_events')
+      .select('event_id')
+      .eq('event_id', event.id)
+      .maybeSingle();
+
+    if (alreadyProcessed) {
+      console.log(`Stripe webhook: duplicate event ${event.id}, skipping`);
+      return NextResponse.json({ received: true });
+    }
+
+    // Mark as processed before executing (prevent double-processing on DB retry)
+    await supabase
+      .from('processed_stripe_events')
+      .insert({ event_id: event.id });
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -90,16 +112,19 @@ export async function POST(request: NextRequest) {
           : subscription.status === 'trialing' ? 'trialing'
           : 'incomplete';
 
+        const periodEnd = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
+
         const { data: updated2, error: err2 } = await supabase
           .from('companies')
           .update({
             subscription_tier: tier,
             subscription_status: status,
-            current_period_end: subscription.current_period_end
-              ? new Date(subscription.current_period_end * 1000).toISOString()
-              : null,
+            current_period_end: periodEnd,
           })
           .eq('stripe_customer_id', customerId)
+          .or(`current_period_end.is.null,current_period_end.lte.${periodEnd ?? new Date().toISOString()}`)
           .select('id');
 
         if (err2) throw err2;

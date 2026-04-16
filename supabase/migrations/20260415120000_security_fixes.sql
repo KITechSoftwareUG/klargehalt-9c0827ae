@@ -70,38 +70,45 @@ CREATE POLICY "user_roles_admin_insert" ON user_roles
 --      (matched via employees.user_id → auth.jwt() ->> 'sub').
 -- ============================================================
 
--- Drop the existing blanket policy set by canonical_schema and
--- fix_rls_recursion migrations
-DROP POLICY IF EXISTS "tenant_isolation"          ON salary_history;
--- Also drop any prior iteration of the split policies (idempotency)
-DROP POLICY IF EXISTS "salary_history_hr_all"     ON salary_history;
-DROP POLICY IF EXISTS "salary_history_self_select" ON salary_history;
+-- salary_history table is optional — guard all operations
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'salary_history' AND table_schema = 'public') THEN
+    -- Drop the existing blanket policy set by canonical_schema and fix_rls_recursion migrations
+    EXECUTE 'DROP POLICY IF EXISTS "tenant_isolation" ON salary_history';
+    EXECUTE 'DROP POLICY IF EXISTS "salary_history_hr_all" ON salary_history';
+    EXECUTE 'DROP POLICY IF EXISTS "salary_history_self_select" ON salary_history';
 
--- HR/admin: full access within the org
-CREATE POLICY "salary_history_hr_all" ON salary_history
-  FOR ALL TO authenticated
-  USING (
-    organization_id = public.org_id()
-    AND public.is_hr_or_admin()
-  )
-  WITH CHECK (
-    organization_id = public.org_id()
-    AND public.is_hr_or_admin()
-  );
+    -- HR/admin: full access within the org
+    EXECUTE $p$
+      CREATE POLICY "salary_history_hr_all" ON salary_history
+        FOR ALL TO authenticated
+        USING (
+          organization_id = public.org_id()
+          AND public.is_hr_or_admin()
+        )
+        WITH CHECK (
+          organization_id = public.org_id()
+          AND public.is_hr_or_admin()
+        )
+    $p$;
 
--- Employees: read their own salary history only
--- Correlates via employees table (user_id column) using the SECURITY
--- DEFINER employees table; no additional recursion risk.
-CREATE POLICY "salary_history_self_select" ON salary_history
-  FOR SELECT TO authenticated
-  USING (
-    organization_id = public.org_id()
-    AND employee_id IN (
-      SELECT id FROM employees
-      WHERE user_id = (auth.jwt() ->> 'sub')
-        AND organization_id = public.org_id()
-    )
-  );
+    -- Employees: read their own salary history only
+    EXECUTE $p$
+      CREATE POLICY "salary_history_self_select" ON salary_history
+        FOR SELECT TO authenticated
+        USING (
+          organization_id = public.org_id()
+          AND employee_id IN (
+            SELECT id FROM employees
+            WHERE user_id = (auth.jwt() ->> 'sub')
+              AND organization_id = public.org_id()
+          )
+        )
+    $p$;
+  END IF;
+END;
+$$;
 
 
 -- ============================================================

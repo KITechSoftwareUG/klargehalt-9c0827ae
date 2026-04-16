@@ -89,7 +89,7 @@ export const PLANS: Record<SubscriptionTier, PlanDefinition> = {
 
 export function hasFeature(tier: SubscriptionTier, feature: string): boolean {
   const allowedTiers = FEATURE_FLAGS[feature];
-  if (!allowedTiers) return true;
+  if (!allowedTiers) return false;
   return allowedTiers.includes(tier);
 }
 

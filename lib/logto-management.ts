@@ -17,41 +17,55 @@ type LogtoUserResponse = {
 };
 
 let _tokenCache: { token: string; expiresAt: number } | null = null;
+let _refreshPromise: Promise<string> | null = null;
 
-const getManagementToken = async () => {
+const getManagementToken = async (): Promise<string> => {
   const now = Date.now();
-  if (_tokenCache && _tokenCache.expiresAt > now) {
+  if (_tokenCache && _tokenCache.expiresAt > now + 5000) {
+    // 5s buffer — don't serve a token that expires within 5 seconds
     return _tokenCache.token;
   }
 
-  const endpoint = getRequiredEnv('LOGTO_ENDPOINT');
-  const clientId = getRequiredEnv('LOGTO_M2M_APP_ID');
-  const clientSecret = getRequiredEnv('LOGTO_M2M_APP_SECRET');
-  const resource = process.env.LOGTO_MANAGEMENT_API_RESOURCE ?? 'https://admin.logto.app/api';
-
-  const response = await fetch(`${endpoint}/oidc/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: clientId,
-      client_secret: clientSecret,
-      resource,
-      scope: 'all',
-    }),
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch Logto management token: ${response.status} ${errorText}`);
+  // If a refresh is already in-flight, wait for it rather than issuing a parallel request
+  if (_refreshPromise) {
+    return _refreshPromise;
   }
 
-  const data = await response.json();
-  const token = data.access_token as string;
-  const ttl = ((data.expires_in as number) ?? 3600) - 60;
-  _tokenCache = { token, expiresAt: now + ttl * 1000 };
-  return token;
+  _refreshPromise = (async () => {
+    const endpoint = getRequiredEnv('LOGTO_ENDPOINT');
+    const clientId = getRequiredEnv('LOGTO_M2M_APP_ID');
+    const clientSecret = getRequiredEnv('LOGTO_M2M_APP_SECRET');
+    const resource = process.env.LOGTO_MANAGEMENT_API_RESOURCE ?? 'https://admin.logto.app/api';
+
+    const response = await fetch(`${endpoint}/oidc/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+        resource,
+        scope: 'all',
+      }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch Logto management token: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const token = data.access_token as string;
+    if (!token) throw new Error('Logto management token response missing access_token');
+    const ttl = ((data.expires_in as number) ?? 3600) - 60;
+    _tokenCache = { token, expiresAt: Date.now() + ttl * 1000 };
+    return token;
+  })().finally(() => {
+    _refreshPromise = null;
+  });
+
+  return _refreshPromise;
 };
 
 const callManagementApi = async <T>(path: string, init?: RequestInit): Promise<T> => {

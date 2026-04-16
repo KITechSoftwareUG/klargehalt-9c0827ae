@@ -29,7 +29,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Local env files
+# Local env files — including the root .env which contains production secrets
+.env
 .env*.local
 .env.local
 .env.development.local
