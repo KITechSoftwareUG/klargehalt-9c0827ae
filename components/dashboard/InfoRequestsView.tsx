@@ -21,7 +21,7 @@ import {
   Calendar,
   Lock
 } from 'lucide-react';
-import { useInfoRequests, REQUEST_TYPES, InfoRequestType } from '@/hooks/useInfoRequests';
+import { useInfoRequests, REQUEST_TYPES, InfoRequestType, getDaysUntilDeadline, getDeadlineStatus } from '@/hooks/useInfoRequests';
 import type { InfoRequest } from '@/hooks/useInfoRequests';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -313,9 +313,38 @@ export function InfoRequestsView() {
                         )}
                       </div>
                     </div>
+                    {request.status === 'pending' && request.deadline_at && (
+                      <div className="mt-2 flex items-center gap-2">
+                        {(() => {
+                          const days = getDaysUntilDeadline(request.deadline_at);
+                          const status = getDeadlineStatus(request.deadline_at);
+                          const deadlineFormatted = new Date(request.deadline_at).toLocaleDateString('de-DE');
+                          const colorClass =
+                            status === 'overdue'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              : status === 'warning'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+                          return (
+                            <>
+                              <Badge className={colorClass}>
+                                Fällig: {deadlineFormatted}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {days !== null && days < 0
+                                  ? 'Antwortfrist überschritten'
+                                  : `Antwort erwartet bis: ${days}d verbleibend`}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                     {request.status === 'declined' && (
                       <p className="text-sm text-destructive mt-2">
-                        Diese Anfrage wurde abgelehnt.
+                        {request.decline_reason
+                          ? `Abgelehnt: ${request.decline_reason}`
+                          : 'Diese Anfrage wurde abgelehnt.'}
                       </p>
                     )}
                   </CardContent>

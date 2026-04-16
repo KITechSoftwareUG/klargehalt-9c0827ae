@@ -8,7 +8,8 @@ import Image from 'next/image';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
-    LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock
+    LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock,
+    ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -29,11 +30,16 @@ import MySalaryComparisonView from '@/components/dashboard/MySalaryComparisonVie
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 import DepartmentsView from '@/components/dashboard/DepartmentsView';
 import JobLevelsView from '@/components/dashboard/JobLevelsView';
+import ComplianceCommandCenter from '@/components/dashboard/ComplianceCommandCenter';
+import JobPostingsView from '@/components/dashboard/JobPostingsView';
+import JointAssessmentView from '@/components/dashboard/JointAssessmentView';
+import HRInfoRequestsPanel from '@/components/dashboard/HRInfoRequestsPanel';
+import RightsNotificationsPanel from '@/components/dashboard/RightsNotificationsPanel';
 
 // ── Role definitions ──────────────────────────────────────────────────────────
 
 type AppRole = 'admin' | 'hr_manager' | 'employee';
-type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing';
+type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing' | 'compliance' | 'job-postings' | 'joint-assessment' | 'hr-requests' | 'rights-notifications';
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     admin: { label: 'Administrator', color: 'bg-red-50 border-red-200 text-red-700' },
@@ -43,20 +49,29 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
 
 // Nav items visible per role
 const HR_ADMIN_NAV = [
-    { label: 'Übersicht', icon: BarChart3, view: 'overview' as HRView },
-    { label: 'Mitarbeiter', icon: Users, view: 'employees' as HRView },
-    { label: 'Gehaltscheck', icon: Target, view: 'my-salary' as HRView },
-    { label: 'Analyse', icon: LayoutDashboard, view: 'pay-equity-hr' as HRView },
-    { label: 'Strategie', icon: Briefcase, view: 'pay-equity-mgmt' as HRView },
-    { label: 'Abteilungen', icon: Building, view: 'departments' as HRView },
-    { label: 'Karrierestufen', icon: Layers, view: 'job-levels' as HRView },
-    { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as HRView },
-    { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as HRView },
-    { label: 'Berichte', icon: TrendingUp, view: 'reports' as HRView },
-    { label: 'Anfragen', icon: MessageSquare, view: 'requests' as HRView },
-    { label: 'Audit-Log', icon: Shield, view: 'audit' as HRView, adminOnly: true },
-    { label: 'Abrechnung', icon: CreditCard, view: 'billing' as HRView, adminOnly: true },
-    { label: 'Einstellungen', icon: Settings, view: 'settings' as HRView, adminOnly: true },
+    // ── Compliance ───────────────────────────────────────────────────────────
+    { label: 'Compliance Center', icon: ShieldCheck, view: 'compliance' as HRView, group: 'Compliance' },
+    { label: 'Gem. Bewertung (Art. 10)', icon: Scale, view: 'joint-assessment' as HRView, group: 'Compliance' },
+    { label: 'Stellenanzeigen (Art. 5)', icon: BriefcaseIcon, view: 'job-postings' as HRView, group: 'Compliance' },
+    { label: 'Anfragen HR (Art. 7)', icon: ClipboardList, view: 'hr-requests' as HRView, group: 'Compliance' },
+    { label: 'Jahresinfo (Art. 7)', icon: BellIcon, view: 'rights-notifications' as HRView, group: 'Compliance' },
+    // ── Analytics ────────────────────────────────────────────────────────────
+    { label: 'Übersicht', icon: BarChart3, view: 'overview' as HRView, group: 'Analyse' },
+    { label: 'Pay-Equity Analyse', icon: LayoutDashboard, view: 'pay-equity-hr' as HRView, group: 'Analyse' },
+    { label: 'Management KPIs', icon: Briefcase, view: 'pay-equity-mgmt' as HRView, group: 'Analyse' },
+    { label: 'Berichte', icon: TrendingUp, view: 'reports' as HRView, group: 'Analyse' },
+    // ── HR-Verwaltung ─────────────────────────────────────────────────────────
+    { label: 'Mitarbeiter', icon: Users, view: 'employees' as HRView, group: 'Verwaltung' },
+    { label: 'Gehaltscheck', icon: Target, view: 'my-salary' as HRView, group: 'Verwaltung' },
+    { label: 'Abteilungen', icon: Building, view: 'departments' as HRView, group: 'Verwaltung' },
+    { label: 'Karrierestufen', icon: Layers, view: 'job-levels' as HRView, group: 'Verwaltung' },
+    { label: 'Job-Profile', icon: Building2, view: 'job-profiles' as HRView, group: 'Verwaltung' },
+    { label: 'Gehaltsbänder', icon: Scale, view: 'pay-bands' as HRView, group: 'Verwaltung' },
+    { label: 'Mitarbeiter-Anfragen', icon: MessageSquare, view: 'requests' as HRView, group: 'Verwaltung' },
+    // ── Admin ─────────────────────────────────────────────────────────────────
+    { label: 'Audit-Log', icon: Shield, view: 'audit' as HRView, group: 'Admin', adminOnly: true },
+    { label: 'Abrechnung', icon: CreditCard, view: 'billing' as HRView, group: 'Admin', adminOnly: true },
+    { label: 'Einstellungen', icon: Settings, view: 'settings' as HRView, group: 'Admin', adminOnly: true },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -65,7 +80,7 @@ export default function DashboardPage() {
     const router = useRouter();
     const { user, role, loading, isLoaded, orgId, signOut } = useAuth();
     const { isExpired } = useSubscription();
-    const [activeView, setActiveView] = useState<HRView>('overview');
+    const [activeView, setActiveView] = useState<HRView>('compliance');
 
     const handleSignOut = async () => {
         await signOut();
@@ -96,9 +111,17 @@ export default function DashboardPage() {
 
     // Nav items: filter admin-only for hr_manager
     const visibleNavItems = HR_ADMIN_NAV.filter(item => {
-        if ((item as any).adminOnly && role !== 'admin') return false;
+        if ('adminOnly' in item && item.adminOnly && role !== 'admin') return false;
         return true;
     });
+
+    // Group nav items by group label
+    const navGroups = visibleNavItems.reduce<Record<string, typeof visibleNavItems>>((acc, item) => {
+        const g = 'group' in item ? item.group : 'Menu';
+        if (!acc[g]) acc[g] = [];
+        acc[g] = [...acc[g], item];
+        return acc;
+    }, {});
 
     const renderContent = () => {
         // Employees get their own restricted view — regardless of what URL they hit
@@ -108,21 +131,30 @@ export default function DashboardPage() {
 
         // HR/Admin views
         switch (activeView) {
+            // ── Compliance ────────────────────────────────────────────────────
+            case 'compliance': return <ComplianceCommandCenter />;
+            case 'joint-assessment': return <SubscriptionGate feature="pay_gap_analysis"><JointAssessmentView /></SubscriptionGate>;
+            case 'job-postings': return <JobPostingsView />;
+            case 'hr-requests': return <HRInfoRequestsPanel />;
+            case 'rights-notifications': return <RightsNotificationsPanel />;
+            // ── Analytics ─────────────────────────────────────────────────────
             case 'overview': return <DashboardOverview onNavigate={(v) => setActiveView(v as HRView)} />;
-            case 'employees': return <EmployeesView />;
             case 'my-salary': return <MySalaryComparisonView />;
             case 'pay-equity-hr': return <SubscriptionGate feature="pay_gap_analysis"><PayEquityHRView /></SubscriptionGate>;
             case 'pay-equity-mgmt': return <SubscriptionGate feature="pay_gap_analysis"><PayEquityManagementView /></SubscriptionGate>;
+            case 'reports': return <SubscriptionGate feature="pdf_reports"><PayGapReportView /></SubscriptionGate>;
+            // ── HR Verwaltung ─────────────────────────────────────────────────
+            case 'employees': return <EmployeesView />;
             case 'departments': return <DepartmentsView />;
             case 'job-levels': return <JobLevelsView />;
             case 'job-profiles': return <JobProfilesView />;
             case 'pay-bands': return <PayBandsView />;
-            case 'reports': return <SubscriptionGate feature="pdf_reports"><PayGapReportView /></SubscriptionGate>;
             case 'requests': return <InfoRequestsView />;
+            // ── Admin ─────────────────────────────────────────────────────────
             case 'audit': return role === 'admin' ? <AuditLogsView /> : <AccessDenied />;
             case 'billing': return role === 'admin' ? <BillingView /> : <AccessDenied />;
             case 'settings': return role === 'admin' ? <CompanySetup onComplete={() => setActiveView('overview')} /> : <AccessDenied />;
-            default: return <DashboardOverview onNavigate={(v) => setActiveView(v as HRView)} />;
+            default: return <ComplianceCommandCenter />;
         }
     };
 
@@ -139,20 +171,28 @@ export default function DashboardPage() {
 
                     {/* Navigation — hidden for employees (they see their own sub-nav inside EmployeeDashboard) */}
                     {role !== 'employee' && (
-                        <nav className="flex-1 space-y-1 px-4 py-4">
-                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Menu</p>
-                            {visibleNavItems.map((item) => (
-                                <button
-                                    key={item.view}
-                                    onClick={() => setActiveView(item.view)}
-                                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${activeView === item.view
-                                        ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                        }`}
-                                >
-                                    <item.icon className="h-5 w-5" />
-                                    {item.label}
-                                </button>
+                        <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+                            {Object.entries(navGroups).map(([groupName, items]) => (
+                                <div key={groupName}>
+                                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                        {groupName}
+                                    </p>
+                                    <div className="space-y-0.5">
+                                        {items.map((item) => (
+                                            <button
+                                                key={item.view}
+                                                onClick={() => setActiveView(item.view)}
+                                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${activeView === item.view
+                                                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                                    }`}
+                                            >
+                                                <item.icon className="h-4 w-4 shrink-0" />
+                                                <span className="truncate">{item.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </nav>
                     )}
@@ -212,7 +252,7 @@ export default function DashboardPage() {
                             <h1 className="text-xl font-bold text-slate-900">
                                 {role === 'employee'
                                     ? 'Mein Portal'
-                                    : (visibleNavItems.find(i => i.view === activeView)?.label || 'Dashboard')}
+                                    : (visibleNavItems.find(i => i.view === activeView)?.label || 'Compliance Center')}
                             </h1>
                             <p className="text-sm text-slate-500">
                                 {new Date().toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
