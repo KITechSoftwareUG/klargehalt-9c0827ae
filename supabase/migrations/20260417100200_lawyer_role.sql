@@ -135,7 +135,22 @@ CREATE POLICY "employees_lawyer_select" ON employees
     )
   );
 
--- 4b. Anonymized employee view for lawyers
+-- 4b. Ensure columns referenced by the view exist on employees
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_number TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS birth_year INTEGER;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_level_id UUID;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS variable_pay NUMERIC(12,2) DEFAULT 0;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS weekly_hours NUMERIC(5,2) DEFAULT 40;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'EUR';
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS pay_band_id UUID;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS on_leave BOOLEAN DEFAULT false;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS leave_type TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- Anonymized employee view for lawyers
 -- Strips PII (first_name, last_name, email) but keeps analytical columns
 CREATE OR REPLACE VIEW lawyer_employee_view AS
 SELECT

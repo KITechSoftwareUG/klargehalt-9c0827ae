@@ -18,6 +18,13 @@ ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS evaluated_by_name TEXT;
 -- Timestamp of last evaluation
 ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS last_evaluated_at TIMESTAMPTZ;
 
+-- Ensure the four Art. 4.4 score columns exist (defined in canonical schema
+-- but may be missing on older remote DBs)
+ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS skills_score INTEGER CHECK (skills_score BETWEEN 1 AND 5);
+ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS effort_score INTEGER CHECK (effort_score BETWEEN 1 AND 5);
+ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS responsibility_score INTEGER CHECK (responsibility_score BETWEEN 1 AND 5);
+ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS working_conditions_score INTEGER CHECK (working_conditions_score BETWEEN 1 AND 5);
+
 -- Composite score: sum of all four Art. 4.4 criteria (0-20 range)
 -- Used for quick comparator grouping of equivalent work
 ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS composite_score INTEGER
