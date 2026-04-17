@@ -135,12 +135,22 @@ CREATE POLICY "employees_lawyer_select" ON employees
     )
   );
 
--- 4b. Ensure columns referenced by the view exist on employees
+-- 4b. Ensure ALL columns referenced by the view exist on employees
+-- The canonical schema defines these but older remote DBs may be behind.
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS organization_id TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_number TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS first_name TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS last_name TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS birth_year INTEGER;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_profile_id UUID;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_level_id UUID;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS employment_type TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS hire_date DATE;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS base_salary NUMERIC(12,2);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS variable_pay NUMERIC(12,2) DEFAULT 0;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS weekly_hours NUMERIC(5,2) DEFAULT 40;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'EUR';
@@ -148,6 +158,8 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS pay_band_id UUID;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS on_leave BOOLEAN DEFAULT false;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS leave_type TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS user_id TEXT;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS created_by TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 -- Anonymized employee view for lawyers
