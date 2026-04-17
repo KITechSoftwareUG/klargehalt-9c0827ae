@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { inviteEmployeeToOrg } from '@/lib/logto-management';
-import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
-
-const supabaseAdmin = () =>
-  createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -17,7 +11,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Only admins can invite employees
-  const supabase = supabaseAdmin();
+  const supabase = await createClient();
   const { data: roleRow } = await supabase
     .from('user_roles')
     .select('role')

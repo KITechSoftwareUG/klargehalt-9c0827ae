@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { type SubscriptionTier, getStripePriceId, PLANS } from '@/lib/subscription';
-
-const supabaseAdmin = () =>
-  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabase = await createClient();
+
     // Only admins can manage billing
-    const { data: userRole } = await supabaseAdmin()
+    const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', context.user!.id)
@@ -39,8 +38,6 @@ export async function POST(request: NextRequest) {
     if (!priceId) {
       return NextResponse.json({ error: 'Stripe price not configured for this plan' }, { status: 500 });
     }
-
-    const supabase = supabaseAdmin();
     const { data: company } = await supabase
       .from('companies')
       .select('id, name, stripe_customer_id, organization_id')

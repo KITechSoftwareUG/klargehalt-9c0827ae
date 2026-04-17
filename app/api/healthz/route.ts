@@ -33,11 +33,12 @@ export async function GET() {
   const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
+    // Log details server-side only — never expose env var names in the response
     console.error('Health check failed — missing env vars:', missing);
     return NextResponse.json(
       {
         status: 'unhealthy',
-        missing_env_vars: missing,
+        message: `${missing.length} required environment variable(s) missing`,
         timestamp: new Date().toISOString(),
       },
       { status: 503 }

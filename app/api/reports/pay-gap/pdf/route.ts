@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import puppeteer from 'puppeteer';
-
-const supabaseAdmin = () =>
-  createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
 export async function GET(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -16,7 +10,19 @@ export async function GET(request: NextRequest) {
   }
 
   const orgId = context.activeOrganizationId;
-  const supabase = supabaseAdmin();
+  const supabase = await createClient();
+
+  // Only admins and HR managers can generate pay gap reports
+  const { data: userRole } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', context.claims?.sub ?? '')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+
+  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   // Fetch company info
   const { data: company } = await supabase

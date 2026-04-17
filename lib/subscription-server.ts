@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import {
   type SubscriptionTier,
   type SubscriptionStatus,
@@ -6,9 +6,6 @@ import {
   hasFeature,
   getPlanLimits,
 } from '@/lib/subscription';
-
-const supabaseAdmin = () =>
-  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 export interface CompanySubscription {
   tier: SubscriptionTier;
@@ -19,7 +16,7 @@ export interface CompanySubscription {
 }
 
 export async function getCompanySubscription(organizationId: string): Promise<CompanySubscription | null> {
-  const supabase = supabaseAdmin();
+  const supabase = await createClient();
   const { data } = await supabase
     .from('companies')
     .select('subscription_tier, subscription_status, trial_ends_at, current_period_end')

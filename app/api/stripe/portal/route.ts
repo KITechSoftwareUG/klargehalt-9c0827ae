@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = () =>
-  createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
@@ -13,8 +10,10 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabase = await createClient();
+
     // Only admins can manage billing
-    const { data: userRole } = await supabaseAdmin()
+    const { data: userRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', context.user!.id)
@@ -24,8 +23,6 @@ export async function POST() {
     if (!userRole || userRole.role !== 'admin') {
       return NextResponse.json({ error: 'Only admins can manage billing' }, { status: 403 });
     }
-
-    const supabase = supabaseAdmin();
     const { data: company } = await supabase
       .from('companies')
       .select('stripe_customer_id')

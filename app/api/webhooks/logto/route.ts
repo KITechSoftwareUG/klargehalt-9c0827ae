@@ -1,11 +1,16 @@
-import { timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const getAdminClient = () => createClient(supabaseUrl, supabaseServiceKey);
+const getAdminClient = () => {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase environment variables not configured');
+  }
+  return createClient(supabaseUrl, supabaseServiceKey);
+};
 
 type LogtoWebhookEvent =
   | 'User.Created'
@@ -31,26 +36,55 @@ type LogtoUserData = {
   customData?: Record<string, unknown>;
 };
 
-function verifyWebhookSecret(request: NextRequest): boolean {
-  const secret = request.headers.get('x-webhook-secret');
-  const expected = process.env.LOGTO_WEBHOOK_SECRET;
+/**
+ * Verify Logto webhook using HMAC-SHA256 signature.
+ * Logto sends a `logto-signature-sha-256` header containing `sha256=<hex-digest>`
+ * computed as HMAC-SHA256(rawBody, signingKey).
+ *
+ * Falls back to shared-secret header (`x-webhook-secret`) for backwards compatibility
+ * during migration. Remove the fallback once Logto is configured to send HMAC signatures.
+ */
+async function verifyWebhookSignature(request: NextRequest): Promise<{ verified: boolean; rawBody: string }> {
+  const signingKey = process.env.LOGTO_WEBHOOK_SECRET;
 
-  if (!expected) {
+  if (!signingKey) {
     console.error('LOGTO_WEBHOOK_SECRET not configured');
-    return false;
+    return { verified: false, rawBody: '' };
   }
 
-  if (!secret) {
-    return false;
+  const rawBody = await request.text();
+
+  // Primary: HMAC signature verification (preferred)
+  const signatureHeader = request.headers.get('logto-signature-sha-256');
+  if (signatureHeader) {
+    try {
+      const expected = 'sha256=' + createHmac('sha256', signingKey).update(rawBody).digest('hex');
+      const a = Buffer.from(signatureHeader);
+      const b = Buffer.from(expected);
+      const verified = a.length === b.length && timingSafeEqual(a, b);
+      return { verified, rawBody };
+    } catch {
+      return { verified: false, rawBody };
+    }
   }
 
-  try {
-    const a = Buffer.from(secret);
-    const b = Buffer.from(expected);
-    return a.length === b.length && timingSafeEqual(a, b);
-  } catch {
-    return false;
+  // Fallback: shared-secret header (remove after Logto HMAC is configured)
+  const sharedSecret = request.headers.get('x-webhook-secret');
+  if (sharedSecret) {
+    try {
+      const a = Buffer.from(sharedSecret);
+      const b = Buffer.from(signingKey);
+      const verified = a.length === b.length && timingSafeEqual(a, b);
+      if (verified) {
+        console.warn('Webhook: Using deprecated x-webhook-secret verification — migrate to HMAC signature');
+      }
+      return { verified, rawBody };
+    } catch {
+      return { verified: false, rawBody };
+    }
   }
+
+  return { verified: false, rawBody };
 }
 
 function extractUserData(payload: LogtoWebhookPayload): LogtoUserData | null {
@@ -127,18 +161,19 @@ async function handleUserDeleted(user: LogtoUserData) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!verifyWebhookSecret(request)) {
+  const { verified, rawBody } = await verifyWebhookSignature(request);
+  if (!verified) {
     return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 });
   }
 
-  if (!supabaseServiceKey) {
-    console.error('Webhook: SUPABASE_SERVICE_ROLE_KEY not configured');
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Webhook: Supabase environment variables not configured');
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
   let payload: LogtoWebhookPayload;
   try {
-    payload = (await request.json()) as LogtoWebhookPayload;
+    payload = JSON.parse(rawBody) as LogtoWebhookPayload;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 type RequestType = 'pay_band' | 'avg_pay_category' | 'gap_explanation';
@@ -50,10 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request_type' }, { status: 400 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = await createClient();
 
   const orgId = context.activeOrganizationId;
   const userId = context.user?.id;
