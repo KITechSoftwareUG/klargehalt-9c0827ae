@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         billing_address_collection: 'required',
         tax_id_collection: { enabled: true },
       },
-      { idempotencyKey: `checkout_${context.activeOrganizationId}_${tier}_${interval}_${Date.now()}` }
+      { idempotencyKey: `checkout_${context.activeOrganizationId}_${tier}_${interval}_${Math.floor(Date.now() / (5 * 60 * 1000))}` }
     );
 
     return NextResponse.json({ url: session.url });

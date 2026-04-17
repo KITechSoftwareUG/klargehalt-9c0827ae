@@ -23,37 +23,51 @@ export default function ImpressumPage() {
 
             <section className="py-16 lg:py-24">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8">
-                    <h2 className="text-xl font-bold text-[#071423] mb-4">Diensteanbieter</h2>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-10">
+                        <p className="text-sm text-blue-800 font-medium">
+                            KlarGehalt ist eine Marke der KITech Software UG (haftungsbeschränkt).
+                        </p>
+                    </div>
+
+                    <h2 className="text-xl font-bold text-[#071423] mb-4">Angaben gemäß § 5 TMG</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-2">
                         KITech Software UG (haftungsbeschränkt)
                     </p>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-8">
-                        Eingetragen im Handelsregister.<br />
-                        Registergericht: [Amtsgericht eintragen]<br />
-                        Registernummer: [HRB-Nummer eintragen]
-                    </p>
-
-                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Vertreten durch</h2>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-8">
-                        Geschäftsführer: [Name des Geschäftsführers eintragen]
+                    <p className="text-sm text-slate-600 leading-relaxed mb-2">
+                        Wedekindstraße 14<br />
+                        30161 Hannover<br />
+                        Deutschland
                     </p>
 
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Kontakt</h2>
                     <ul className="text-sm text-slate-600 list-none space-y-1 mb-8">
-                        <li>E-Mail: kontakt@klargehalt.de</li>
-                        <li>Telefon: [Telefonnummer eintragen]</li>
-                        <li>Adresse: [Straße, PLZ, Ort eintragen]</li>
+                        <li>Telefon: +49 151 64682544</li>
+                        <li>E-Mail: info@kitech-software.de</li>
                     </ul>
+
+                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Vertreten durch</h2>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-8">
+                        Geschäftsführer: L. Battel, A. Alkhalil
+                    </p>
+
+                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Registereintrag</h2>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-8">
+                        Eintragung im Handelsregister.<br />
+                        Registergericht: Amtsgericht Hannover<br />
+                        Registernummer: HRB 230077
+                    </p>
 
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Umsatzsteuer-ID</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-8">
-                        Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:<br />
-                        [USt-IdNr. eintragen, z.B. DE123456789]
+                        Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br />
+                        DE459778632
                     </p>
 
-                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-8">
-                        [Name und Anschrift des inhaltlich Verantwortlichen eintragen]
+                        A. Alkhalil<br />
+                        Wedekindstraße 14<br />
+                        30161 Hannover
                     </p>
 
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">EU-Streitschlichtung</h2>

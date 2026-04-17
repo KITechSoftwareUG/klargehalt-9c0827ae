@@ -37,18 +37,36 @@ type LogtoUserData = {
 };
 
 /**
+ * Collect all valid signing keys for Logto webhooks.
+ * Logto auto-generates a unique signingKey per webhook and these cannot be changed via API.
+ * We accept: LOGTO_WEBHOOK_SECRET (shared secret) + any LOGTO_WEBHOOK_SIGNING_KEY_* vars.
+ */
+function getSigningKeys(): string[] {
+  const keys: string[] = [];
+  const primary = process.env.LOGTO_WEBHOOK_SECRET;
+  if (primary) keys.push(primary);
+
+  // Support per-webhook signing keys: LOGTO_WEBHOOK_SIGNING_KEY_1, _2, etc.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith('LOGTO_WEBHOOK_SIGNING_KEY_') && value) {
+      keys.push(value);
+    }
+  }
+  return keys;
+}
+
+/**
  * Verify Logto webhook using HMAC-SHA256 signature.
  * Logto sends a `logto-signature-sha-256` header containing `sha256=<hex-digest>`
  * computed as HMAC-SHA256(rawBody, signingKey).
  *
- * Falls back to shared-secret header (`x-webhook-secret`) for backwards compatibility
- * during migration. Remove the fallback once Logto is configured to send HMAC signatures.
+ * Falls back to shared-secret header (`x-webhook-secret`) for backwards compatibility.
  */
 async function verifyWebhookSignature(request: NextRequest): Promise<{ verified: boolean; rawBody: string }> {
-  const signingKey = process.env.LOGTO_WEBHOOK_SECRET;
+  const signingKeys = getSigningKeys();
 
-  if (!signingKey) {
-    console.error('LOGTO_WEBHOOK_SECRET not configured');
+  if (signingKeys.length === 0) {
+    console.error('No Logto webhook signing keys configured');
     return { verified: false, rawBody: '' };
   }
 
@@ -57,31 +75,36 @@ async function verifyWebhookSignature(request: NextRequest): Promise<{ verified:
   // Primary: HMAC signature verification (preferred)
   const signatureHeader = request.headers.get('logto-signature-sha-256');
   if (signatureHeader) {
-    try {
-      const expected = 'sha256=' + createHmac('sha256', signingKey).update(rawBody).digest('hex');
-      const a = Buffer.from(signatureHeader);
-      const b = Buffer.from(expected);
-      const verified = a.length === b.length && timingSafeEqual(a, b);
-      return { verified, rawBody };
-    } catch {
-      return { verified: false, rawBody };
+    for (const key of signingKeys) {
+      try {
+        const expected = 'sha256=' + createHmac('sha256', key).update(rawBody).digest('hex');
+        const a = Buffer.from(signatureHeader);
+        const b = Buffer.from(expected);
+        if (a.length === b.length && timingSafeEqual(a, b)) {
+          return { verified: true, rawBody };
+        }
+      } catch {
+        continue;
+      }
     }
+    return { verified: false, rawBody };
   }
 
-  // Fallback: shared-secret header (remove after Logto HMAC is configured)
+  // Fallback: shared-secret header
   const sharedSecret = request.headers.get('x-webhook-secret');
   if (sharedSecret) {
-    try {
-      const a = Buffer.from(sharedSecret);
-      const b = Buffer.from(signingKey);
-      const verified = a.length === b.length && timingSafeEqual(a, b);
-      if (verified) {
-        console.warn('Webhook: Using deprecated x-webhook-secret verification — migrate to HMAC signature');
+    for (const key of signingKeys) {
+      try {
+        const a = Buffer.from(sharedSecret);
+        const b = Buffer.from(key);
+        if (a.length === b.length && timingSafeEqual(a, b)) {
+          return { verified: true, rawBody };
+        }
+      } catch {
+        continue;
       }
-      return { verified, rawBody };
-    } catch {
-      return { verified: false, rawBody };
     }
+    return { verified: false, rawBody };
   }
 
   return { verified: false, rawBody };

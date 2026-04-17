@@ -70,11 +70,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Mark as processed before executing (prevent double-processing on DB retry)
-    await supabase
-      .from('processed_stripe_events')
-      .insert({ event_id: event.id });
-
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -182,6 +177,10 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`Stripe webhook: unhandled event ${event.type}`);
     }
+    // Mark as processed after successful execution (if processing fails, Stripe will retry)
+    await supabase
+      .from('processed_stripe_events')
+      .insert({ event_id: event.id });
   } catch (error) {
     console.error(`Stripe webhook: error processing ${event.type}`, error);
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });

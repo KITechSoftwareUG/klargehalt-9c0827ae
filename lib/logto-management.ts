@@ -132,7 +132,7 @@ export const inviteEmployeeToOrg = async (params: {
   firstName: string;
   lastName: string;
   orgId: string;
-}): Promise<{ logtoUserId: string; tempPassword: string; alreadyExists: boolean }> => {
+}): Promise<{ logtoUserId: string; tempPassword: string | null; alreadyExists: boolean }> => {
   // Try to find existing Logto user by email first
   let logtoUserId: string | null = null;
   let alreadyExists = false;
@@ -191,14 +191,15 @@ export const inviteEmployeeToOrg = async (params: {
     // Role assignment failure is non-fatal
   }
 
-  // Generate a temporary password
-  const tempPassword = generateTempPassword();
-
-  // Set the temporary password so the user can log in immediately
-  await callManagementApi<null>(`/api/users/${logtoUserId}/password`, {
-    method: 'PATCH',
-    body: JSON.stringify({ password: tempPassword }),
-  });
+  // Only set a temporary password for new users — existing users keep their credentials
+  let tempPassword: string | null = null;
+  if (!alreadyExists) {
+    tempPassword = generateTempPassword();
+    await callManagementApi<null>(`/api/users/${logtoUserId}/password`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password: tempPassword }),
+    });
+  }
 
   return { logtoUserId, tempPassword, alreadyExists };
 };

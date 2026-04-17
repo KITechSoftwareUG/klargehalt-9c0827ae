@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS companies (
   industry             TEXT,
   employee_size_band   TEXT,    -- '100-149','150-249','250+'; drives reporting frequency
   reporting_frequency  TEXT,    -- 'annual','triennial'
+  subscription_tier    TEXT DEFAULT 'professional',
+  subscription_status  TEXT DEFAULT 'trialing',
+  trial_ends_at        TIMESTAMPTZ,
+  stripe_customer_id   TEXT,
+  stripe_subscription_id TEXT,
+  current_period_end   TIMESTAMPTZ,
+  created_by           TEXT,
   created_at           TIMESTAMPTZ DEFAULT now(),
   updated_at           TIMESTAMPTZ DEFAULT now()
 );
@@ -62,6 +69,13 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS legal_name TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS employee_size_band TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS reporting_frequency TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'professional';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'trialing';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by TEXT;
 
 -- Ensure NOT NULL on organization_id after backfill (see data safety section below)
 -- This is done at the end of the migration after any necessary backfill.

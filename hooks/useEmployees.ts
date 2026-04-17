@@ -83,6 +83,8 @@ export function useEmployees() {
         query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
       }
 
+      query = query.eq('is_active', true);
+
       const { data, error } = await query.order('last_name');
 
       if (error) throw error;
@@ -129,7 +131,7 @@ export function useEmployees() {
     try {
       const { error } = await supabase
         .from('employees')
-        .update(formData)
+        .update({ ...formData, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
@@ -148,12 +150,12 @@ export function useEmployees() {
     try {
       const { error } = await supabase
         .from('employees')
-        .delete()
+        .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
 
-      toast.success('Mitarbeiter erfolgreich gelöscht');
+      toast.success('Mitarbeiter erfolgreich archiviert');
       await fetchEmployees();
       return true;
     } catch (error: unknown) {

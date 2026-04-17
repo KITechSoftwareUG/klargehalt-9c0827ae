@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rateLimitKey = `info-request:${context.user?.id}`;
-  if (!checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000)) {
+  if (!(await checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

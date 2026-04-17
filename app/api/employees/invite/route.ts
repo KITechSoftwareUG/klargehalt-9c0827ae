@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rateLimitKey = `employee-invite:${context.activeOrganizationId}`;
-  if (!checkRateLimit(rateLimitKey, 20, 60 * 60 * 1000)) {
+  if (!(await checkRateLimit(rateLimitKey, 20, 60 * 60 * 1000))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
       success: true,
       alreadyExists: result.alreadyExists,
       email: employee.email,
+      tempPassword: result.tempPassword,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Einladung fehlgeschlagen';
