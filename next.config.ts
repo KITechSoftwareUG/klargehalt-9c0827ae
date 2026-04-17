@@ -2,7 +2,7 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Trigger rebuild: 2026-02-19T10:06:04
+  // Trigger rebuild: 2026-04-17T06:10:00
   reactStrictMode: true,
 
   // Expose non-secret env vars to Edge Runtime (middleware)
