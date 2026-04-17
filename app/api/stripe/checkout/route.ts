@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         billing_address_collection: 'required',
         tax_id_collection: { enabled: true },
       },
-      { idempotencyKey: `checkout_${context.activeOrganizationId}_${tier}_${interval}` }
+      { idempotencyKey: `checkout_${context.activeOrganizationId}_${tier}_${interval}_${Date.now()}` }
     );
 
     return NextResponse.json({ url: session.url });

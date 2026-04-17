@@ -96,6 +96,28 @@ const callManagementApi = async <T>(path: string, init?: RequestInit): Promise<T
   return (await response.json()) as T;
 };
 
+type MfaVerification = {
+  id: string;
+  createdAt: string;
+  type: 'Totp' | 'BackupCode' | 'WebAuthn';
+};
+
+/**
+ * Check whether a user has any MFA factors enrolled (TOTP, WebAuthn).
+ * BackupCode alone doesn't count — it's a recovery mechanism, not a real factor.
+ * Returns false on any API error (fail-open: banner shown instead of blocking).
+ */
+export const hasUserMfaEnrolled = async (userId: string): Promise<boolean> => {
+  try {
+    const verifications = await callManagementApi<MfaVerification[]>(
+      `/api/users/${userId}/mfa-verifications`
+    );
+    return verifications.some((v) => v.type === 'Totp' || v.type === 'WebAuthn');
+  } catch {
+    return false;
+  }
+};
+
 export const verifyUserExists = async (userId: string): Promise<boolean> => {
   try {
     await callManagementApi<LogtoUserResponse>(`/api/users/${userId}`);

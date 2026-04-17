@@ -48,10 +48,22 @@ export async function POST() {
     return NextResponse.json({ role: existingRole.role, repaired: false });
   }
 
+  // Determine the correct role: only the org creator gets 'admin'.
+  // Check if this user created the company for this org; if not, default to 'employee'
+  // to prevent privilege escalation for invited users whose role insert failed.
+  const { data: company } = await adminClient
+    .from('companies')
+    .select('created_by')
+    .eq('organization_id', context.activeOrganizationId)
+    .maybeSingle();
+
+  const isOrgCreator = company?.created_by === context.user.id;
+  const assignedRole = isOrgCreator ? 'admin' : 'employee';
+
   const { error } = await adminClient.from('user_roles').insert({
     user_id: context.user.id,
     organization_id: context.activeOrganizationId,
-    role: 'admin',
+    role: assignedRole,
   });
 
   if (error) {
@@ -59,5 +71,5 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to repair role' }, { status: 500 });
   }
 
-  return NextResponse.json({ role: 'admin', repaired: true });
+  return NextResponse.json({ role: assignedRole, repaired: true });
 }

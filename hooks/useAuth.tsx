@@ -45,6 +45,7 @@ interface AuthContextType {
   organization: Organization | null;
   organizations: Organization[];
   orgId: string | null;
+  mfaEnabled: boolean;
   loading: boolean;
   supabase: SupabaseClient;
   signOut: () => Promise<void>;
@@ -57,6 +58,7 @@ type MeResponse = {
   user: AuthUser | null;
   organizations: Organization[];
   activeOrganizationId: string | null;
+  mfaEnabled: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user: null,
     organizations: [],
     activeOrganizationId: null,
+    mfaEnabled: false,
   });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -107,6 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: null,
         organizations: [],
         activeOrganizationId: null,
+        mfaEnabled: false,
       });
     } finally {
       setAuthLoading(false);
@@ -239,6 +243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         organization: activeOrganization,
         organizations: authState.organizations,
         orgId: activeOrganization?.id || null,
+        mfaEnabled: authState.mfaEnabled,
         loading: authLoading || dataLoading,
         supabase,
         signOut: async () => {

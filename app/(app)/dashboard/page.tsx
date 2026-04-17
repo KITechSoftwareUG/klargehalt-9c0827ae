@@ -10,12 +10,14 @@ import {
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
     LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock,
     ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck,
-    Menu,
+    Menu, ChevronRight,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 import { TrialBanner } from '@/components/TrialBanner';
+import { MfaBanner } from '@/components/MfaBanner';
 import { SubscriptionGate } from '@/components/SubscriptionGate';
 import { useSubscription } from '@/hooks/useSubscription';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
@@ -44,11 +46,11 @@ import LawyerDashboard from '@/components/dashboard/LawyerDashboard';
 type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
 type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing' | 'compliance' | 'job-postings' | 'joint-assessment' | 'hr-requests' | 'rights-notifications' | 'lawyer-reviews';
 
-const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-    admin: { label: 'Administrator', color: 'bg-red-50 border-red-200 text-red-700' },
-    hr_manager: { label: 'HR-Manager', color: 'bg-amber-50 border-amber-200 text-amber-700' },
-    employee: { label: 'Mitarbeiter', color: 'bg-blue-50 border-blue-200 text-blue-700' },
-    lawyer: { label: 'Anwalt', color: 'bg-purple-50 border-purple-200 text-purple-700' },
+const ROLE_LABELS: Record<string, { label: string; color: string; dotColor: string }> = {
+    admin: { label: 'Administrator', color: 'text-slate-300', dotColor: 'bg-emerald-400' },
+    hr_manager: { label: 'HR-Manager', color: 'text-slate-300', dotColor: 'bg-amber-400' },
+    employee: { label: 'Mitarbeiter', color: 'text-slate-300', dotColor: 'bg-blue-400' },
+    lawyer: { label: 'Anwalt', color: 'text-slate-300', dotColor: 'bg-purple-400' },
 };
 
 // Nav items visible per role
@@ -237,33 +239,30 @@ export default function DashboardPage() {
             )}
 
             {/* User Card */}
-            <div className="border-t border-white/10 p-4 m-4 rounded-2xl bg-white/5 backdrop-blur-sm mt-auto">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-semibold shadow-inner">
+            <div className="border-t border-white/10 px-4 py-4 mt-auto">
+                <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary/80 to-purple-500/80 flex items-center justify-center text-white text-sm font-semibold shrink-0">
                         {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="truncate text-sm font-medium text-white">
-                            {user?.firstName || user?.fullName || 'User'}
+                        <p className="truncate text-sm font-medium text-white leading-tight">
+                            {user?.fullName || user?.firstName || user?.email?.split('@')[0]}
                         </p>
-                        <p className="truncate text-xs text-slate-400">
-                            {user?.email}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            {roleBadge && <span className={`h-1.5 w-1.5 rounded-full ${roleBadge.dotColor}`} />}
+                            <span className="text-xs text-slate-400 truncate">
+                                {roleBadge?.label}
+                            </span>
+                        </div>
                     </div>
+                    <button
+                        onClick={handleSignOut}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+                        title="Abmelden"
+                    >
+                        <LogOut className="h-4 w-4" />
+                    </button>
                 </div>
-                {roleBadge && (
-                    <div className={`text-xs font-semibold px-2 py-1 rounded-lg border mb-3 text-center ${roleBadge.color}`}>
-                        {roleBadge.label}
-                    </div>
-                )}
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10 h-9"
-                    onClick={handleSignOut}
-                >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Abmelden
-                </Button>
             </div>
         </div>
     );
@@ -285,6 +284,7 @@ export default function DashboardPage() {
             {/* Main Content */}
             <main className="lg:pl-72 transition-all duration-300">
                 <TrialBanner />
+                <MfaBanner />
                 {isExpired && <TrialExpiredOverlay />}
                 {/* Top Header */}
                 <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-4 sm:px-8 py-4">
@@ -343,10 +343,14 @@ function TrialExpiredOverlay() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tier: 'professional', interval: 'monthly' }),
             });
-            const data = await res.json() as { url?: string };
+            const data = await res.json() as { url?: string; error?: string };
+            if (!res.ok) {
+                toast.error(data.error || 'Checkout konnte nicht gestartet werden');
+                return;
+            }
             if (data.url) window.location.href = data.url;
         } catch {
-            console.error('Failed to start checkout');
+            toast.error('Verbindungsfehler — bitte versuchen Sie es erneut');
         } finally {
             setLoading(false);
         }
@@ -394,9 +398,13 @@ function BillingView() {
         try {
             const res = await fetch('/api/stripe/portal', { method: 'POST' });
             const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || 'Kundenportal konnte nicht geöffnet werden');
+                return;
+            }
             if (data.url) window.location.href = data.url;
         } catch {
-            console.error('Failed to open billing portal');
+            toast.error('Verbindungsfehler — bitte versuchen Sie es erneut');
         } finally {
             setPortalLoading(false);
         }
@@ -410,9 +418,13 @@ function BillingView() {
                 body: JSON.stringify({ tier, interval: billingInterval }),
             });
             const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || 'Checkout konnte nicht gestartet werden');
+                return;
+            }
             if (data.url) window.location.href = data.url;
         } catch {
-            console.error('Failed to start checkout');
+            toast.error('Verbindungsfehler — bitte versuchen Sie es erneut');
         }
     };
 
