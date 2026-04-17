@@ -10,7 +10,7 @@ import {
     BarChart3, Building2, Scale, TrendingUp, MessageSquare,
     LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock,
     ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck,
-    Menu, Headset,
+    Menu, ArrowRight,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -309,15 +309,21 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 text-slate-600 border-slate-200 hover:bg-slate-50"
+                        <button
                             onClick={() => router.push('/book-consulting')}
+                            className="group flex items-center gap-3 pl-1 pr-3 py-1.5 rounded-full border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
                         >
-                            <Headset className="h-4 w-4" />
-                            <span className="hidden sm:inline">Beratung buchen</span>
-                        </Button>
+                            {/* Stacked advisor avatars */}
+                            <div className="flex -space-x-2">
+                                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&h=80&fit=crop&crop=face" alt="" className="h-7 w-7 rounded-full border-2 border-white object-cover" />
+                                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop&crop=face" alt="" className="h-7 w-7 rounded-full border-2 border-white object-cover" />
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face" alt="" className="h-7 w-7 rounded-full border-2 border-white object-cover" />
+                            </div>
+                            <span className="hidden sm:flex items-center gap-1.5 text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
+                                <span className="font-medium">Experten sprechen</span>
+                                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </span>
+                        </button>
                     </div>
                 </header>
 
