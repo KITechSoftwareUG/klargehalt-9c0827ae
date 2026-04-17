@@ -1,27 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { usePayGapStatistics } from '@/hooks/usePayGapStatistics';
 import { useAuth } from '@/hooks/useAuth';
 
 // getSalaryStatistics was removed — this view uses static demo data until Phase 5
-import { 
-  StatusBadge, 
-  InfoBox, 
+import {
+  StatusBadge,
+  InfoBox,
   DataValue,
   ProgressWithContext,
   EmptyState,
   LEGAL_TEXTS
 } from '@/components/ui/status-components';
-import { 
-  Scale, 
-  TrendingUp, 
-  Users, 
+import {
+  Scale,
+  TrendingUp,
+  Users,
   Lock,
   ShieldCheck,
   Info,
-  FileText
+  FileText,
+  Clock,
 } from 'lucide-react';
+import type { SalaryJustification } from '@/lib/types/salary-justification';
+import {
+  SALARY_FACTOR_DISPLAY_LABELS,
+  SALARY_SCORE_LABELS,
+  hasJustification,
+} from '@/lib/types/salary-justification';
 
 /**
  * Mitarbeiter-Ansicht: Anonymisierter Gehaltsvergleich
@@ -220,6 +228,24 @@ export function EmployeeSalaryComparisonView() {
             Gehaltsspanne in vier gleiche Teile. Quartil 2 bedeutet, dass Sie im 
             Bereich zwischen 25% und 50% der Gehaltsspanne liegen.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Salary Justification — placeholder until real data is wired */}
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Scale className="h-4 w-4 text-primary" />
+            Warum dieses Gehalt?
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert className="bg-slate-50 border-dashed">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Die detaillierte Begründung Ihrer Gehaltspositionierung wird aktuell erstellt.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 

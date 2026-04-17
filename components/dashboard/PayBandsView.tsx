@@ -171,7 +171,7 @@ const PayBandsView = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="grid gap-2">
           <Label htmlFor="min_salary">Mindestgehalt *</Label>
           <div className="relative">
@@ -311,6 +311,7 @@ const PayBandsView = () => {
         </div>
       ) : (
         <div className="border border-border rounded-xl overflow-hidden bg-card">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -355,6 +356,7 @@ const PayBandsView = () => {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

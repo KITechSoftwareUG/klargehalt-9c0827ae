@@ -3,9 +3,13 @@ import { useEmployees, Employee, EmployeeFormData } from '@/hooks/useEmployees';
 import { useJobProfiles } from '@/hooks/useJobProfiles';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useJobLevels } from '@/hooks/useJobLevels';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -39,8 +43,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle, Scale, X } from 'lucide-react';
 import { toast } from 'sonner';
+import type { SalaryFactor, SalaryFactorType, SalaryJustification } from '@/lib/types/salary-justification';
+import {
+  SALARY_FACTOR_DISPLAY_LABELS,
+  SALARY_SCORE_LABELS,
+  createDefaultFactor,
+  hasJustification,
+} from '@/lib/types/salary-justification';
 
 const genderLabels: Record<string, string> = {
   male: 'Männlich',
@@ -83,16 +94,30 @@ const defaultFormData: EmployeeFormData = {
   is_active: true,
 };
 
+const FACTOR_TYPE_OPTIONS: { value: SalaryFactorType; label: string }[] = [
+  { value: 'experience', label: SALARY_FACTOR_DISPLAY_LABELS.experience },
+  { value: 'education', label: SALARY_FACTOR_DISPLAY_LABELS.education },
+  { value: 'performance', label: SALARY_FACTOR_DISPLAY_LABELS.performance },
+  { value: 'market_rate', label: SALARY_FACTOR_DISPLAY_LABELS.market_rate },
+  { value: 'seniority', label: SALARY_FACTOR_DISPLAY_LABELS.seniority },
+  { value: 'other', label: SALARY_FACTOR_DISPLAY_LABELS.other },
+];
+
 const EmployeesView = () => {
   const { employees, loading, createEmployee, updateEmployee, deleteEmployee } = useEmployees();
   const { jobProfiles } = useJobProfiles();
   const { departments } = useDepartments();
   const { jobLevels } = useJobLevels();
+  const { user } = useAuth();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<EmployeeFormData>({ ...defaultFormData });
+
+  // Salary justification state
+  const [justificationFactors, setJustificationFactors] = useState<SalaryFactor[]>([]);
+  const [justificationSummary, setJustificationSummary] = useState('');
 
   // Invite state
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
@@ -103,6 +128,8 @@ const EmployeesView = () => {
 
   const resetForm = () => {
     setFormData({ ...defaultFormData });
+    setJustificationFactors([]);
+    setJustificationSummary('');
   };
 
   const handleInvite = async (employee: Employee) => {
@@ -234,6 +261,15 @@ const EmployeesView = () => {
       location: employee.location || '',
       is_active: employee.is_active,
     });
+    // Load existing justification
+    const justification = employee.salary_justification;
+    if (justification && hasJustification(justification)) {
+      setJustificationFactors([...justification.factors]);
+      setJustificationSummary(justification.summary || '');
+    } else {
+      setJustificationFactors([]);
+      setJustificationSummary('');
+    }
     setIsEditOpen(true);
   };
 
@@ -243,6 +279,18 @@ const EmployeesView = () => {
     if (!submitData.job_profile_id) delete submitData.job_profile_id;
     if (!submitData.job_level_id) delete submitData.job_level_id;
     if (!submitData.department_id) delete submitData.department_id;
+
+    // Attach salary justification
+    const justification: SalaryJustification = {
+      factors: justificationFactors,
+      summary: justificationSummary,
+      last_reviewed_at: new Date().toISOString(),
+      reviewed_by: user?.id ?? undefined,
+    };
+    submitData.salary_justification = justification;
+    submitData.salary_justification_updated_at = new Date().toISOString();
+    submitData.salary_justification_updated_by = user?.id ?? undefined;
+
     await updateEmployee(selectedEmployee.id, submitData);
     setIsEditOpen(false);
     setSelectedEmployee(null);
@@ -475,6 +523,155 @@ const EmployeesView = () => {
               placeholder="5.000"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Salary Justification (Begründung) */}
+      <div className="space-y-4 border-t pt-4">
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-semibold flex items-center gap-2">
+            <Scale className="h-4 w-4" />
+            Gehaltsbegründung
+          </Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setJustificationFactors([...justificationFactors, createDefaultFactor()])}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Faktor hinzufügen
+          </Button>
+        </div>
+
+        {justificationFactors.length === 0 && (
+          <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Ohne Begründung ist die Gehaltspositionierung nicht Art. 16 konform.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {justificationFactors.map((factor, index) => {
+          const totalWeight = justificationFactors.reduce((sum, f) => sum + f.weight, 0);
+          return (
+            <div key={index} className="rounded-lg border p-3 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Faktor {index + 1}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    const updated = justificationFactors.filter((_, i) => i !== index);
+                    setJustificationFactors(updated);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1">
+                  <Label className="text-xs">Typ</Label>
+                  <Select
+                    value={factor.type}
+                    onValueChange={(value: SalaryFactorType) => {
+                      const updated = justificationFactors.map((f, i) =>
+                        i === index ? { ...f, type: value } : f
+                      );
+                      setJustificationFactors(updated);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FACTOR_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-1">
+                  <Label className="text-xs">
+                    Gewichtung: {factor.weight.toFixed(2)}
+                    {totalWeight > 0 && (
+                      <span className={`ml-1 ${Math.abs(totalWeight - 1) > 0.05 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                        (Summe: {totalWeight.toFixed(2)})
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    className="h-8 text-sm"
+                    value={factor.weight}
+                    onChange={(e) => {
+                      const val = Math.min(1, Math.max(0, parseFloat(e.target.value) || 0));
+                      const updated = justificationFactors.map((f, i) =>
+                        i === index ? { ...f, weight: val } : f
+                      );
+                      setJustificationFactors(updated);
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-1">
+                <Label className="text-xs">
+                  Bewertung: {factor.score} / 5 — {SALARY_SCORE_LABELS[factor.score] || ''}
+                </Label>
+                <Slider
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={[factor.score]}
+                  onValueChange={(value) => {
+                    const updated = justificationFactors.map((f, i) =>
+                      i === index ? { ...f, score: value[0] } : f
+                    );
+                    setJustificationFactors(updated);
+                  }}
+                  className="py-2"
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label className="text-xs">Anmerkung</Label>
+                <Input
+                  className="h-8 text-sm"
+                  placeholder="z.B. 8 Jahre Berufserfahrung im Fachbereich"
+                  value={factor.note}
+                  onChange={(e) => {
+                    const updated = justificationFactors.map((f, i) =>
+                      i === index ? { ...f, note: e.target.value } : f
+                    );
+                    setJustificationFactors(updated);
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="grid gap-1">
+          <Label className="text-xs">Zusammenfassung</Label>
+          <Textarea
+            placeholder="Kurze Zusammenfassung der Gehaltspositionierung..."
+            value={justificationSummary}
+            onChange={(e) => setJustificationSummary(e.target.value)}
+            rows={2}
+          />
         </div>
       </div>
     </div>

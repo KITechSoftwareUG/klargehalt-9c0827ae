@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { usePayGapStatistics, DepartmentStatistic, GenderPayGap } from '@/hooks/usePayGapStatistics';
 import { usePermissions } from '@/hooks/usePermissions';
+import { LawyerReviewBadge } from '@/components/dashboard/LawyerReviewBadge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 
@@ -134,6 +135,7 @@ export function PayGapReportView() {
           <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
             <FileBarChart className="h-6 w-6 text-primary" />
             Pay Equity Report
+            <LawyerReviewBadge scopeType="pay_gap_report" />
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Aggregierte Gehaltsanalyse gemäß EU-Richtlinie 2023/970

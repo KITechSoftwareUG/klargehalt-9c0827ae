@@ -69,10 +69,29 @@ export async function GET(request: NextRequest) {
   const maleCount = (employees ?? []).filter((e) => e.gender === 'male').length;
   const femaleCount = (employees ?? []).filter((e) => e.gender === 'female').length;
 
-  // Find org-wide gap
-  const orgSnap = (snapshots ?? []).find((s) => s.scope === 'organization' && !s.is_suppressed);
-  const overallGap = orgSnap?.mean_gap_base_pct ?? null;
-  const gapStatus = orgSnap?.gap_status ?? null;
+  // Find company-wide gap (canonical scope is 'company', not 'organization')
+  const companySnap = (snapshots ?? []).find((s) => s.scope === 'company' && !s.is_suppressed);
+  const overallGap = companySnap?.mean_gap_base_pct ?? null;
+  const gapStatus = companySnap?.gap_status ?? null;
+
+  // Art. 9 Abs. 1b/d — Variable pay gap data
+  const variableGapPct = companySnap?.mean_gap_variable_pct != null
+    ? Number(companySnap.mean_gap_variable_pct)
+    : null;
+  const pctMaleVariable = companySnap?.pct_male_receiving_variable != null
+    ? Number(companySnap.pct_male_receiving_variable)
+    : null;
+  const pctFemaleVariable = companySnap?.pct_female_receiving_variable != null
+    ? Number(companySnap.pct_female_receiving_variable)
+    : null;
+
+  // Art. 9 Abs. 1e — Quartile distribution
+  const quartiles: { q: string; malePct: number | null; femalePct: number | null }[] = [
+    { q: 'Q1 (unteres Viertel)', malePct: companySnap?.q1_male_pct != null ? Number(companySnap.q1_male_pct) : null, femalePct: companySnap?.q1_female_pct != null ? Number(companySnap.q1_female_pct) : null },
+    { q: 'Q2', malePct: companySnap?.q2_male_pct != null ? Number(companySnap.q2_male_pct) : null, femalePct: companySnap?.q2_female_pct != null ? Number(companySnap.q2_female_pct) : null },
+    { q: 'Q3', malePct: companySnap?.q3_male_pct != null ? Number(companySnap.q3_male_pct) : null, femalePct: companySnap?.q3_female_pct != null ? Number(companySnap.q3_female_pct) : null },
+    { q: 'Q4 (oberes Viertel)', malePct: companySnap?.q4_male_pct != null ? Number(companySnap.q4_male_pct) : null, femalePct: companySnap?.q4_female_pct != null ? Number(companySnap.q4_female_pct) : null },
+  ];
 
   const reportDate = new Date().toLocaleDateString('de-DE', {
     year: 'numeric', month: 'long', day: 'numeric',
@@ -80,6 +99,8 @@ export async function GET(request: NextRequest) {
   const reportYear = new Date().getFullYear();
 
   const companyName = company?.name ?? 'Ihr Unternehmen';
+
+  const filteredSnapshots = (snapshots ?? []).filter((s) => !s.is_suppressed).slice(0, 20);
 
   const html = generateReportHtml({
     companyName,
@@ -90,8 +111,12 @@ export async function GET(request: NextRequest) {
     femaleCount,
     overallGap,
     gapStatus,
+    variableGapPct,
+    pctMaleVariable,
+    pctFemaleVariable,
+    quartiles,
     deptStats: Object.values(deptAgg),
-    snapshots: (snapshots ?? []).filter((s) => !s.is_suppressed).slice(0, 20),
+    snapshots: filteredSnapshots,
   });
 
   let browser;
@@ -107,6 +132,23 @@ export async function GET(request: NextRequest) {
       format: 'A4',
       printBackground: true,
       margin: { top: '20mm', bottom: '20mm', left: '18mm', right: '18mm' },
+    });
+
+    // Track report generation in compliance_reports
+    const userId = context.claims?.sub ?? 'unknown';
+    await supabase.from('compliance_reports').insert({
+      organization_id: orgId,
+      report_year: reportYear,
+      reporting_period: 'annual',
+      status: 'draft',
+      generated_by: userId,
+      report_data: {
+        snapshot_count: filteredSnapshots.length,
+        total_employees: totalEmployees,
+        overall_gap: overallGap,
+        variable_gap_pct: variableGapPct,
+        quartiles,
+      },
     });
 
     return new NextResponse(pdfBuffer, {
@@ -132,6 +174,10 @@ interface ReportParams {
   femaleCount: number;
   overallGap: number | null;
   gapStatus: string | null;
+  variableGapPct: number | null;
+  pctMaleVariable: number | null;
+  pctFemaleVariable: number | null;
+  quartiles: { q: string; malePct: number | null; femalePct: number | null }[];
   deptStats: { name: string; male: number; female: number; diverse: number; total: number }[];
   snapshots: Array<Record<string, unknown>>;
 }
@@ -146,6 +192,133 @@ function gapColor(gap: number | null): string {
   if (Math.abs(gap) <= 5) return '#16a34a';
   if (Math.abs(gap) <= 10) return '#d97706';
   return '#dc2626';
+}
+
+function quartileColor(pct: number | null): string {
+  if (pct === null) return '#6b7280';
+  if (pct >= 40 && pct <= 60) return '#16a34a'; // balanced
+  if (pct >= 30 && pct <= 70) return '#d97706'; // skewed
+  return '#dc2626'; // very skewed
+}
+
+function generateVariablePaySection(p: ReportParams): string {
+  const hasData = p.variableGapPct !== null || p.pctMaleVariable !== null || p.pctFemaleVariable !== null;
+  if (!hasData) {
+    return `
+<div class="section">
+  <div class="section-title">4. Variable Vergütung — Gender Pay Gap (Art. 9 Abs. 1b/d)</div>
+  <p style="font-size:10pt; color:#94a3b8;">Keine Daten zur variablen Vergütung verfügbar.</p>
+</div>`;
+  }
+
+  const variableGapDisplay = p.variableGapPct !== null ? `${p.variableGapPct.toFixed(1)} %` : 'Keine Daten';
+  const variableGapCol = gapColor(p.variableGapPct);
+  const maleVarDisplay = p.pctMaleVariable !== null ? `${p.pctMaleVariable.toFixed(1)} %` : '—';
+  const femaleVarDisplay = p.pctFemaleVariable !== null ? `${p.pctFemaleVariable.toFixed(1)} %` : '—';
+
+  // Build variable pay rows from snapshots
+  const variableSnapRows = p.snapshots
+    .filter((s) => s.mean_gap_variable_pct !== null && s.mean_gap_variable_pct !== undefined)
+    .map(
+      (s) => `
+      <tr>
+        <td>${String(s.scope_label ?? s.scope ?? '—')}</td>
+        <td style="text-align:center">${String(s.male_count ?? '—')}</td>
+        <td style="text-align:center">${String(s.female_count ?? '—')}</td>
+        <td style="text-align:center; color:${gapColor(s.mean_gap_variable_pct as number | null)}">${Number(s.mean_gap_variable_pct).toFixed(1)} %</td>
+        <td style="text-align:center">${formatEur(s.male_mean_variable)} / ${formatEur(s.female_mean_variable)}</td>
+      </tr>`
+    )
+    .join('');
+
+  return `
+<div class="section">
+  <div class="section-title">4. Variable Vergütung — Gender Pay Gap (Art. 9 Abs. 1b/d)</div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="kpi">
+      <div class="kpi-label">Variable Pay Gap (Mean)</div>
+      <div class="kpi-value" style="color:${variableGapCol}">${variableGapDisplay}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Anteil Männer mit variabler Vergütung</div>
+      <div class="kpi-value" style="color:#3b82f6">${maleVarDisplay}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Anteil Frauen mit variabler Vergütung</div>
+      <div class="kpi-value" style="color:#ec4899">${femaleVarDisplay}</div>
+    </div>
+  </div>
+  ${variableSnapRows ? `
+  <table style="margin-top:16px;">
+    <thead>
+      <tr>
+        <th>Kategorie</th>
+        <th style="text-align:center">Männlich (n)</th>
+        <th style="text-align:center">Weiblich (n)</th>
+        <th style="text-align:center">Variable Pay Gap</th>
+        <th style="text-align:center">Ø Variable ♂ / ♀</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${variableSnapRows}
+    </tbody>
+  </table>
+  <p style="font-size:8pt;color:#94a3b8;margin-top:8px">
+    Gap = (Ø männlich − Ø weiblich) / Ø männlich × 100. Bezogen auf variable Vergütungsbestandteile.
+  </p>` : ''}
+</div>`;
+}
+
+function generateQuartileSection(p: ReportParams): string {
+  const hasQuartileData = p.quartiles.some((q) => q.malePct !== null || q.femalePct !== null);
+  if (!hasQuartileData) {
+    return `
+<div class="section page-break">
+  <div class="section-title">5. Quartilverteilung der Vergütung (Art. 9 Abs. 1e)</div>
+  <p style="font-size:10pt; color:#94a3b8;">Keine Quartildaten verfügbar.</p>
+</div>`;
+  }
+
+  const quartileRows = p.quartiles
+    .map((q) => {
+      const maleDisplay = q.malePct !== null ? `${q.malePct.toFixed(1)} %` : '—';
+      const femaleDisplay = q.femalePct !== null ? `${q.femalePct.toFixed(1)} %` : '—';
+      const maleCol = quartileColor(q.malePct);
+      const femaleCol = quartileColor(q.femalePct);
+      return `
+      <tr>
+        <td>${q.q}</td>
+        <td style="text-align:center; color:${maleCol}; font-weight:600">${maleDisplay}</td>
+        <td style="text-align:center; color:${femaleCol}; font-weight:600">${femaleDisplay}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `
+<div class="section page-break">
+  <div class="section-title">5. Quartilverteilung der Vergütung (Art. 9 Abs. 1e)</div>
+  <p style="font-size:10pt; color:#374151; margin-bottom:12px;">
+    Verteilung der Beschäftigten nach Geschlecht in den vier Entgeltquartilen.
+    Ein ausgewogenes Verhältnis liegt bei 40–60 % vor.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Quartil</th>
+        <th style="text-align:center">Männeranteil</th>
+        <th style="text-align:center">Frauenanteil</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${quartileRows}
+    </tbody>
+  </table>
+  <p style="font-size:8pt;color:#94a3b8;margin-top:8px">
+    <span style="color:#16a34a">■</span> Ausgewogen (40–60 %)&nbsp;&nbsp;
+    <span style="color:#d97706">■</span> Leichte Abweichung (30–70 %)&nbsp;&nbsp;
+    <span style="color:#dc2626">■</span> Starke Abweichung (&lt;30 % oder &gt;70 %)
+  </p>
+</div>`;
 }
 
 function generateReportHtml(p: ReportParams): string {
@@ -313,8 +486,12 @@ ${p.snapshots.length > 0 ? `
 </div>
 ` : ''}
 
+${generateVariablePaySection(p)}
+
+${generateQuartileSection(p)}
+
 <div class="section">
-  <div class="section-title">4. Methodik &amp; Rechtliche Grundlagen</div>
+  <div class="section-title">6. Methodik &amp; Rechtliche Grundlagen</div>
   <p style="font-size:10pt; color:#374151; line-height:1.7;">
     Die Berechnung des Gender Pay Gap erfolgt auf Basis des arithmetischen Mittels und des Medians
     der Grundvergütung (base_salary), aufgeschlüsselt nach Geschlecht pro Job-Profil und Abteilung.

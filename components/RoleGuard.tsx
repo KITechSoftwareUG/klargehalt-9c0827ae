@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 
-type AppRole = 'admin' | 'hr_manager' | 'employee';
+type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
 
 interface RoleGuardProps {
     /** Content is shown only if user has at least one of these roles */

@@ -11,7 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Info } from 'lucide-react';
+import { Info, Scale, Clock } from 'lucide-react';
+import type { SalaryJustification } from '@/lib/types/salary-justification';
+import {
+    SALARY_FACTOR_DISPLAY_LABELS,
+    SALARY_SCORE_LABELS,
+    hasJustification,
+} from '@/lib/types/salary-justification';
 
 interface EmployeePayInfo {
     base_salary: number;
@@ -21,6 +27,8 @@ interface EmployeePayInfo {
     job_profile_title: string | null;
     job_level_name: string | null;
     department_name: string | null;
+    salary_justification: SalaryJustification | null;
+    salary_justification_updated_at: string | null;
 }
 
 export default function MySalaryComparisonView() {
@@ -39,7 +47,7 @@ export default function MySalaryComparisonView() {
                 // Get employee record for current user
                 const { data: employee, error: empErr } = await supabase
                     .from('employees')
-                    .select('base_salary, variable_pay, job_profile_id, job_level_id, department_id, pay_band_id')
+                    .select('base_salary, variable_pay, job_profile_id, job_level_id, department_id, pay_band_id, salary_justification, salary_justification_updated_at')
                     .eq('user_id', user.id)
                     .eq('organization_id', orgId)
                     .maybeSingle();
@@ -57,6 +65,8 @@ export default function MySalaryComparisonView() {
                     job_profile_title: null,
                     job_level_name: null,
                     department_name: null,
+                    salary_justification: employee.salary_justification as SalaryJustification | null,
+                    salary_justification_updated_at: employee.salary_justification_updated_at,
                 };
 
                 // Fetch pay band if assigned
@@ -221,7 +231,101 @@ export default function MySalaryComparisonView() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Salary Justification */}
+            <SalaryJustificationSection
+                justification={payInfo.salary_justification}
+                updatedAt={payInfo.salary_justification_updated_at}
+            />
         </div>
+    );
+}
+
+interface SalaryJustificationSectionProps {
+    justification: SalaryJustification | null;
+    updatedAt: string | null;
+}
+
+function SalaryJustificationSection({ justification, updatedAt }: SalaryJustificationSectionProps) {
+    const hasData = hasJustification(justification);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-sm font-semibold uppercase text-slate-500 flex items-center gap-2">
+                    <Scale className="h-4 w-4" />
+                    Warum dieses Gehalt?
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {!hasData ? (
+                    <Alert className="bg-slate-50 border-dashed">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                            Die detaillierte Begründung Ihrer Gehaltspositionierung wird aktuell erstellt.
+                        </AlertDescription>
+                    </Alert>
+                ) : (
+                    <>
+                        {justification!.factors.map((factor, index) => (
+                            <div
+                                key={index}
+                                className="rounded-lg border p-4 space-y-2 bg-muted/30"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold">
+                                        {SALARY_FACTOR_DISPLAY_LABELS[factor.type] || factor.type}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {SALARY_SCORE_LABELS[factor.score] || `${factor.score}/5`}
+                                    </span>
+                                </div>
+                                {/* Score bar */}
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((level) => (
+                                        <div
+                                            key={level}
+                                            className={`h-2 flex-1 rounded-full transition-colors ${
+                                                level <= factor.score
+                                                    ? 'bg-primary'
+                                                    : 'bg-slate-200'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                                {factor.note && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {factor.note}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+
+                        {justification!.summary && (
+                            <div className="pt-2 border-t">
+                                <p className="text-sm text-muted-foreground italic">
+                                    {justification!.summary}
+                                </p>
+                            </div>
+                        )}
+
+                        {updatedAt && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                    Zuletzt geprüft am{' '}
+                                    {new Intl.DateTimeFormat('de-DE', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                    }).format(new Date(updatedAt))}
+                                </span>
+                            </div>
+                        )}
+                    </>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 

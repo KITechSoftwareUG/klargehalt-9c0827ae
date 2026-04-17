@@ -60,11 +60,15 @@ export const PERMISSIONS = {
   REQUESTS_VIEW_OWN: 'requests.view_own',
   REQUESTS_VIEW_ALL: 'requests.view_all',
   REQUESTS_PROCESS: 'requests.process',
+
+  // Lawyer Reviews
+  LAWYER_REVIEWS_VIEW: 'lawyer_reviews.view',
+  LAWYER_REVIEWS_CREATE: 'lawyer_reviews.create',
 } as const;
 
 export type PermissionCode = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
-type AppRole = 'admin' | 'hr_manager' | 'employee';
+type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
 
 // Static role → permission mapping. RLS is the real security boundary;
 // this is purely for UI gating.
@@ -90,6 +94,19 @@ const ROLE_PERMISSION_MAP: Record<AppRole, PermissionCode[]> = {
     'salaries.view_aggregated',
     'requests.create',
     'requests.view_own',
+  ],
+  lawyer: [
+    'company.view',
+    'job_profiles.view',
+    'pay_bands.view',
+    'employees.view',
+    'salaries.view',
+    'salaries.view_aggregated',
+    'audit.view',
+    'reports.view',
+    'reports.export',
+    'lawyer_reviews.view',
+    'lawyer_reviews.create',
   ],
 };
 
@@ -149,6 +166,7 @@ export const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrator',
   hr_manager: 'HR-Manager',
   employee: 'Mitarbeiter',
+  lawyer: 'Anwalt',
 };
 
 /**
@@ -158,6 +176,7 @@ export const ROLE_DESCRIPTIONS: Record<string, string> = {
   admin: 'Vollzugriff auf alle Funktionen und Einstellungen',
   hr_manager: 'Verwaltung von Mitarbeitern, Gehältern und Job-Profilen',
   employee: 'Einsicht in eigene Daten und Auskunftsanfragen',
+  lawyer: 'Rechtliche Bewertungen und Compliance-Prüfungen',
 };
 
 /**
@@ -167,4 +186,5 @@ export const ROLE_COLORS: Record<string, string> = {
   admin: 'bg-status-action/10 text-status-action',
   hr_manager: 'bg-status-warning/10 text-status-warning',
   employee: 'bg-status-ok/10 text-status-ok',
+  lawyer: 'bg-purple-100 text-purple-700',
 };

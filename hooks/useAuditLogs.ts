@@ -127,11 +127,29 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     }
   }, [isLoaded, user, orgId, filters?.action, filters?.entity_type, filters?.user_id, filters?.dateFrom, filters?.dateTo]);
 
+  const verifyChain = async (): Promise<boolean | null> => {
+    if (!isLoaded || !user || !orgId) return null;
+
+    try {
+      const { data, error } = await supabase.rpc('verify_audit_chain', {
+        _org_id: orgId,
+      });
+
+      if (error) throw error;
+      return data as boolean;
+    } catch (error: unknown) {
+      console.error('Error verifying audit chain:', error);
+      toast.error('Fehler bei der Integritätsprüfung');
+      return null;
+    }
+  };
+
   return {
     auditLogs,
     loading,
     totalCount,
     fetchAuditLogs,
     exportAuditLogs,
+    verifyChain,
   };
 }

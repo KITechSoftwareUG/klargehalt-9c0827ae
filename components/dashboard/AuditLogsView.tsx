@@ -46,8 +46,13 @@ import {
   Shield,
   RefreshCw,
   FileJson,
-  FileSpreadsheet
+  FileSpreadsheet,
+  CheckCircle2,
+  XCircle,
+  Link2,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const actionLabels: Record<string, string> = {
   create: 'Erstellt',
@@ -107,7 +112,9 @@ const AuditLogsView = () => {
   const [stats, setStats] = useState<AuditStatistics | null>(null);
   const [activeTab, setActiveTab] = useState('logs');
 
-  const { auditLogs, loading, totalCount } = useAuditLogs(
+  const [chainStatus, setChainStatus] = useState<'idle' | 'checking' | 'pass' | 'fail'>('idle');
+
+  const { auditLogs, loading, totalCount, verifyChain } = useAuditLogs(
     Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== ''))
   );
 
@@ -135,6 +142,22 @@ const AuditLogsView = () => {
     const result = await createExport('full', 'csv');
     if (result) {
       downloadExport(result, 'csv');
+    }
+  };
+
+  const handleVerifyChain = async () => {
+    setChainStatus('checking');
+    const result = await verifyChain();
+    if (result === null) {
+      setChainStatus('idle');
+      return;
+    }
+    if (result) {
+      setChainStatus('pass');
+      toast.success('Hash-Kette intakt — keine Manipulationen erkannt.');
+    } else {
+      setChainStatus('fail');
+      toast.error('Hash-Kette unterbrochen — mögliche Manipulation erkannt!');
     }
   };
 
@@ -169,6 +192,23 @@ const AuditLogsView = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={chainStatus === 'pass' ? 'outline' : chainStatus === 'fail' ? 'destructive' : 'outline'}
+            size="sm"
+            onClick={handleVerifyChain}
+            disabled={chainStatus === 'checking'}
+          >
+            {chainStatus === 'checking' ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : chainStatus === 'pass' ? (
+              <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+            ) : chainStatus === 'fail' ? (
+              <XCircle className="w-4 h-4 mr-2" />
+            ) : (
+              <Link2 className="w-4 h-4 mr-2" />
+            )}
+            {chainStatus === 'checking' ? 'Prüfe...' : chainStatus === 'pass' ? 'Kette intakt' : chainStatus === 'fail' ? 'Kette unterbrochen' : 'Integritätsprüfung'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExportJson} disabled={systemLoading}>
             <FileJson className="w-4 h-4 mr-2" />
             JSON

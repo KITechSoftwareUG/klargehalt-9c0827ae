@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
+export type EvaluationMethod = 'hay' | 'korn_ferry' | 'mercer' | 'willis_towers_watson' | 'internal' | 'other';
+
 export interface JobProfile {
   id: string;
   organization_id: string;
@@ -12,6 +14,12 @@ export interface JobProfile {
   effort_score: number | null;
   responsibility_score: number | null;
   working_conditions_score: number | null;
+  evaluation_method: EvaluationMethod | null;
+  evaluation_method_notes: string | null;
+  evaluated_by: string | null;
+  evaluated_by_name: string | null;
+  last_evaluated_at: string | null;
+  composite_score: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -40,6 +48,11 @@ export interface JobProfileFormData {
   effort_score?: number | null;
   responsibility_score?: number | null;
   working_conditions_score?: number | null;
+  evaluation_method?: EvaluationMethod | null;
+  evaluation_method_notes?: string | null;
+  evaluated_by?: string | null;
+  evaluated_by_name?: string | null;
+  last_evaluated_at?: string | null;
   is_active: boolean;
 }
 

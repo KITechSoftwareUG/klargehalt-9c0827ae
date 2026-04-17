@@ -35,6 +35,7 @@ import {
   Circle,
   ChevronDown,
 } from 'lucide-react';
+import { useLawyerReviews, VERDICT_LABELS, VERDICT_COLORS, SCOPE_TYPE_LABELS } from '@/hooks/useLawyerReviews';
 
 interface DashboardOverviewProps {
   onNavigate: (view: string) => void;
@@ -47,6 +48,7 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
   const { employees, loading: employeesLoading } = useEmployees();
   const { hasPermission } = usePermissions();
   const { calculateGenderPayGap } = usePayGapStatistics();
+  const { reviews: lawyerReviews, loading: lawyerReviewsLoading } = useLawyerReviews();
   const [hasSnapshots, setHasSnapshots] = React.useState<boolean | null>(null);
   const [hasHRManager, setHasHRManager] = React.useState<boolean | null>(null);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -231,6 +233,48 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
         </Card>
       )}
 
+
+      {/* Anwaltliche Bewertungen — für Admin/HR */}
+      {(role === 'admin' || role === 'hr_manager') && lawyerReviews.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Scale className="h-5 w-5 text-purple-600" />
+              Anwaltliche Bewertungen
+            </CardTitle>
+            <CardDescription>
+              {lawyerReviews.length} rechtliche Bewertung{lawyerReviews.length !== 1 ? 'en' : ''} vorhanden
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {lawyerReviews.slice(0, 3).map((review) => (
+                <div
+                  key={review.id}
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-muted/40"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${VERDICT_COLORS[review.verdict]}`}>
+                      {VERDICT_LABELS[review.verdict]}
+                    </span>
+                    <span className="text-sm font-medium truncate">
+                      {SCOPE_TYPE_LABELS[review.scope_type]}
+                    </span>
+                    {review.scope_label && (
+                      <span className="text-sm text-muted-foreground truncate">
+                        — {review.scope_label}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(review.signed_at).toLocaleDateString('de-DE')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* EU-Hinweis für Mitarbeiter - beruhigend, nicht bedrohlich */}
       {role === 'employee' && (

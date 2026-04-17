@@ -9,8 +9,10 @@ import {
     Shield, Users, Settings, LogOut, CreditCard,
     BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
     LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock,
-    ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck
+    ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck,
+    Menu,
 } from 'lucide-react';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 
 import { TrialBanner } from '@/components/TrialBanner';
@@ -35,16 +37,18 @@ import JobPostingsView from '@/components/dashboard/JobPostingsView';
 import JointAssessmentView from '@/components/dashboard/JointAssessmentView';
 import HRInfoRequestsPanel from '@/components/dashboard/HRInfoRequestsPanel';
 import RightsNotificationsPanel from '@/components/dashboard/RightsNotificationsPanel';
+import LawyerDashboard from '@/components/dashboard/LawyerDashboard';
 
 // ── Role definitions ──────────────────────────────────────────────────────────
 
-type AppRole = 'admin' | 'hr_manager' | 'employee';
-type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing' | 'compliance' | 'job-postings' | 'joint-assessment' | 'hr-requests' | 'rights-notifications';
+type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
+type HRView = 'overview' | 'employees' | 'job-profiles' | 'pay-bands' | 'reports' | 'settings' | 'audit' | 'requests' | 'pay-equity-hr' | 'pay-equity-mgmt' | 'my-salary' | 'departments' | 'job-levels' | 'billing' | 'compliance' | 'job-postings' | 'joint-assessment' | 'hr-requests' | 'rights-notifications' | 'lawyer-reviews';
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
     admin: { label: 'Administrator', color: 'bg-red-50 border-red-200 text-red-700' },
     hr_manager: { label: 'HR-Manager', color: 'bg-amber-50 border-amber-200 text-amber-700' },
     employee: { label: 'Mitarbeiter', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+    lawyer: { label: 'Anwalt', color: 'bg-purple-50 border-purple-200 text-purple-700' },
 };
 
 // Nav items visible per role
@@ -74,13 +78,22 @@ const HR_ADMIN_NAV = [
     { label: 'Einstellungen', icon: Settings, view: 'settings' as HRView, group: 'Admin', adminOnly: true },
 ] as const;
 
+// Lawyer-specific navigation
+const LAWYER_NAV = [
+    { label: 'Bewertungen', icon: Scale, view: 'lawyer-reviews' as HRView, group: 'Anwalt' },
+    { label: 'Pay-Gap-Berichte', icon: TrendingUp, view: 'reports' as HRView, group: 'Analyse' },
+    { label: 'Gem. Bewertungen', icon: Scale, view: 'joint-assessment' as HRView, group: 'Analyse' },
+    { label: 'Audit-Log', icon: Shield, view: 'audit' as HRView, group: 'Compliance' },
+] as const;
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
     const router = useRouter();
     const { user, role, loading, isLoaded, orgId, signOut } = useAuth();
     const { isExpired } = useSubscription();
-    const [activeView, setActiveView] = useState<HRView>('compliance');
+    const [activeView, setActiveView] = useState<HRView>(role === 'lawyer' ? 'lawyer-reviews' : 'compliance');
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     const handleSignOut = async () => {
         await signOut();
@@ -109,15 +122,19 @@ export default function DashboardPage() {
     // Role badge info
     const roleBadge = ROLE_LABELS[role || 'employee'];
 
-    // Nav items: filter admin-only for hr_manager
-    const visibleNavItems = HR_ADMIN_NAV.filter(item => {
-        if ('adminOnly' in item && item.adminOnly && role !== 'admin') return false;
-        return true;
-    });
+    // Nav items: lawyer gets own nav, filter admin-only for hr_manager
+    const visibleNavItems = role === 'lawyer'
+        ? [...LAWYER_NAV]
+        : HR_ADMIN_NAV.filter(item => {
+            if ('adminOnly' in item && item.adminOnly && role !== 'admin') return false;
+            return true;
+        });
 
     // Group nav items by group label
-    const navGroups = visibleNavItems.reduce<Record<string, typeof visibleNavItems>>((acc, item) => {
-        const g = 'group' in item ? item.group : 'Menu';
+    type NavItem = { label: string; icon: typeof Shield; view: HRView; group: string; adminOnly?: boolean };
+    const navItems: NavItem[] = visibleNavItems as unknown as NavItem[];
+    const navGroups = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
+        const g = item.group ?? 'Menu';
         if (!acc[g]) acc[g] = [];
         acc[g] = [...acc[g], item];
         return acc;
@@ -127,6 +144,18 @@ export default function DashboardPage() {
         // Employees get their own restricted view — regardless of what URL they hit
         if (role === 'employee') {
             return <EmployeeDashboard />;
+        }
+
+        // Lawyers get a dedicated view with limited navigation
+        if (role === 'lawyer') {
+            switch (activeView) {
+                case 'lawyer-reviews': return <LawyerDashboard />;
+                case 'reports': return <PayGapReportView />;
+                case 'joint-assessment': return <JointAssessmentView />;
+                case 'audit': return <AuditLogsView />;
+                case 'overview': return <DashboardOverview onNavigate={(v) => setActiveView(v as HRView)} />;
+                default: return <LawyerDashboard />;
+            }
         }
 
         // HR/Admin views
@@ -151,6 +180,7 @@ export default function DashboardPage() {
             case 'pay-bands': return <PayBandsView />;
             case 'requests': return <InfoRequestsView />;
             // ── Admin ─────────────────────────────────────────────────────────
+            case 'lawyer-reviews': return <LawyerDashboard />;
             case 'audit': return role === 'admin' ? <AuditLogsView /> : <AccessDenied />;
             case 'billing': return role === 'admin' ? <BillingView /> : <AccessDenied />;
             case 'settings': return role === 'admin' ? <CompanySetup onComplete={() => setActiveView('overview')} /> : <AccessDenied />;
@@ -158,113 +188,134 @@ export default function DashboardPage() {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-slate-50/50">
-            {/* Sidebar */}
-            <aside className="fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto">
-                <div className="flex h-full flex-col">
-                    {/* Logo */}
-                    <div className="flex items-center gap-3 px-8 py-8">
-                        <Image src="/brandname.svg" alt="klargehalt" width={120} height={18} className="h-5 w-auto invert" />
-                        <span className="text-2xl font-bold tracking-tight lowercase">klargehalt</span>
-                    </div>
+    // Sidebar nav content — shared between desktop aside and mobile Sheet
+    const SidebarNav = () => (
+        <div className="flex h-full flex-col">
+            {/* Logo */}
+            <div className="flex items-center gap-3 px-6 py-7">
+                <Image src="/brandname.svg" alt="klargehalt" width={120} height={18} className="h-5 w-auto invert" />
+                <span className="text-2xl font-bold tracking-tight lowercase">klargehalt</span>
+            </div>
 
-                    {/* Navigation — hidden for employees (they see their own sub-nav inside EmployeeDashboard) */}
-                    {role !== 'employee' && (
-                        <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-                            {Object.entries(navGroups).map(([groupName, items]) => (
-                                <div key={groupName}>
-                                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                        {groupName}
-                                    </p>
-                                    <div className="space-y-0.5">
-                                        {items.map((item) => (
-                                            <button
-                                                key={item.view}
-                                                onClick={() => setActiveView(item.view)}
-                                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${activeView === item.view
-                                                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                                    }`}
-                                            >
-                                                <item.icon className="h-4 w-4 shrink-0" />
-                                                <span className="truncate">{item.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </nav>
-                    )}
-
-                    {/* Employee: simplified sidebar */}
-                    {role === 'employee' && (
-                        <nav className="flex-1 px-4 py-4">
-                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Mein Portal</p>
-                            <div className="px-4 py-3 text-sm text-slate-400 leading-relaxed">
-                                <User className="h-5 w-5 mb-2 text-slate-500" />
-                                Ihr persönliches Transparenzportal gemäß EntgTranspG.
-                            </div>
-                        </nav>
-                    )}
-
-                    {/* User Card */}
-                    <div className="border-t border-white/10 p-4 m-4 rounded-2xl bg-white/5 backdrop-blur-sm mt-auto">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-semibold shadow-inner">
-                                {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="truncate text-sm font-medium text-white">
-                                    {user?.firstName || user?.fullName || 'User'}
-                                </p>
-                                <p className="truncate text-xs text-slate-400">
-                                    {user?.email}
-                                </p>
+            {/* Navigation — hidden for employees */}
+            {role !== 'employee' && (
+                <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+                    {Object.entries(navGroups).map(([groupName, items]) => (
+                        <div key={groupName}>
+                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                                {groupName}
+                            </p>
+                            <div className="space-y-0.5">
+                                {items.map((item) => (
+                                    <button
+                                        key={item.view}
+                                        onClick={() => { setActiveView(item.view); setMobileNavOpen(false); }}
+                                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${activeView === item.view
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                            }`}
+                                    >
+                                        <item.icon className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">{item.label}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                        {/* Role badge */}
-                        {roleBadge && (
-                            <div className={`text-xs font-semibold px-2 py-1 rounded-lg border mb-3 text-center ${roleBadge.color}`}>
-                                {roleBadge.label}
-                            </div>
-                        )}
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10 h-9"
-                            onClick={handleSignOut}
-                        >
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Abmelden
-                        </Button>
+                    ))}
+                </nav>
+            )}
+
+            {/* Employee: simplified sidebar */}
+            {role === 'employee' && (
+                <nav className="flex-1 px-4 py-4">
+                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Mein Portal</p>
+                    <div className="px-4 py-3 text-sm text-slate-400 leading-relaxed">
+                        <User className="h-5 w-5 mb-2 text-slate-500" />
+                        Ihr persönliches Transparenzportal gemäß EntgTranspG.
+                    </div>
+                </nav>
+            )}
+
+            {/* User Card */}
+            <div className="border-t border-white/10 p-4 m-4 rounded-2xl bg-white/5 backdrop-blur-sm mt-auto">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-semibold shadow-inner">
+                        {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-medium text-white">
+                            {user?.firstName || user?.fullName || 'User'}
+                        </p>
+                        <p className="truncate text-xs text-slate-400">
+                            {user?.email}
+                        </p>
                     </div>
                 </div>
+                {roleBadge && (
+                    <div className={`text-xs font-semibold px-2 py-1 rounded-lg border mb-3 text-center ${roleBadge.color}`}>
+                        {roleBadge.label}
+                    </div>
+                )}
+                <Button
+                    variant="ghost"
+                    className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/10 h-9"
+                    onClick={handleSignOut}
+                >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Abmelden
+                </Button>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-slate-50/50">
+            {/* Desktop Sidebar — hidden on mobile */}
+            <aside className="fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto hidden lg:block">
+                <SidebarNav />
             </aside>
 
+            {/* Mobile Sidebar — Sheet drawer */}
+            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                <SheetContent side="left" className="w-72 p-0 bg-[#0F172A] text-white overflow-y-auto border-r-0">
+                    <SidebarNav />
+                </SheetContent>
+            </Sheet>
+
             {/* Main Content */}
-            <main className="pl-72 transition-all duration-300">
+            <main className="lg:pl-72 transition-all duration-300">
                 <TrialBanner />
                 {isExpired && <TrialExpiredOverlay />}
                 {/* Top Header */}
-                <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-8 py-4">
+                <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-4 sm:px-8 py-4">
                     <div className="flex items-center justify-between max-w-7xl mx-auto">
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">
-                                {role === 'employee'
-                                    ? 'Mein Portal'
-                                    : (visibleNavItems.find(i => i.view === activeView)?.label || 'Compliance Center')}
-                            </h1>
-                            <p className="text-sm text-slate-500">
-                                {new Date().toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
+                        <div className="flex items-center gap-3">
+                            {/* Mobile hamburger */}
+                            <button
+                                onClick={() => setMobileNavOpen(true)}
+                                className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                                aria-label="Navigation öffnen"
+                            >
+                                <Menu className="h-5 w-5" />
+                            </button>
+                            <div>
+                                <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+                                    {role === 'employee'
+                                        ? 'Mein Portal'
+                                        : (visibleNavItems.find(i => i.view === activeView)?.label || 'Compliance Center')}
+                                </h1>
+                                <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">
+                                    {new Date().toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
                             <button className="relative p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                                 <Bell className="h-5 w-5" />
                                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
                             </button>
-                            <div className="h-8 w-px bg-slate-200" />
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
+                            <div className="hidden sm:block h-8 w-px bg-slate-200" />
+                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                                 <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Live</span>
                             </div>
@@ -273,7 +324,7 @@ export default function DashboardPage() {
                 </header>
 
                 {/* Content */}
-                <div className="p-8 max-w-7xl mx-auto">
+                <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
                     {renderContent()}
                 </div>
             </main>
@@ -406,7 +457,7 @@ function BillingView() {
                     </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-sm mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-6">
                     <div className="bg-slate-50 rounded-lg p-3">
                         <p className="text-slate-500 text-xs">Mitarbeiter-Limit</p>
                         <p className="font-semibold">{sub.limits.maxEmployees === -1 ? 'Unbegrenzt' : sub.limits.maxEmployees}</p>

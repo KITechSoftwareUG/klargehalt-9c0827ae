@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, createContext, useContext, ReactNode } fr
 import { createClient, createSupabaseClient } from '@/utils/supabase/client';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-type AppRole = 'admin' | 'hr_manager' | 'employee';
+type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
 
 type AuthUser = {
   id: string;

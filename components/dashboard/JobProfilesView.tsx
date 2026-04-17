@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useJobProfiles, JobProfile, JobProfileFormData } from '@/hooks/useJobProfiles';
+import { useJobProfiles, JobProfile, JobProfileFormData, EvaluationMethod } from '@/hooks/useJobProfiles';
+import { useAuth } from '@/hooks/useAuth';
 import { useDepartments } from '@/hooks/useDepartments';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +42,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Briefcase, CheckCircle, XCircle } from 'lucide-react';
 
+const EVALUATION_METHOD_LABELS: Record<EvaluationMethod, string> = {
+  hay: 'Hay-Methode',
+  korn_ferry: 'Korn Ferry',
+  mercer: 'Mercer',
+  willis_towers_watson: 'Willis Towers Watson',
+  internal: 'Interne Methode',
+  other: 'Andere',
+};
+
 const scoreLabels = ['—', '1 - Niedrig', '2', '3 - Mittel', '4', '5 - Hoch'];
 
 const ScoreSelect = ({
@@ -72,6 +83,7 @@ const ScoreSelect = ({
 
 const JobProfilesView = () => {
   const { jobProfiles, loading, createJobProfile, updateJobProfile, deleteJobProfile } = useJobProfiles();
+  const { user } = useAuth();
   const { departments } = useDepartments();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -85,6 +97,8 @@ const JobProfilesView = () => {
     effort_score: null,
     responsibility_score: null,
     working_conditions_score: null,
+    evaluation_method: null,
+    evaluation_method_notes: null,
     is_active: true,
   });
 
@@ -97,12 +111,21 @@ const JobProfilesView = () => {
       effort_score: null,
       responsibility_score: null,
       working_conditions_score: null,
+      evaluation_method: null,
+      evaluation_method_notes: null,
       is_active: true,
     });
   };
 
+  const withEvaluatorAttribution = (data: JobProfileFormData): JobProfileFormData => ({
+    ...data,
+    evaluated_by: user?.id ?? null,
+    evaluated_by_name: user?.fullName ?? user?.email ?? null,
+    last_evaluated_at: new Date().toISOString(),
+  });
+
   const handleCreate = async () => {
-    await createJobProfile(formData);
+    await createJobProfile(withEvaluatorAttribution(formData));
     setIsCreateOpen(false);
     resetForm();
   };
@@ -117,6 +140,8 @@ const JobProfilesView = () => {
       effort_score: profile.effort_score,
       responsibility_score: profile.responsibility_score,
       working_conditions_score: profile.working_conditions_score,
+      evaluation_method: profile.evaluation_method,
+      evaluation_method_notes: profile.evaluation_method_notes,
       is_active: profile.is_active,
     });
     setIsEditOpen(true);
@@ -124,7 +149,7 @@ const JobProfilesView = () => {
 
   const handleUpdate = async () => {
     if (!selectedProfile) return;
-    await updateJobProfile(selectedProfile.id, formData);
+    await updateJobProfile(selectedProfile.id, withEvaluatorAttribution(formData));
     setIsEditOpen(false);
     setSelectedProfile(null);
     resetForm();
@@ -142,10 +167,12 @@ const JobProfilesView = () => {
     return departments.find(d => d.id === deptId)?.name || '—';
   };
 
-  const getAvgScore = (profile: JobProfile): string => {
-    const scores = [profile.skills_score, profile.effort_score, profile.responsibility_score, profile.working_conditions_score].filter((s): s is number => s != null);
-    if (scores.length === 0) return '—';
-    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+  const getCompositeLabel = (profile: JobProfile): string => {
+    if (profile.composite_score == null || profile.composite_score === 0) {
+      const scores = [profile.skills_score, profile.effort_score, profile.responsibility_score, profile.working_conditions_score];
+      if (scores.every((s) => s == null)) return '—';
+    }
+    return `${profile.composite_score ?? 0} / 20`;
   };
 
   const FormFields = () => (
@@ -215,6 +242,73 @@ const JobProfilesView = () => {
             onChange={(val) => setFormData({ ...formData, working_conditions_score: val })}
           />
         </div>
+
+        {/* Composite Score Display */}
+        {(() => {
+          const scores = [formData.skills_score, formData.effort_score, formData.responsibility_score, formData.working_conditions_score];
+          const sum = scores.reduce<number>((acc, s) => acc + (s ?? 0), 0);
+          const hasAny = scores.some((s) => s != null);
+          if (!hasAny) return null;
+          return (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs text-muted-foreground">Gesamtpunktzahl:</span>
+              <Badge variant="secondary" className="text-sm font-semibold">{sum} / 20</Badge>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Evaluation Methodology (Art. 16 compliance) */}
+      <div className="border rounded-lg p-4 bg-muted/30">
+        <p className="text-sm font-semibold mb-1">Bewertungsmethodik</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          Art. 16 EU-Richtlinie: Die verwendete Bewertungsmethode muss dokumentiert werden.
+        </p>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Bewertungsmethode</Label>
+            <Select
+              value={formData.evaluation_method ?? 'none'}
+              onValueChange={(v) => setFormData({
+                ...formData,
+                evaluation_method: v === 'none' ? null : v as EvaluationMethod,
+                evaluation_method_notes: v !== 'other' ? null : formData.evaluation_method_notes,
+              })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Methode auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">-- Nicht angegeben --</SelectItem>
+                {(Object.entries(EVALUATION_METHOD_LABELS) as [EvaluationMethod, string][]).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {formData.evaluation_method === 'other' && (
+            <div className="grid gap-1.5">
+              <Label className="text-xs">Beschreibung der Methode</Label>
+              <Input
+                value={formData.evaluation_method_notes ?? ''}
+                onChange={(e) => setFormData({ ...formData, evaluation_method_notes: e.target.value })}
+                placeholder="Beschreiben Sie die verwendete Bewertungsmethode"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Evaluator attribution (read-only display when editing) */}
+        {selectedProfile?.evaluated_by && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+              Bewertet von: <span className="font-medium text-foreground">{selectedProfile.evaluated_by_name ?? 'Unbekannt'}</span>
+              {selectedProfile.last_evaluated_at && (
+                <>, am <span className="font-medium text-foreground">{new Date(selectedProfile.last_evaluated_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></>
+              )}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -276,7 +370,7 @@ const JobProfilesView = () => {
               <TableRow>
                 <TableHead>Titel</TableHead>
                 <TableHead>Abteilung</TableHead>
-                <TableHead>EU-Score (Ø)</TableHead>
+                <TableHead>EU-Score (Gesamt)</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -287,9 +381,9 @@ const JobProfilesView = () => {
                   <TableCell className="font-medium">{profile.title}</TableCell>
                   <TableCell>{getDeptName(profile.department_id)}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                      {getAvgScore(profile)}
-                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      {getCompositeLabel(profile)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {profile.is_active ? (

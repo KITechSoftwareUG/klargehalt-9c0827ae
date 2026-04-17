@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 // ROLLEN-BASIERTE KOMPONENTEN
 // =====================================================
 
-type AppRole = 'admin' | 'hr_manager' | 'employee' | 'legal' | 'auditor';
+type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer' | 'legal' | 'auditor';
 
 interface RoleGuardProps {
   children: ReactNode;
@@ -113,6 +113,13 @@ export const ROLE_STYLES: Record<AppRole, {
     border: 'border-status-success/30',
     label: 'Mitarbeiter',
     description: 'Einsicht in eigene Daten und Auskunftsanfragen'
+  },
+  lawyer: {
+    bg: 'bg-purple-100',
+    text: 'text-purple-700',
+    border: 'border-purple-300',
+    label: 'Anwalt',
+    description: 'Rechtliche Bewertungen und Compliance-Prüfungen'
   },
   legal: {
     bg: 'bg-status-warning/10',
@@ -292,24 +299,53 @@ export function getNavigationForRole(role: AppRole | null): NavItem[] {
         },
       ];
       
-    case 'legal':
+    case 'lawyer':
       return [
         ...baseItems,
-        { 
-          label: 'Berichte', 
-          icon: TrendingUp, 
+        {
+          label: 'Bewertungen',
+          icon: Scale,
+          view: 'lawyer-reviews',
+          description: 'Rechtliche Compliance-Bewertungen'
+        },
+        {
+          label: 'Berichte',
+          icon: TrendingUp,
           view: 'reports',
           description: 'Pay Equity Analysen'
         },
-        { 
-          label: 'Audit-Logs', 
-          icon: Shield, 
+        {
+          label: 'Gem. Bewertungen',
+          icon: Users,
+          view: 'joint-assessment',
+          description: 'Gemeinsame Entgeltbewertungen'
+        },
+        {
+          label: 'Audit-Logs',
+          icon: Shield,
           view: 'audit',
           description: 'Compliance-Protokolle'
         },
-        { 
-          label: 'Anfragen', 
-          icon: ClipboardList, 
+      ];
+
+    case 'legal':
+      return [
+        ...baseItems,
+        {
+          label: 'Berichte',
+          icon: TrendingUp,
+          view: 'reports',
+          description: 'Pay Equity Analysen'
+        },
+        {
+          label: 'Audit-Logs',
+          icon: Shield,
+          view: 'audit',
+          description: 'Compliance-Protokolle'
+        },
+        {
+          label: 'Anfragen',
+          icon: ClipboardList,
           view: 'requests',
           description: 'Auskunftsanfragen einsehen'
         },
@@ -370,6 +406,13 @@ export function getWelcomeMessage(role: AppRole | null, name?: string): {
         tip: 'Gemäß EU-Richtlinie haben Sie Anspruch auf transparente Gehaltsinformationen.'
       };
       
+    case 'lawyer':
+      return {
+        greeting: `Willkommen, ${displayName}`,
+        subtitle: 'Erstellen Sie rechtliche Bewertungen und prüfen Sie die Entgelttransparenz-Compliance.',
+        tip: 'Ihre Bewertungen werden unveränderlich gespeichert und dienen als rechtsverbindliche Stellungnahme.'
+      };
+
     case 'legal':
       return {
         greeting: `Willkommen, ${displayName}`,

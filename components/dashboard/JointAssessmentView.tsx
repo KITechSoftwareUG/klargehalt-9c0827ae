@@ -59,6 +59,7 @@ import {
 } from '@/hooks/useJointAssessments';
 import { usePayGapSnapshots } from '@/hooks/usePayEquity';
 import type { PayGapSnapshot } from '@/lib/types/pay-equity';
+import { LawyerReviewBadge } from '@/components/dashboard/LawyerReviewBadge';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -904,9 +905,12 @@ function AssessmentCard({ assessment, onClick }: AssessmentCardProps) {
               <StepIndicator status={assessment.status} />
             </CardDescription>
           </div>
-          <Badge className={`${STATUS_COLORS[assessment.status]} shrink-0`}>
-            {STATUS_LABELS[assessment.status]}
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <LawyerReviewBadge scopeType="joint_assessment" scopeId={assessment.id} compact />
+            <Badge className={`${STATUS_COLORS[assessment.status]}`}>
+              {STATUS_LABELS[assessment.status]}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pb-3 pt-0">

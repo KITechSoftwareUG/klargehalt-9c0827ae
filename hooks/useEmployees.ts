@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import type { SalaryJustification } from '@/lib/types/salary-justification';
 
 export interface Employee {
   id: string;
@@ -31,6 +32,9 @@ export interface Employee {
   created_by: string;
   created_at: string;
   updated_at: string;
+  salary_justification: SalaryJustification | null;
+  salary_justification_updated_at: string | null;
+  salary_justification_updated_by: string | null;
 }
 
 export interface EmployeeFormData {
@@ -52,6 +56,9 @@ export interface EmployeeFormData {
   currency?: string;
   pay_band_id?: string;
   is_active: boolean;
+  salary_justification?: SalaryJustification;
+  salary_justification_updated_at?: string;
+  salary_justification_updated_by?: string;
 }
 
 export function useEmployees() {
