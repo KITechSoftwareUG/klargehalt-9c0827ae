@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
-    BarChart3, Building2, Scale, TrendingUp, Bell, MessageSquare,
+    BarChart3, Building2, Scale, TrendingUp, MessageSquare,
     LayoutDashboard, Target, Briefcase, User, Building, Layers, Clock,
     ShieldCheck, Briefcase as BriefcaseIcon, ClipboardList, Bell as BellIcon, FileCheck,
-    Menu, ChevronRight,
+    Menu, Headset,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
             {/* Navigation — hidden for employees */}
             {role !== 'employee' && (
-                <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+                <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto sidebar-scroll">
                     {Object.entries(navGroups).map(([groupName, items]) => (
                         <div key={groupName}>
                             <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -309,17 +309,15 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-4">
-                            <button className="relative p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
-                            </button>
-                            <div className="hidden sm:block h-8 w-px bg-slate-200" />
-                            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-                                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Live</span>
-                            </div>
-                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 text-slate-600 border-slate-200 hover:bg-slate-50"
+                            onClick={() => router.push('/book-consulting')}
+                        >
+                            <Headset className="h-4 w-4" />
+                            <span className="hidden sm:inline">Beratung buchen</span>
+                        </Button>
                     </div>
                 </header>
 
