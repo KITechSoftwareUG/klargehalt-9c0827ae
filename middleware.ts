@@ -10,7 +10,9 @@ const isSkipAuthCheck = (pathname: string) =>
   pathname === '/' ||
   pathname.startsWith('/auth/') ||
   pathname.startsWith('/callback') ||
-  pathname.startsWith('/api/auth/');
+  pathname.startsWith('/api/auth/') ||
+  pathname.startsWith('/api/healthz') ||
+  pathname.startsWith('/api/webhooks/');
 
 export default async function middleware(request: Request) {
   const client = new LogtoClient(getLogtoConfig());
