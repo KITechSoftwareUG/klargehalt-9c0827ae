@@ -35,6 +35,7 @@ export interface Employee {
   salary_justification: SalaryJustification | null;
   salary_justification_updated_at: string | null;
   salary_justification_updated_by: string | null;
+  creator_profile?: { full_name: string | null; email: string } | null;
 }
 
 export interface EmployeeFormData {

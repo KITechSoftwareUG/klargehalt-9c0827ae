@@ -18,7 +18,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE OR REPLACE FUNCTION public.org_id()
 RETURNS TEXT
 LANGUAGE sql STABLE SECURITY DEFINER
-AS $$ SELECT (auth.jwt() ->> 'org_id') $$;
+AS $$
+  SELECT COALESCE(
+    -- Primary: extract org ID from Logto organization token audience claim
+    -- Format: 'urn:logto:organization:org_abc123' → 'org_abc123'
+    CASE
+      WHEN (auth.jwt() ->> 'aud') LIKE 'urn:logto:organization:%'
+      THEN REPLACE(auth.jwt() ->> 'aud', 'urn:logto:organization:', '')
+    END,
+    -- Fallback: direct org_id claim (custom JWT template)
+    auth.jwt() ->> 'org_id'
+  )
+$$;
 
 GRANT EXECUTE ON FUNCTION public.org_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.org_id() TO anon;

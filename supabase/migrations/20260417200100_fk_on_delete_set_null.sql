@@ -11,10 +11,14 @@ ALTER TABLE info_requests
   ADD CONSTRAINT info_requests_employee_id_fkey
   FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL;
 
--- 2. salary_history: drop existing FK constraint and recreate with ON DELETE CASCADE
-ALTER TABLE salary_history
-  DROP CONSTRAINT IF EXISTS salary_history_employee_id_fkey;
-
-ALTER TABLE salary_history
-  ADD CONSTRAINT salary_history_employee_id_fkey
-  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE;
+-- 2. salary_history: only if table exists (may not be created yet)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'salary_history') THEN
+    ALTER TABLE salary_history
+      DROP CONSTRAINT IF EXISTS salary_history_employee_id_fkey;
+    ALTER TABLE salary_history
+      ADD CONSTRAINT salary_history_employee_id_fkey
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE;
+  END IF;
+END $$;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useJobProfiles, usePayBands } from '@/hooks/useJobProfiles';
 import { useEmployees } from '@/hooks/useEmployees';
@@ -37,11 +38,48 @@ import {
 } from 'lucide-react';
 import { useLawyerReviews, VERDICT_LABELS, VERDICT_COLORS, SCOPE_TYPE_LABELS } from '@/hooks/useLawyerReviews';
 
+/** Map old view keys to URL routes */
+const VIEW_TO_ROUTE: Record<string, string> = {
+  compliance: '/dashboard',
+  overview: '/dashboard/overview',
+  employees: '/dashboard/employees',
+  'job-profiles': '/dashboard/job-profiles',
+  'pay-bands': '/dashboard/pay-bands',
+  reports: '/dashboard/reports',
+  audit: '/dashboard/audit',
+  requests: '/dashboard/requests',
+  'pay-equity-hr': '/dashboard/pay-equity-hr',
+  'pay-equity-mgmt': '/dashboard/pay-equity-mgmt',
+  'my-salary': '/dashboard/my-salary',
+  departments: '/dashboard/departments',
+  'job-levels': '/dashboard/job-levels',
+  billing: '/dashboard/billing',
+  settings: '/dashboard/settings',
+  'job-postings': '/dashboard/job-postings',
+  'joint-assessment': '/dashboard/joint-assessment',
+  'hr-requests': '/dashboard/hr-requests',
+  'rights-notifications': '/dashboard/rights-notifications',
+  'lawyer-reviews': '/dashboard/lawyer-reviews',
+  // Legacy alias used in setup checklist
+  'hr-analytics': '/dashboard/pay-equity-hr',
+};
+
 interface DashboardOverviewProps {
-  onNavigate: (view: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
 const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
+  const router = useRouter();
+
+  /** Navigate to a dashboard view by key, using URL routing */
+  const navigateTo = React.useCallback((view: string) => {
+    if (onNavigate) {
+      onNavigate(view);
+      return;
+    }
+    const route = VIEW_TO_ROUTE[view] || `/dashboard/${view}`;
+    router.push(route);
+  }, [onNavigate, router]);
   const { role, profile, supabase, orgId } = useAuth();
   const { jobProfiles, loading: profilesLoading } = useJobProfiles();
   const { payBands, loading: bandsLoading } = usePayBands();
@@ -205,7 +243,7 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     step.done ? 'bg-green-50/80' : 'bg-muted/40 cursor-pointer hover:bg-muted/60'
                   }`}
-                  onClick={() => !step.done && onNavigate(step.view)}
+                  onClick={() => !step.done && navigateTo(step.view)}
                 >
                   {step.done
                     ? <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
@@ -294,7 +332,7 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
               title={item.label}
               description={item.description || ''}
               icon={item.icon}
-              onClick={() => onNavigate(item.view)}
+              onClick={() => navigateTo(item.view)}
             />
           ))}
         </div>

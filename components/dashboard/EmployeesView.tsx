@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEmployees, Employee, EmployeeFormData } from '@/hooks/useEmployees';
 import { useJobProfiles } from '@/hooks/useJobProfiles';
 import { useDepartments } from '@/hooks/useDepartments';
@@ -108,7 +108,33 @@ const EmployeesView = () => {
   const { jobProfiles } = useJobProfiles();
   const { departments } = useDepartments();
   const { jobLevels } = useJobLevels();
-  const { user } = useAuth();
+  const { user, supabase, orgId } = useAuth();
+
+  // Resolve created_by user IDs to display names
+  const [creatorMap, setCreatorMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!employees.length || !orgId) return;
+    const creatorIds = [...new Set(employees.map(e => e.created_by).filter(Boolean))];
+    if (!creatorIds.length) return;
+
+    supabase
+      .from('profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', creatorIds)
+      .then(({ data }) => {
+        if (!data) return;
+        const map: Record<string, string> = {};
+        for (const p of data) {
+          map[p.user_id] = p.full_name || p.email || p.user_id;
+        }
+        setCreatorMap(map);
+      });
+  }, [employees, orgId, supabase]);
+
+  const getCreatorName = (userId: string | null | undefined): string => {
+    if (!userId) return '—';
+    return creatorMap[userId] || userId.slice(0, 8) + '…';
+  };
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -760,6 +786,8 @@ const EmployeesView = () => {
                 <TableHead>Stufe</TableHead>
                 <TableHead>Grundgehalt</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Erstellt von</TableHead>
+                <TableHead>Erstellt am</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
@@ -797,6 +825,14 @@ const EmployeesView = () => {
                         Inaktiv
                       </span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {getCreatorName(employee.created_by)}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {employee.created_at
+                      ? new Date(employee.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                      : '—'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
