@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import Script from 'next/script';
 import '../(marketing)/globals.css';
 import { Providers } from './providers';
 
@@ -28,6 +29,14 @@ export default function AppLayout({
 }) {
     return (
         <html lang="de" suppressHydrationWarning>
+            <head>
+                <Script
+                    defer
+                    data-domain="app.klargehalt.de"
+                    src="https://analytics.klargehalt.de/js/script.js"
+                    strategy="afterInteractive"
+                />
+            </head>
             <body className={font.className}>
                 <Providers>{children}</Providers>
             </body>
