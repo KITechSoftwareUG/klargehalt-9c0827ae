@@ -20,7 +20,7 @@ type CompanySize = '1-50' | '51-250' | '251-1000';
 
 export default function OnboardingPage() {
     const router = useRouter();
-    const { user, isLoaded, isSignedIn, organizations, setActiveOrganization, refreshAuth, supabase } = useAuth();
+    const { user, isLoaded, isSignedIn, organizations, setActiveOrganization, refreshAuth } = useAuth();
     const { toast } = useToast();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
     const [loading, setLoading] = useState(false);
@@ -81,131 +81,38 @@ export default function OnboardingPage() {
         setLoading(true);
 
         try {
-            let organization = organizations[0] ?? null;
+            const res = await fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName,
+                    companyName,
+                    industry,
+                    companySize,
+                    selectedPlan,
+                    selfReportedRole: selectedRole,
+                    consultingOption,
+                }),
+            });
 
-            if (!organization) {
-                const res = await fetch('/api/auth/organizations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: companyName || `${fullName}s Unternehmen` }),
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    // Session broken → force re-authentication
-                    if (data.reauth || res.status === 401) {
-                        toast({
-                            title: 'Sitzung abgelaufen',
-                            description: 'Sie werden zur Anmeldung weitergeleitet...',
-                            variant: 'destructive',
-                        });
-                        setTimeout(() => window.location.assign('/auth/sign-in'), 1500);
-                        return;
-                    }
-                    throw new Error(data.error || 'Organisation konnte nicht erstellt werden.');
+            const data = await res.json();
+
+            if (!res.ok) {
+                if (data.reauth || res.status === 401) {
+                    toast({
+                        title: 'Sitzung abgelaufen',
+                        description: 'Sie werden zur Anmeldung weitergeleitet...',
+                        variant: 'destructive',
+                    });
+                    setTimeout(() => window.location.assign('/auth/sign-in'), 1500);
+                    return;
                 }
-                organization = data.organization;
+                throw new Error(data.error || 'Onboarding fehlgeschlagen.');
             }
 
-            if (!organization) throw new Error('Organisation konnte nicht gefunden werden.');
-
-            await setActiveOrganization(organization.id);
+            // Refresh the client-side auth state so useAuth picks up the new org
+            await setActiveOrganization(data.organization.id);
             await refreshAuth();
-
-            const trialEndsAt = new Date();
-            trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DURATION_DAYS);
-
-            const { data: existingCompany } = await supabase
-                .from('companies')
-                .select('id')
-                .eq('organization_id', organization.id)
-                .maybeSingle();
-
-            let companyId: string;
-
-            // During trial, everyone gets Professional features.
-            // selectedPlan is stored in onboarding_data for post-trial conversion.
-            const trialTier = TRIAL_TIER;
-
-            if (existingCompany) {
-                const { data, error } = await supabase
-                    .from('companies')
-                    .update({
-                        name: companyName,
-                        industry,
-                        size: companySize,
-                        subscription_tier: trialTier,
-                        subscription_status: 'trialing',
-                        trial_ends_at: trialEndsAt.toISOString(),
-                    })
-                    .eq('id', existingCompany.id)
-                    .select('id')
-                    .single();
-                if (error) throw error;
-                companyId = data.id;
-            } else {
-                const { data, error } = await supabase
-                    .from('companies')
-                    .insert({
-                        name: companyName,
-                        industry,
-                        size: companySize,
-                        organization_id: organization.id,
-                        created_by: user.id,
-                        subscription_tier: trialTier,
-                        subscription_status: 'trialing',
-                        trial_ends_at: trialEndsAt.toISOString(),
-                    })
-                    .select('id')
-                    .single();
-                if (error) throw error;
-                companyId = data.id;
-            }
-
-            await supabase.from('profiles').upsert(
-                {
-                    user_id: user.id,
-                    full_name: fullName,
-                    company_name: companyName,
-                    organization_id: organization.id,
-                },
-                { onConflict: 'user_id' }
-            );
-
-            const { data: existingRole } = await supabase
-                .from('user_roles')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('organization_id', organization.id)
-                .maybeSingle();
-
-            if (!existingRole) {
-                const { error: roleError } = await supabase.from('user_roles').insert({
-                    user_id: user.id,
-                    role: 'admin',
-                    organization_id: organization.id,
-                });
-                if (roleError) console.error('user_roles insert failed:', roleError);
-            } else {
-                const { error: roleError } = await supabase
-                    .from('user_roles')
-                    .update({ role: 'admin' })
-                    .eq('id', existingRole.id);
-                if (roleError) console.error('user_roles update failed:', roleError);
-            }
-
-            await supabase.from('onboarding_data').upsert(
-                {
-                    user_id: user.id,
-                    organization_id: organization.id,
-                    company_id: companyId,
-                    company_size: companySize,
-                    selected_plan: selectedPlan,
-                    self_reported_role: selectedRole,
-                    consulting_option: consultingOption,
-                    completed_at: new Date().toISOString(),
-                },
-                { onConflict: 'user_id' }
-            );
 
             toast({
                 title: 'Willkommen bei KlarGehalt!',

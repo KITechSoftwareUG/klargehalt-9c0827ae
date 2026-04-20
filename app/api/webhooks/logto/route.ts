@@ -120,18 +120,36 @@ function extractUserData(payload: LogtoWebhookPayload): LogtoUserData | null {
 async function handleUserCreated(user: LogtoUserData) {
   const supabase = getAdminClient();
 
-  const { error } = await supabase.from('profiles').upsert(
-    {
+  // Insert-or-update but NEVER clobber organization_id (onboarding may have
+  // set it before this webhook arrives). Use manual check + conditional write.
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        email: user.primaryEmail || '',
+        full_name: user.name || user.username || '',
+      })
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('Webhook: Failed to update profile', error);
+      throw error;
+    }
+  } else {
+    const { error } = await supabase.from('profiles').insert({
       user_id: user.id,
       email: user.primaryEmail || '',
       full_name: user.name || user.username || '',
-    },
-    { onConflict: 'user_id' }
-  );
-
-  if (error) {
-    console.error('Webhook: Failed to upsert profile', error);
-    throw error;
+    });
+    if (error) {
+      console.error('Webhook: Failed to insert profile', error);
+      throw error;
+    }
   }
 
   if (user.primaryEmail) {

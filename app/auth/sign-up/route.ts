@@ -7,7 +7,6 @@ export async function GET() {
     interactionMode: 'signUp',
     extraParams: {
       first_screen: 'register',
-      prompt: 'login',
     },
   });
 }
