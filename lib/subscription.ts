@@ -22,7 +22,7 @@ export interface PlanDefinition {
 }
 
 export const FEATURE_FLAGS: Record<string, SubscriptionTier[]> = {
-  pay_gap_analysis: ['professional', 'enterprise'],
+  pay_gap_analysis: ['basis', 'professional', 'enterprise'],
   pdf_reports: ['professional', 'enterprise'],
   trend_analysis: ['professional', 'enterprise'],
   priority_support: ['professional', 'enterprise'],
@@ -37,11 +37,12 @@ export const PLANS: Record<SubscriptionTier, PlanDefinition> = {
     tier: 'basis',
     name: 'Basis',
     nameDE: 'Basis',
-    priceMonthly: 99,
-    priceYearly: 990,
+    priceMonthly: 149,
+    priceYearly: 1490,
     limits: { maxEmployees: 50, maxAdmins: 1, maxHRManagers: 1 },
     features: [
       'Gehaltsbänder & Job-Profile',
+      'Gender-Pay-Gap-Analyse',
       'CSV-Import',
       'Basis-Audit-Trail',
       '1 Admin + 1 HR-Manager',
@@ -54,7 +55,7 @@ export const PLANS: Record<SubscriptionTier, PlanDefinition> = {
     name: 'Professional',
     nameDE: 'Professional',
     priceMonthly: 299,
-    priceYearly: 2990,
+    priceYearly: 2690,
     limits: { maxEmployees: 250, maxAdmins: 5, maxHRManagers: -1 },
     features: [
       'Alles aus Basis',

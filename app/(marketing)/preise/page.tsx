@@ -12,28 +12,34 @@ const plans = [
     {
         name: 'Basis',
         desc: 'Für kleine Unternehmen bis 50 Mitarbeiter',
-        priceMonthly: 99,
-        priceYearly: 83,
+        priceMonthly: 149,
+        priceYearly: 124,
+        yearlyTotal: 1490,
+        yearlyLabel: '2 Monate gespart',
         cta: 'Kostenlos testen',
         href: getAppUrl('/sign-up?plan=basis'),
         featured: false,
-        highlights: ['1 Admin + 1 HR-Manager', 'Bis 50 Mitarbeiter', 'E-Mail Support'],
+        highlights: ['Gender-Pay-Gap-Analyse', '1 Admin + 1 HR-Manager', 'Bis 50 Mitarbeiter'],
     },
     {
         name: 'Professional',
         desc: 'Für wachsende Unternehmen mit EU-Berichtspflicht',
         priceMonthly: 299,
-        priceYearly: 249,
+        priceYearly: 224,
+        yearlyTotal: 2690,
+        yearlyLabel: '3 Monate gespart',
         cta: '14 Tage kostenlos testen',
         href: getAppUrl('/sign-up?plan=professional'),
         featured: true,
-        highlights: ['5 Admins, unbegrenzt HR', 'Bis 250 Mitarbeiter', 'Prioritäts-Support'],
+        highlights: ['PDF-Berichte & Trendanalyse', '5 Admins, unbegrenzt HR', 'Bis 250 Mitarbeiter'],
     },
     {
         name: 'Enterprise',
         desc: 'Für Großunternehmen mit individuellen Anforderungen',
         priceMonthly: null,
         priceYearly: null,
+        yearlyTotal: null,
+        yearlyLabel: null,
         cta: 'Kontakt aufnehmen',
         href: '/kontakt',
         featured: false,
@@ -51,7 +57,7 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
             { name: 'Mitarbeiterverwaltung', basis: 'Bis 50', professional: 'Bis 250', enterprise: 'Unbegrenzt' },
             { name: 'CSV/Excel-Import', basis: true, professional: true, enterprise: true },
             { name: 'Abteilungen & Karrierestufen', basis: true, professional: true, enterprise: true },
-            { name: 'Gender-Pay-Gap Analyse', basis: false, professional: true, enterprise: true },
+            { name: 'Gender-Pay-Gap Analyse', basis: true, professional: true, enterprise: true },
             { name: 'Pay-Gap Berichte (PDF)', basis: false, professional: true, enterprise: true },
             { name: 'Trendanalyse über Zeiträume', basis: false, professional: true, enterprise: true },
             { name: 'KI-gestützte Handlungsempfehlungen', basis: false, professional: true, enterprise: true },
@@ -110,7 +116,7 @@ const faqs = [
     },
     {
         q: 'Wie funktioniert die Abrechnung?',
-        a: 'Monatlich oder jährlich per Kreditkarte, SEPA-Lastschrift oder Rechnung. Bei jährlicher Abrechnung sparen Sie 2 Monate. Alle Preise verstehen sich zzgl. der gesetzlichen MwSt. (19%). Sie erhalten eine ordnungsgemäße Rechnung mit ausgewiesener Umsatzsteuer.',
+        a: 'Monatlich oder jährlich per Kreditkarte, SEPA-Lastschrift oder Rechnung. Im Basis-Plan sparen Sie bei jährlicher Abrechnung 2 Monate, im Professional-Plan sogar 3 Monate. Alle Preise verstehen sich zzgl. der gesetzlichen MwSt. (19%). Sie erhalten eine ordnungsgemäße Rechnung mit ausgewiesener Umsatzsteuer.',
     },
     {
         q: 'Können wir jederzeit kündigen?',
@@ -151,7 +157,7 @@ function FeatureCell({ value }: { value: FeatureValue }) {
 
 export default function PreisePage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
-    const [interval, setInterval] = useState<Interval>('monthly');
+    const [interval, setInterval] = useState<Interval>('yearly');
 
     return (
         <>
@@ -196,7 +202,7 @@ export default function PreisePage() {
                         >
                             Jährlich
                             <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded-full">
-                                -17%
+                                bis -25%
                             </span>
                         </button>
                     </div>
@@ -232,7 +238,7 @@ export default function PreisePage() {
                                     </div>
                                     {!isCustom && interval === 'yearly' && (
                                         <p className="text-xs text-slate-400 mb-5">
-                                            EUR {(price ?? 0) * 12}/Jahr · <span className="text-green-500 font-medium">2 Monate gespart</span>
+                                            EUR {p.yearlyTotal?.toLocaleString('de-DE')}/Jahr · <span className="text-green-500 font-medium">{p.yearlyLabel}</span>
                                         </p>
                                     )}
                                     {!isCustom && interval === 'monthly' && (
