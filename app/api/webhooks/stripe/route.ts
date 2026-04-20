@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionTier } from '@/lib/subscription';
+import { sendPaymentFailedEmail } from '@/lib/email';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -163,11 +164,36 @@ export async function POST(request: NextRequest) {
           .from('companies')
           .update({ subscription_status: 'past_due' })
           .eq('stripe_customer_id', customerId)
-          .select('id');
+          .select('id, name');
 
         if (err4) throw err4;
         if (!updated4 || updated4.length === 0) {
           console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
+
+        // Send payment failed email to all admins of the company
+        if (updated4 && updated4.length > 0) {
+          const companyId = updated4[0].id as string;
+          const companyName = (updated4[0].name as string) || 'Ihr Unternehmen';
+          const { data: admins } = await supabase
+            .from('user_roles')
+            .select('user_id, profiles!inner(email, full_name)')
+            .eq('organization_id', companyId)
+            .eq('role', 'admin');
+
+          if (admins) {
+            for (const admin of admins) {
+              const profileRaw = admin.profiles as unknown;
+              const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
+              if (profile?.email) {
+                try {
+                  await sendPaymentFailedEmail(profile.email, profile.full_name, companyName);
+                } catch (emailError) {
+                  console.error('Stripe webhook: Failed to send payment failed email', emailError);
+                }
+              }
+            }
+          }
         }
 
         console.log(`Stripe webhook: invoice.payment_failed for ${customerId}`);

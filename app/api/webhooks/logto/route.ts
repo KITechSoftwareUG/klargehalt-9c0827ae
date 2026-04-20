@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendWelcomeEmail } from '@/lib/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -131,6 +132,14 @@ async function handleUserCreated(user: LogtoUserData) {
   if (error) {
     console.error('Webhook: Failed to upsert profile', error);
     throw error;
+  }
+
+  if (user.primaryEmail) {
+    try {
+      await sendWelcomeEmail(user.primaryEmail, user.name || user.username || '');
+    } catch (emailError) {
+      console.error('Webhook: Failed to send welcome email', emailError);
+    }
   }
 
   console.log(`Webhook: Profile synced for user ${user.id}`);
