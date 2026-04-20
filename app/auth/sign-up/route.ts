@@ -5,5 +5,9 @@ export async function GET() {
   await signIn(getLogtoConfig(), {
     redirectUri: getLogtoSignInRedirectUri(),
     interactionMode: 'signUp',
+    extraParams: {
+      first_screen: 'register',
+      prompt: 'login',
+    },
   });
 }

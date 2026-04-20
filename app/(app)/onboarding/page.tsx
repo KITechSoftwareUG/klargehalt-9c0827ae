@@ -42,6 +42,14 @@ export default function OnboardingPage() {
         }
     }, [isLoaded, isSignedIn, hasOrg, router]);
 
+    // If auth loaded and user is not signed in, redirect to sign-in.
+    // Runs in an effect (never during render) to avoid hydration mismatches.
+    useEffect(() => {
+        if (isLoaded && !isSignedIn) {
+            window.location.assign('/auth/sign-in');
+        }
+    }, [isLoaded, isSignedIn]);
+
     // Pre-fill name from auth if available
     useEffect(() => {
         if (user?.fullName) {
@@ -55,8 +63,8 @@ export default function OnboardingPage() {
     const canProceedStep1 = fullName.trim().length > 0;
     const canProceedStep2 = companyName.trim().length > 0;
 
-    // Show loading while auth is initializing
-    if (!isLoaded) {
+    // Show loading while auth is initializing, or while the sign-in redirect effect runs
+    if (!isLoaded || !isSignedIn) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center space-y-4">
@@ -65,13 +73,6 @@ export default function OnboardingPage() {
                 </div>
             </div>
         );
-    }
-
-    // If not signed in (broken session or not logged in),
-    // redirect to /auth/sign-in (route handler) to bypass middleware and get fresh session
-    if (!isSignedIn) {
-        window.location.assign('/auth/sign-in');
-        return null;
     }
 
     const handleComplete = async () => {
