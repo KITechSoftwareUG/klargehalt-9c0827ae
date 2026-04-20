@@ -22,6 +22,7 @@ interface ModeCopy {
     footerPrompt: string;
     footerLinkLabel: string;
     footerLinkHref: string;
+    showForgotPassword?: boolean;
 }
 
 const COPY: Record<Mode, ModeCopy> = {
@@ -33,6 +34,7 @@ const COPY: Record<Mode, ModeCopy> = {
         footerPrompt: 'Noch kein Konto?',
         footerLinkLabel: 'Jetzt registrieren',
         footerLinkHref: '/sign-up',
+        showForgotPassword: true,
     },
     'sign-up': {
         title: 'Konto erstellen',
@@ -203,6 +205,13 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
                                         {copy.footerLinkLabel}
                                     </Link>
                                 </p>
+                                {copy.showForgotPassword && (
+                                    <p className="mt-3 text-sm text-[#535a6b]">
+                                        <Link href="/auth/forgot-password" className="text-[#535a6b] hover:text-[#071423] hover:underline">
+                                            Passwort vergessen?
+                                        </Link>
+                                    </p>
+                                )}
                             </>
                         )}
                     </div>
