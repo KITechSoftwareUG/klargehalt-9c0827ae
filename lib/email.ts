@@ -1,13 +1,27 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy singleton — the Resend constructor throws if RESEND_API_KEY is unset,
+// which breaks `next build` during page-data collection for any route that
+// imports this module. Deferring instantiation keeps build safe while still
+// erroring loudly at request time when the key is actually missing.
+let resendClient: Resend | null = null;
+const getResend = (): Resend => {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+};
 
 const FROM_NOREPLY = 'KlarGehalt <noreply@klargehalt.de>';
 const FROM_SUPPORT = 'KlarGehalt Support <support@klargehalt.de>';
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<void> {
   const displayName = name || 'dort';
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_NOREPLY,
     to,
     subject: 'Willkommen bei KlarGehalt',
@@ -48,7 +62,7 @@ export async function sendTrialEndingEmail(
   companyName: string
 ): Promise<void> {
   const displayName = name || 'dort';
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_NOREPLY,
     to,
     subject: `Ihr KlarGehalt-Test endet in ${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tagen'}`,
@@ -89,7 +103,7 @@ export async function sendPaymentFailedEmail(
   companyName: string
 ): Promise<void> {
   const displayName = name || 'dort';
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_SUPPORT,
     to,
     subject: 'Zahlung fehlgeschlagen — Bitte Zahlungsmittel aktualisieren',
