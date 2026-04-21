@@ -33,7 +33,7 @@ export default async function middleware(request: Request) {
   const hostname = nextRequest.headers.get('host') || '';
   const pathname = url.pathname;
 
-  if (hostname.startsWith('app.') || hostname.includes('-app-')) {
+  if (hostname.startsWith('app.') || hostname.includes('.app.') || hostname.includes('-app-')) {
     if (pathname === '/') {
       return applyNoStore(NextResponse.redirect(new URL('/dashboard', nextRequest.url)));
     }
