@@ -38,30 +38,29 @@ import {
 } from 'lucide-react';
 import { useLawyerReviews, VERDICT_LABELS, VERDICT_COLORS, SCOPE_TYPE_LABELS } from '@/hooks/useLawyerReviews';
 
-/** Map old view keys to URL routes */
 const VIEW_TO_ROUTE: Record<string, string> = {
-  compliance: '/dashboard',
-  overview: '/dashboard/overview',
-  employees: '/dashboard/employees',
-  'job-profiles': '/dashboard/job-profiles',
-  'pay-bands': '/dashboard/pay-bands',
-  reports: '/dashboard/reports',
-  audit: '/dashboard/audit',
-  requests: '/dashboard/requests',
-  'pay-equity-hr': '/dashboard/pay-equity-hr',
-  'pay-equity-mgmt': '/dashboard/pay-equity-mgmt',
-  'my-salary': '/dashboard/my-salary',
-  departments: '/dashboard/departments',
-  'job-levels': '/dashboard/job-levels',
-  billing: '/dashboard/billing',
-  settings: '/dashboard/settings',
-  'job-postings': '/dashboard/job-postings',
-  'joint-assessment': '/dashboard/joint-assessment',
-  'hr-requests': '/dashboard/hr-requests',
-  'rights-notifications': '/dashboard/rights-notifications',
-  'lawyer-reviews': '/dashboard/lawyer-reviews',
-  // Legacy alias used in setup checklist
-  'hr-analytics': '/dashboard/pay-equity-hr',
+  compliance:             '/dashboard',
+  employees:              '/mitarbeiter',
+  'job-profiles':         '/jobprofile',
+  'pay-bands':            '/gehaltsbaender',
+  departments:            '/abteilungen',
+  'job-levels':           '/karrierestufen',
+  'my-salary':            '/mein-gehalt',
+  billing:                '/abrechnung',
+  settings:               '/einstellungen',
+  audit:                  '/audit',
+  // Phase-2 — redirect to dashboard until built
+  overview:               '/dashboard',
+  reports:                '/dashboard',
+  requests:               '/dashboard',
+  'pay-equity-hr':        '/dashboard',
+  'pay-equity-mgmt':      '/dashboard',
+  'job-postings':         '/dashboard',
+  'joint-assessment':     '/dashboard',
+  'hr-requests':          '/dashboard',
+  'rights-notifications': '/dashboard',
+  'lawyer-reviews':       '/dashboard',
+  'hr-analytics':         '/dashboard',
 };
 
 interface DashboardOverviewProps {

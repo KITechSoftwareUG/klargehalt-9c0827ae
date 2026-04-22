@@ -2,6 +2,6 @@
 
 import MySalaryComparisonView from '@/components/dashboard/MySalaryComparisonView';
 
-export default function MySalaryPage() {
+export default function MeinGehaltPage() {
     return <MySalaryComparisonView />;
 }

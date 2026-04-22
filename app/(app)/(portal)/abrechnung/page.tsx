@@ -1,13 +1,13 @@
 'use client';
 
-import AuditLogsView from '@/components/dashboard/AuditLogsView';
+import BillingView from '@/components/dashboard/BillingView';
 import { RoleGuard } from '@/components/RoleGuard';
 import AccessDenied from '@/components/dashboard/AccessDenied';
 
-export default function AuditPage() {
+export default function AbrechnungPage() {
     return (
         <RoleGuard roles={['admin']} fallback={<AccessDenied />}>
-            <AuditLogsView />
+            <BillingView />
         </RoleGuard>
     );
 }
