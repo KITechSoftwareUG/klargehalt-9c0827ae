@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { type SubscriptionTier, getStripePriceId, PLANS } from '@/lib/subscription';
 
 export async function POST(request: NextRequest) {
@@ -11,10 +12,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    // Use service role client to bypass RLS for the admin check.
+    // The org token may not be available in API route context (Logto fetch),
+    // which would cause org_id() to return NULL and block the RLS query.
+    const serviceClient = createSupabaseServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    // Only admins can manage billing
-    const { data: userRole } = await supabase
+    const { data: userRole } = await serviceClient
       .from('user_roles')
       .select('role')
       .eq('user_id', context.user!.id)
@@ -24,6 +30,8 @@ export async function POST(request: NextRequest) {
     if (!userRole || userRole.role !== 'admin') {
       return NextResponse.json({ error: 'Only admins can manage billing' }, { status: 403 });
     }
+
+    const supabase = await createClient();
 
     const { tier = 'professional', interval = 'monthly' } = (await request.json().catch(() => ({}))) as {
       tier?: SubscriptionTier;

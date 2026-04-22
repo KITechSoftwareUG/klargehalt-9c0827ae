@@ -3,7 +3,7 @@
 import { ArrowLeft, Clock, Loader2, Scale } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +59,7 @@ const TARGET_DATE = new Date('2026-06-07T00:00:00');
 
 export function AuthLauncher({ mode }: AuthLauncherProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { isLoaded, isSignedIn, organizations } = useAuth();
     const copy = COPY[mode];
 
@@ -94,6 +95,14 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
     }, [isLoaded, isSignedIn, organizations, router]);
 
     const alreadyAuthenticated = isLoaded && isSignedIn;
+
+    function handleSignUpClick() {
+        const plan = searchParams.get('plan');
+        if (plan) {
+            document.cookie = `kg_intent_plan=${encodeURIComponent(plan)}; path=/; max-age=3600; samesite=lax`;
+        }
+        router.push('/auth/sign-up');
+    }
 
     async function handleEmailSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -268,19 +277,18 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
                             </form>
                         ) : (
                             <>
-                                <Link href={copy.ctaHref} className="block mb-4" aria-disabled={!isLoaded} tabIndex={isLoaded ? undefined : -1}>
-                                    <Button
-                                        disabled={!isLoaded}
-                                        className="w-full h-12 rounded-xl bg-[#071423] text-white hover:bg-[#0d1f33] text-sm font-semibold cursor-pointer"
-                                    >
-                                        {isLoaded ? copy.cta : (
-                                            <span className="inline-flex items-center gap-2">
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                {copy.cta}
-                                            </span>
-                                        )}
-                                    </Button>
-                                </Link>
+                                <Button
+                                    disabled={!isLoaded}
+                                    onClick={handleSignUpClick}
+                                    className="w-full h-12 rounded-xl bg-[#071423] text-white hover:bg-[#0d1f33] text-sm font-semibold cursor-pointer mb-4"
+                                >
+                                    {isLoaded ? copy.cta : (
+                                        <span className="inline-flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            {copy.cta}
+                                        </span>
+                                    )}
+                                </Button>
                                 <p className="text-sm text-[#535a6b]">
                                     {copy.footerPrompt}{' '}
                                     <Link href={copy.footerLinkHref} className="text-[#946df7] font-semibold hover:underline">
