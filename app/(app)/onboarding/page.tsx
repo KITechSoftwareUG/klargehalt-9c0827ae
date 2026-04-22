@@ -33,6 +33,19 @@ export default function OnboardingPage() {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
     const [consultingOption, setConsultingOption] = useState<'self-service' | 'guided'>('self-service');
 
+    // Read plan intent cookie set before Logto auth roundtrip
+    useEffect(() => {
+        const match = document.cookie.match(/(?:^|;\s*)kg_intent_plan=([^;]+)/);
+        if (match) {
+            const plan = decodeURIComponent(match[1]) as SubscriptionTier;
+            if (plan === 'basis' || plan === 'professional' || plan === 'enterprise') {
+                setSelectedPlan(plan);
+            }
+            // Clear the cookie after reading
+            document.cookie = 'kg_intent_plan=; path=/; max-age=0';
+        }
+    }, []);
+
     const hasOrg = organizations.length > 0;
 
     // If auth loaded and user already has an org, skip to dashboard

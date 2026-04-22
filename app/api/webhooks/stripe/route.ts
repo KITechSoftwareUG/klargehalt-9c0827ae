@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionTier } from '@/lib/subscription';
-import { sendPaymentFailedEmail } from '@/lib/email';
+import { sendPaymentFailedEmail, sendSubscriptionConfirmedEmail } from '@/lib/email';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -92,6 +92,37 @@ export async function POST(request: NextRequest) {
         if (err1) throw err1;
         if (!updated1 || updated1.length === 0) {
           console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        }
+
+        // Send subscription confirmed email to all admins
+        if (updated1 && updated1.length > 0) {
+          const companyId = updated1[0].id as string;
+          const { data: company } = await supabase
+            .from('companies')
+            .select('name')
+            .eq('id', companyId)
+            .single();
+          const companyName = (company?.name as string) || 'Ihr Unternehmen';
+
+          const { data: admins } = await supabase
+            .from('user_roles')
+            .select('user_id, profiles!inner(email, full_name)')
+            .eq('organization_id', companyId)
+            .eq('role', 'admin');
+
+          if (admins) {
+            for (const admin of admins) {
+              const profileRaw = admin.profiles as unknown;
+              const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
+              if (profile?.email) {
+                try {
+                  await sendSubscriptionConfirmedEmail(profile.email, profile.full_name, companyName, tier);
+                } catch (emailError) {
+                  console.error('Stripe webhook: Failed to send confirmation email', emailError);
+                }
+              }
+            }
+          }
         }
 
         console.log(`Stripe webhook: checkout.session.completed for ${customerId}, tier=${tier}`);
