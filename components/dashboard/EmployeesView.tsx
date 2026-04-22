@@ -347,7 +347,7 @@ const EmployeesView = () => {
 
   const canSubmit = formData.first_name && formData.last_name && formData.gender && formData.hire_date && formData.employment_type && formData.base_salary > 0;
 
-  const FormFields = () => (
+  const renderFormFields = () => (
     <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
       {/* Name */}
       <div className="grid grid-cols-2 gap-4">
@@ -752,7 +752,7 @@ const EmployeesView = () => {
               <DialogTitle>Neuen Mitarbeiter anlegen</DialogTitle>
               <DialogDescription>Erfassen Sie die Stamm- und Gehaltsdaten des Mitarbeiters.</DialogDescription>
             </DialogHeader>
-            <FormFields />
+            {renderFormFields()}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
               <Button variant="hero" onClick={handleCreate} disabled={!canSubmit}>Erstellen</Button>
@@ -877,7 +877,7 @@ const EmployeesView = () => {
             <DialogTitle>Mitarbeiter bearbeiten</DialogTitle>
             <DialogDescription>Aktualisieren Sie die Mitarbeiterdaten.</DialogDescription>
           </DialogHeader>
-          <FormFields />
+          {renderFormFields()}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
             <Button variant="hero" onClick={handleUpdate} disabled={!canSubmit}>Speichern</Button>
