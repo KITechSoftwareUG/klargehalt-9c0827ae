@@ -2,6 +2,6 @@
 
 import PayBandsView from '@/components/dashboard/PayBandsView';
 
-export default function PayBandsPage() {
+export default function GehaltsbaenderPage() {
     return <PayBandsView />;
 }

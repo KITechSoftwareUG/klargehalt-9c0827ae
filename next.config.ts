@@ -2,8 +2,35 @@ import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Trigger rebuild: 2026-04-17T06:10:00
+  // Trigger rebuild: 2026-04-22T00:00:00
   reactStrictMode: true,
+
+  async redirects() {
+    return [
+      // Old /dashboard/* sub-routes → new clean German routes
+      { source: '/dashboard/employees',          destination: '/mitarbeiter',    permanent: true },
+      { source: '/dashboard/pay-bands',          destination: '/gehaltsbaender', permanent: true },
+      { source: '/dashboard/job-profiles',       destination: '/jobprofile',     permanent: true },
+      { source: '/dashboard/job-levels',         destination: '/karrierestufen', permanent: true },
+      { source: '/dashboard/departments',        destination: '/abteilungen',    permanent: true },
+      { source: '/dashboard/my-salary',          destination: '/mein-gehalt',    permanent: true },
+      { source: '/dashboard/billing',            destination: '/abrechnung',     permanent: true },
+      { source: '/dashboard/settings',           destination: '/einstellungen',  permanent: true },
+      { source: '/dashboard/audit',              destination: '/audit',          permanent: true },
+      { source: '/dashboard/admin',              destination: '/admin',          permanent: true },
+      // Phase-2 routes → back to dashboard for now
+      { source: '/dashboard/overview',           destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/pay-equity-hr',      destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/pay-equity-mgmt',    destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/reports',            destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/joint-assessment',   destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/job-postings',       destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/hr-requests',        destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/rights-notifications', destination: '/dashboard',    permanent: false },
+      { source: '/dashboard/lawyer-reviews',     destination: '/dashboard',      permanent: false },
+      { source: '/dashboard/requests',           destination: '/dashboard',      permanent: false },
+    ];
+  },
 
   // Expose non-secret env vars to Edge Runtime (middleware)
   env: {

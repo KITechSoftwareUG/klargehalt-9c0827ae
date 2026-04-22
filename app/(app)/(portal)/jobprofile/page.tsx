@@ -2,6 +2,6 @@
 
 import JobProfilesView from '@/components/dashboard/JobProfilesView';
 
-export default function JobProfilesPage() {
+export default function JobprofilePage() {
     return <JobProfilesView />;
 }

@@ -2,6 +2,6 @@
 
 import EmployeesView from '@/components/dashboard/EmployeesView';
 
-export default function EmployeesPage() {
+export default function MitarbeiterPage() {
     return <EmployeesView />;
 }
