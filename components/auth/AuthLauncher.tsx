@@ -4,8 +4,9 @@ import { ArrowLeft, Clock, Loader2, Scale } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 
 type Mode = 'sign-in' | 'sign-up';
@@ -28,7 +29,7 @@ interface ModeCopy {
 const COPY: Record<Mode, ModeCopy> = {
     'sign-in': {
         title: 'Anmelden',
-        body: 'Melden Sie sich sicher in Ihrem klargehalt-Workspace an.',
+        body: 'Geben Sie Ihre E-Mail-Adresse ein, um fortzufahren.',
         cta: 'Sicher anmelden',
         ctaHref: '/auth/sign-in',
         footerPrompt: 'Noch kein Konto?',
@@ -62,6 +63,10 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
     const copy = COPY[mode];
 
     const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [checkingEmail, setCheckingEmail] = useState(false);
+    const emailInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const calc = () => {
@@ -89,6 +94,35 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
     }, [isLoaded, isSignedIn, organizations, router]);
 
     const alreadyAuthenticated = isLoaded && isSignedIn;
+
+    async function handleEmailSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed || !trimmed.includes('@')) {
+            setEmailError('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+            emailInputRef.current?.focus();
+            return;
+        }
+        setEmailError('');
+        setCheckingEmail(true);
+        try {
+            const res = await fetch('/api/auth/check-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: trimmed }),
+            });
+            const data = await res.json() as { exists?: boolean; error?: string };
+            if (data.exists) {
+                router.push(`/auth/sign-in?login_hint=${encodeURIComponent(trimmed)}`);
+            } else {
+                router.push(`/sign-up?email=${encodeURIComponent(trimmed)}`);
+            }
+        } catch {
+            setEmailError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+        } finally {
+            setCheckingEmail(false);
+        }
+    }
 
     return (
         <div className="min-h-screen flex bg-[#071423]">
@@ -184,6 +218,54 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
                                 <Loader2 className="w-4 h-4 text-[#946df7] animate-spin flex-shrink-0" />
                                 <span>Sie sind bereits angemeldet — Sie werden weitergeleitet...</span>
                             </div>
+                        ) : mode === 'sign-in' ? (
+                            <form onSubmit={handleEmailSubmit} noValidate>
+                                <div className="mb-4">
+                                    <label htmlFor="email-input" className="block text-sm font-medium text-[#071423] mb-1.5">
+                                        E-Mail-Adresse
+                                    </label>
+                                    <Input
+                                        id="email-input"
+                                        ref={emailInputRef}
+                                        type="email"
+                                        autoComplete="email"
+                                        autoFocus
+                                        placeholder="name@unternehmen.de"
+                                        value={email}
+                                        onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+                                        className="h-11 rounded-xl border-[#e0e0e2] text-sm"
+                                        disabled={checkingEmail || !isLoaded}
+                                    />
+                                    {emailError && (
+                                        <p className="mt-1.5 text-xs text-red-500">{emailError}</p>
+                                    )}
+                                </div>
+                                <Button
+                                    type="submit"
+                                    disabled={checkingEmail || !isLoaded}
+                                    className="w-full h-12 rounded-xl bg-[#071423] text-white hover:bg-[#0d1f33] text-sm font-semibold cursor-pointer mb-4"
+                                >
+                                    {checkingEmail ? (
+                                        <span className="inline-flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Wird geprüft…
+                                        </span>
+                                    ) : 'Weiter'}
+                                </Button>
+                                <p className="text-sm text-[#535a6b]">
+                                    {copy.footerPrompt}{' '}
+                                    <Link href={copy.footerLinkHref} className="text-[#946df7] font-semibold hover:underline">
+                                        {copy.footerLinkLabel}
+                                    </Link>
+                                </p>
+                                {copy.showForgotPassword && (
+                                    <p className="mt-3 text-sm text-[#535a6b]">
+                                        <Link href="/auth/forgot-password" className="text-[#535a6b] hover:text-[#071423] hover:underline">
+                                            Passwort vergessen?
+                                        </Link>
+                                    </p>
+                                )}
+                            </form>
                         ) : (
                             <>
                                 <Link href={copy.ctaHref} className="block mb-4" aria-disabled={!isLoaded} tabIndex={isLoaded ? undefined : -1}>
@@ -205,13 +287,6 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
                                         {copy.footerLinkLabel}
                                     </Link>
                                 </p>
-                                {copy.showForgotPassword && (
-                                    <p className="mt-3 text-sm text-[#535a6b]">
-                                        <Link href="/auth/forgot-password" className="text-[#535a6b] hover:text-[#071423] hover:underline">
-                                            Passwort vergessen?
-                                        </Link>
-                                    </p>
-                                )}
                             </>
                         )}
                     </div>
