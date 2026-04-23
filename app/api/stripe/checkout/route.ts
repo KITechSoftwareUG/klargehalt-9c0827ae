@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { type SubscriptionTier, getStripePriceId, PLANS } from '@/lib/subscription';
 
@@ -31,8 +30,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only admins can manage billing' }, { status: 403 });
     }
 
-    const supabase = await createClient();
-
     const { tier = 'professional', interval = 'monthly' } = (await request.json().catch(() => ({}))) as {
       tier?: SubscriptionTier;
       interval?: 'monthly' | 'yearly';
@@ -46,7 +43,9 @@ export async function POST(request: NextRequest) {
     if (!priceId) {
       return NextResponse.json({ error: 'Stripe price not configured for this plan' }, { status: 500 });
     }
-    const { data: company } = await supabase
+
+    // Use service client — org JWT may lag after onboarding, causing RLS to block the query
+    const { data: company } = await serviceClient
       .from('companies')
       .select('id, name, stripe_customer_id, organization_id')
       .eq('organization_id', context.activeOrganizationId)
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
       });
       customerId = customer.id;
 
-      await supabase
+      await serviceClient
         .from('companies')
         .update({ stripe_customer_id: customerId })
         .eq('id', company.id);
