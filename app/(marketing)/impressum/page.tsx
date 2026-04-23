@@ -42,7 +42,7 @@ export default function ImpressumPage() {
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Kontakt</h2>
                     <ul className="text-sm text-slate-600 list-none space-y-1 mb-8">
                         <li>Telefon: +49 151 64682544</li>
-                        <li>E-Mail: info@kitech-software.de</li>
+                        <li>E-Mail: info@klargehalt.de</li>
                     </ul>
 
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Vertreten durch</h2>
