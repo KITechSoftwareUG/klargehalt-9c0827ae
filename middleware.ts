@@ -13,7 +13,8 @@ const isSkipAuthCheck = (pathname: string) =>
   pathname.startsWith('/api/auth/') ||
   pathname.startsWith('/api/healthz') ||
   pathname.startsWith('/api/webhooks/') ||
-  pathname.startsWith('/api/cron/');
+  pathname.startsWith('/api/cron/') ||
+  pathname.startsWith('/api/onboarding/');
 
 /**
  * Prevent the browser from serving cached authenticated pages when the user
