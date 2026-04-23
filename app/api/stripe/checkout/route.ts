@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
         allow_promotion_codes: true,
         billing_address_collection: 'required',
         tax_id_collection: { enabled: true },
+        customer_update: { name: 'auto', address: 'auto' },
       },
       { idempotencyKey: `checkout_${context.activeOrganizationId}_${tier}_${interval}_${Math.floor(Date.now() / (5 * 60 * 1000))}` }
     );
