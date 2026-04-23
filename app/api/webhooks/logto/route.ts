@@ -228,7 +228,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { event } = payload;
+  const { event, hookId, createdAt } = payload;
+
+  // Idempotency: deduplicate using hookId + createdAt as a stable event fingerprint.
+  // Logto does not provide a unique event ID, so we derive one from the webhook metadata.
+  const eventFingerprint = `logto:${hookId}:${createdAt}`;
+  const supabase = getAdminClient();
+  const { data: alreadyProcessed } = await supabase
+    .from('processed_stripe_events')
+    .select('event_id')
+    .eq('event_id', eventFingerprint)
+    .maybeSingle();
+
+  if (alreadyProcessed) {
+    console.log(`Webhook: duplicate Logto event ${eventFingerprint}, skipping`);
+    return NextResponse.json({ success: true });
+  }
+
   console.log(`Webhook: Received ${event}`);
 
   try {
@@ -256,6 +272,12 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`Webhook: Unhandled event ${event}`);
     }
+
+    // Mark event as processed to prevent duplicate processing on retries
+    await supabase
+      .from('processed_stripe_events')
+      .insert({ event_id: eventFingerprint })
+      .throwOnError();
 
     return NextResponse.json({ success: true });
   } catch (error) {

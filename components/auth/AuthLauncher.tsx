@@ -96,11 +96,15 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
 
     const alreadyAuthenticated = isLoaded && isSignedIn;
 
-    function handleSignUpClick() {
+    function setPlanIntentCookie() {
         const plan = searchParams.get('plan');
         if (plan) {
             document.cookie = `kg_intent_plan=${encodeURIComponent(plan)}; path=/; max-age=3600; samesite=lax`;
         }
+    }
+
+    function handleSignUpClick() {
+        setPlanIntentCookie();
         router.push('/auth/sign-up');
     }
 
@@ -124,7 +128,11 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
             if (data.exists) {
                 router.push(`/auth/sign-in?login_hint=${encodeURIComponent(trimmed)}`);
             } else {
-                router.push(`/sign-up?email=${encodeURIComponent(trimmed)}`);
+                // Preserve plan intent before leaving this page
+                setPlanIntentCookie();
+                const plan = searchParams.get('plan');
+                const planSuffix = plan ? `&plan=${encodeURIComponent(plan)}` : '';
+                router.push(`/sign-up?email=${encodeURIComponent(trimmed)}${planSuffix}`);
             }
         } catch {
             setEmailError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');

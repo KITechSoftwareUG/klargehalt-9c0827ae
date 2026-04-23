@@ -143,16 +143,24 @@ export async function POST(request: NextRequest) {
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null;
 
-        const { data: updated2, error: err2 } = await supabase
+        // Build the update query. When periodEnd is non-null, guard against
+        // out-of-order events by only applying the update when the stored
+        // period end is null or earlier than the incoming event's period end.
+        // When periodEnd is null (e.g. immediate cancellation), apply unconditionally.
+        let updateQuery = supabase
           .from('companies')
           .update({
             subscription_tier: tier,
             subscription_status: status,
             current_period_end: periodEnd,
           })
-          .eq('stripe_customer_id', customerId)
-          .or(`current_period_end.is.null,current_period_end.lte.${periodEnd ?? new Date().toISOString()}`)
-          .select('id');
+          .eq('stripe_customer_id', customerId);
+
+        if (periodEnd !== null) {
+          updateQuery = updateQuery.or(`current_period_end.is.null,current_period_end.lte.${periodEnd}`);
+        }
+
+        const { data: updated2, error: err2 } = await updateQuery.select('id');
 
         if (err2) throw err2;
         if (!updated2 || updated2.length === 0) {

@@ -25,6 +25,8 @@ export const FEATURE_FLAGS: Record<string, SubscriptionTier[]> = {
   pay_gap_analysis: ['basis', 'professional', 'enterprise'],
   pdf_reports: ['professional', 'enterprise'],
   trend_analysis: ['professional', 'enterprise'],
+  decision_documentation: ['professional', 'enterprise'],
+  lawyer_review: ['professional', 'enterprise'],
   priority_support: ['professional', 'enterprise'],
   advanced_audit: ['professional', 'enterprise'],
   sso: ['enterprise'],
