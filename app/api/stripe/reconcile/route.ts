@@ -164,3 +164,144 @@ export async function GET(request: NextRequest) {
     discrepancies,
   });
 }
+
+interface RepairResult {
+  companyId: string;
+  companyName: string;
+  action: string;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * POST /api/stripe/reconcile
+ *
+ * Applies automatic fixes for all detected Stripe ↔ Supabase discrepancies.
+ * Super-admin only. Idempotent — safe to run multiple times.
+ */
+export async function POST(request: NextRequest) {
+  const auth = await getServerAuthContext();
+  if (!auth?.user || auth.user.id !== SUPER_ADMIN_USER_ID) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const supabase = supabaseAdmin();
+  const stripe = getStripe();
+  const results: RepairResult[] = [];
+
+  const { data: companies, error: dbError } = await supabase
+    .from('companies')
+    .select('id, name, stripe_customer_id, stripe_subscription_id, subscription_tier, subscription_status')
+    .not('stripe_customer_id', 'is', null);
+
+  if (dbError) {
+    return NextResponse.json({ error: 'Database error', detail: dbError.message }, { status: 500 });
+  }
+
+  for (const company of companies ?? []) {
+    const customerId = company.stripe_customer_id as string;
+    const companyId = company.id as string;
+    const companyName = (company.name as string) ?? '(unknown)';
+
+    try {
+      let stripeSub: { id: string; status: string; tier: string; periodEnd: string | null } | null = null;
+
+      if (company.stripe_subscription_id) {
+        const sub = await stripe.subscriptions.retrieve(company.stripe_subscription_id as string);
+        const item = sub.items.data[0];
+        const priceId = item?.price?.id ?? '';
+        // In Stripe SDK v20 current_period_end lives on the subscription item
+        const rawPeriodEnd = item?.current_period_end ?? null;
+        stripeSub = {
+          id: sub.id,
+          status: sub.status,
+          tier: mapPriceToTier(priceId),
+          periodEnd: rawPeriodEnd ? new Date(rawPeriodEnd * 1000).toISOString() : null,
+        };
+      } else {
+        const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: 'all' });
+        if (subs.data.length > 0) {
+          const sub = subs.data[0];
+          const item = sub.items.data[0];
+          const priceId = item?.price?.id ?? '';
+          const rawPeriodEnd = item?.current_period_end ?? null;
+          stripeSub = {
+            id: sub.id,
+            status: sub.status,
+            tier: mapPriceToTier(priceId),
+            periodEnd: rawPeriodEnd ? new Date(rawPeriodEnd * 1000).toISOString() : null,
+          };
+        }
+      }
+
+      if (!stripeSub) {
+        const appStatus = company.subscription_status as string;
+        if (appStatus === 'active' || appStatus === 'past_due') {
+          const { error: fixErr } = await supabase
+            .from('companies')
+            .update({ subscription_status: 'canceled', stripe_subscription_id: null })
+            .eq('id', companyId);
+          results.push({
+            companyId, companyName,
+            action: 'set canceled (no Stripe subscription found)',
+            success: !fixErr,
+            error: fixErr?.message,
+          });
+        }
+        continue;
+      }
+
+      const normalizedStatus =
+        stripeSub.status === 'active' ? 'active'
+        : stripeSub.status === 'past_due' ? 'past_due'
+        : stripeSub.status === 'canceled' ? 'canceled'
+        : stripeSub.status === 'trialing' ? 'trialing'
+        : 'incomplete';
+
+      const appStatus = company.subscription_status as string;
+      const appTier = company.subscription_tier as string;
+
+      const needsTierFix = stripeSub.tier !== 'unknown' && stripeSub.tier !== appTier;
+      const needsStatusFix = normalizedStatus !== appStatus;
+      const needsSubIdFix = !company.stripe_subscription_id;
+
+      if (needsTierFix || needsStatusFix || needsSubIdFix) {
+        const patch: Record<string, unknown> = {};
+        if (needsTierFix) patch.subscription_tier = stripeSub.tier;
+        if (needsStatusFix) patch.subscription_status = normalizedStatus;
+        if (needsSubIdFix) patch.stripe_subscription_id = stripeSub.id;
+        if (stripeSub.periodEnd) patch.current_period_end = stripeSub.periodEnd;
+
+        const { error: fixErr } = await supabase
+          .from('companies')
+          .update(patch)
+          .eq('id', companyId);
+
+        const description = [
+          needsTierFix ? `tier: ${appTier} → ${stripeSub.tier}` : null,
+          needsStatusFix ? `status: ${appStatus} → ${normalizedStatus}` : null,
+          needsSubIdFix ? `linked subscription ${stripeSub.id}` : null,
+        ].filter(Boolean).join('; ');
+
+        results.push({
+          companyId, companyName,
+          action: description,
+          success: !fixErr,
+          error: fixErr?.message,
+        });
+      }
+    } catch (err) {
+      results.push({
+        companyId, companyName,
+        action: 'Stripe API error — skipped',
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const fixed = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
+
+  return NextResponse.json({ repairedAt: new Date().toISOString(), fixed, failed, results });
+}
