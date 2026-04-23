@@ -18,7 +18,7 @@ const ContactSection = () => {
             </div>
 
             <div className="space-y-4">
-              <InfoRow label="E-Mail" value="kontakt@klargehalt.de" />
+              <InfoRow label="E-Mail" value="info@klargehalt.de" />
               <InfoRow label="Telefon" value="+49 (0) 30 847 291 03" />
               <InfoRow label="Standort" value="Berlin, Deutschland" />
             </div>

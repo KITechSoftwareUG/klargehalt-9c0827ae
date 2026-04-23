@@ -20,7 +20,7 @@ export default function ContactForm() {
                                         <Mail className="w-5 h-5 text-[var(--ep-teal-dark)]" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-[#071423]">kontakt@klargehalt.de</p>
+                                        <p className="text-sm font-medium text-[#071423]">info@klargehalt.de</p>
                                         <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">Für allgemeine Anfragen und Demos</p>
                                     </div>
                                 </div>
