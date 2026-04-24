@@ -2,6 +2,7 @@
 
 import { Clock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -23,6 +24,24 @@ async function startCheckout(tier: 'professional' | 'basis' = 'professional') {
     console.error('Failed to start checkout', err);
     toast.error('Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut.');
   }
+}
+
+export function TrialHeaderBadge(): JSX.Element | null {
+  const { isTrialing, trialDaysRemaining, loading } = useSubscription();
+
+  if (loading || !isTrialing || trialDaysRemaining === null || trialDaysRemaining < 10) {
+    return null;
+  }
+
+  return (
+    <Link
+      href="/abrechnung"
+      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground px-3 py-1.5 rounded-full border border-border hover:bg-muted transition-colors"
+    >
+      <Clock className="h-3 w-3" />
+      {trialDaysRemaining} Tage Test
+    </Link>
+  );
 }
 
 export function TrialBanner() {
@@ -49,8 +68,8 @@ export function TrialBanner() {
     );
   }
 
-  // Active trial banner
-  if (!isTrialing || trialDaysRemaining === null) return null;
+  // Active trial banner — full banner only for days 9 and below; days 10+ use TrialHeaderBadge
+  if (!isTrialing || trialDaysRemaining === null || trialDaysRemaining >= 10) return null;
 
   const isHard = trialDaysRemaining <= 4;
   const isSoft = trialDaysRemaining >= 5 && trialDaysRemaining <= 9;

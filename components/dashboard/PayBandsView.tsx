@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Scale, Euro } from 'lucide-react';
+import { SetupStepGuide } from '@/components/dashboard/SetupStepGuide';
 
 const formatCurrency = (value: number, currency: string = 'EUR') => {
   return new Intl.NumberFormat('de-DE', {
@@ -297,6 +298,15 @@ const PayBandsView = () => {
         </Dialog>
       </div>
 
+      {payBands.length === 0 && (
+        <SetupStepGuide
+          icon={Scale}
+          title="Gehaltsbänder hinterlegen"
+          complianceNote="Gehaltsbänder dokumentieren die Entgeltstruktur und erlauben die Überprüfung auf Ausreißer. Pflicht nach Art. 5 der Richtlinie für Unternehmen ab 100 Mitarbeitern."
+          stepNumber={4}
+          totalSteps={5}
+        />
+      )}
       {payBands.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl">
           <Scale className="h-12 w-12 text-muted-foreground mb-4" />

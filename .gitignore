@@ -63,3 +63,5 @@ next-env.d.ts
 # Claude Code — personal overrides (gitignored per convention)
 CLAUDE.local.md
 .claude/settings.local.json
+# Added by code-review-graph
+.code-review-graph/

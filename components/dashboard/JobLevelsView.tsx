@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Layers } from 'lucide-react';
+import { SetupStepGuide } from '@/components/dashboard/SetupStepGuide';
 
 const JobLevelsView = () => {
   const { jobLevels, loading, createJobLevel, updateJobLevel, deleteJobLevel } = useJobLevels();
@@ -139,6 +140,15 @@ const JobLevelsView = () => {
         </Dialog>
       </div>
 
+      {jobLevels.length === 0 && (
+        <SetupStepGuide
+          icon={Layers}
+          title="Karrierestufen festlegen"
+          complianceNote="Karrierestufen ermöglichen die Bewertung von Lohnunterschieden innerhalb gleicher Tätigkeitsgruppen gemäß Art. 10 der Richtlinie. Sie sind Pflichtbestandteil der Entgeltbewertung."
+          stepNumber={2}
+          totalSteps={5}
+        />
+      )}
       {jobLevels.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl">
           <Layers className="h-12 w-12 text-muted-foreground mb-4" />

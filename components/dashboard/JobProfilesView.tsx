@@ -40,7 +40,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Briefcase, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Briefcase, Building2, CheckCircle, XCircle } from 'lucide-react';
+import { SetupStepGuide } from '@/components/dashboard/SetupStepGuide';
 
 const EVALUATION_METHOD_LABELS: Record<EvaluationMethod, string> = {
   hay: 'Hay-Methode',
@@ -351,6 +352,15 @@ const JobProfilesView = () => {
         </Dialog>
       </div>
 
+      {jobProfiles.length === 0 && (
+        <SetupStepGuide
+          icon={Building2}
+          title="Job-Profile anlegen"
+          complianceNote="Job-Profile definieren Vergleichsgruppen für gleiche oder gleichwertige Arbeit nach Art. 4 der EU-Richtlinie. Sie sind die zentrale Grundlage der Gehaltsanalyse."
+          stepNumber={3}
+          totalSteps={5}
+        />
+      )}
       {jobProfiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl">
           <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
