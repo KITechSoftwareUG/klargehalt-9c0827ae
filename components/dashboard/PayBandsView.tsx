@@ -283,7 +283,7 @@ const PayBandsView = () => {
                 Definieren Sie eine Gehaltsspanne für ein Job-Profil und eine Karrierestufe.
               </DialogDescription>
             </DialogHeader>
-            <FormFields />
+            {FormFields()}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
               <Button

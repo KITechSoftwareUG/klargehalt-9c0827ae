@@ -154,7 +154,7 @@ const DepartmentsView = () => {
                 Erstellen Sie eine neue Abteilung für Ihre Organisationsstruktur.
               </DialogDescription>
             </DialogHeader>
-            <FormFields />
+            {FormFields()}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                 Abbrechen
@@ -231,7 +231,7 @@ const DepartmentsView = () => {
             <DialogTitle>Abteilung bearbeiten</DialogTitle>
             <DialogDescription>Aktualisieren Sie die Abteilungsdaten.</DialogDescription>
           </DialogHeader>
-          <FormFields />
+          {FormFields()}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
             <Button variant="hero" onClick={handleUpdate} disabled={!formData.name.trim()}>Speichern</Button>

@@ -343,7 +343,7 @@ const JobProfilesView = () => {
                 Erstellen Sie ein neues Stellenprofil mit EU-Bewertungskriterien.
               </DialogDescription>
             </DialogHeader>
-            <FormFields />
+            {FormFields()}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
               <Button variant="hero" onClick={handleCreate} disabled={!formData.title}>Erstellen</Button>

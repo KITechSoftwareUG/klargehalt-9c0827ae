@@ -131,7 +131,7 @@ const JobLevelsView = () => {
                 Definieren Sie eine neue Karrierestufe für Gehaltsbänder und Mitarbeiter.
               </DialogDescription>
             </DialogHeader>
-            <FormFields />
+            {FormFields()}
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Abbrechen</Button>
               <Button variant="hero" onClick={handleCreate} disabled={!formData.name.trim()}>Erstellen</Button>
@@ -208,7 +208,7 @@ const JobLevelsView = () => {
             <DialogTitle>Karrierestufe bearbeiten</DialogTitle>
             <DialogDescription>Aktualisieren Sie die Stufendaten.</DialogDescription>
           </DialogHeader>
-          <FormFields />
+          {FormFields()}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Abbrechen</Button>
             <Button variant="hero" onClick={handleUpdate} disabled={!formData.name.trim()}>Speichern</Button>
