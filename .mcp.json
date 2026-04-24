@@ -1,8 +1,21 @@
 {
   "mcpServers": {
+    "chrome-devtools": {
+      "command": "/home/deploy/.nvm/versions/node/v20.20.2/bin/npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--browserUrl", "http://127.0.0.1:9222"],
+      "type": "stdio"
+    },
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=btbucjkczpejplykyvkj"
+    },
+    "code-review-graph": {
+      "command": "uvx",
+      "args": [
+        "code-review-graph",
+        "serve"
+      ],
+      "type": "stdio"
     }
   }
 }

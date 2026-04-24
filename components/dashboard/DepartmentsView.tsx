@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2, Building } from 'lucide-react';
+import { SetupStepGuide } from '@/components/dashboard/SetupStepGuide';
 
 const DepartmentsView = () => {
   const { departments, loading, createDepartment, updateDepartment, deleteDepartment } = useDepartments();
@@ -166,6 +167,15 @@ const DepartmentsView = () => {
         </Dialog>
       </div>
 
+      {departments.length === 0 && (
+        <SetupStepGuide
+          icon={Building}
+          title="Unternehmensstruktur definieren"
+          complianceNote="Abteilungen sind die Grundlage für Vergleichsgruppen nach Art. 9 EU-Entgelttransparenzrichtlinie. Ohne Struktur können keine Gehaltsgruppen analysiert werden."
+          stepNumber={1}
+          totalSteps={5}
+        />
+      )}
       {departments.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl">
           <Building className="h-12 w-12 text-muted-foreground mb-4" />

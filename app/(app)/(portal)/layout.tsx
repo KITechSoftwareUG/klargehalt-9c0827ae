@@ -12,7 +12,8 @@ import {
     Layers, ShieldCheck, Building, KeyRound, Menu,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { TrialBanner } from '@/components/TrialBanner';
+import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
+import { WelcomeModal } from '@/components/WelcomeModal';
 import { MfaBanner } from '@/components/MfaBanner';
 import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
@@ -242,6 +243,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <TrialBanner />
                 <MfaBanner />
                 {isExpired && <TrialExpiredOverlay />}
+                <WelcomeModal />
                 <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl px-4 sm:px-8 py-4">
                     <div className="flex items-center justify-between max-w-7xl mx-auto">
                         <div className="flex items-center gap-3">
@@ -260,6 +262,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     {new Date().toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <TrialHeaderBadge />
                         </div>
                     </div>
                 </header>

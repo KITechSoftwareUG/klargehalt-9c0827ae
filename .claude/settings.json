@@ -17,5 +17,31 @@
       "Bash(source .env)",
       "Bash(curl -s -X POST \"$LOGTO_ENDPOINT/oidc/token\" -H \"Content-Type: application/x-www-form-urlencoded\" -d \"grant_type=client_credentials&client_id=$LOGTO_M2M_APP_ID&client_secret=$LOGTO_M2M_APP_SECRET&resource=$LOGTO_MANAGEMENT_API_RESOURCE&scope=all\")"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "code-review-graph update --skip-flows",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "code-review-graph status",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
