@@ -265,7 +265,7 @@ export default function UeberUnsPage() {
                                 Faire Bezahlung fängt bei uns selbst an.
                             </p>
                             <Link
-                                href="/kontakt"
+                                href="/karriere"
                                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-white text-[#51398e] hover:bg-white/90 transition-colors cursor-pointer"
                             >
                                 Offene Stellen ansehen <ArrowRight className="w-4 h-4" />
