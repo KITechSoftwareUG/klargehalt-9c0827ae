@@ -9,10 +9,20 @@ CREATE TABLE IF NOT EXISTS processed_logto_events (
 
 ALTER TABLE processed_logto_events ENABLE ROW LEVEL SECURITY;
 
--- Only service role (used by the webhook handler) can read/write
-CREATE POLICY "service_role_only" ON processed_logto_events
-  USING (false)
-  WITH CHECK (false);
+-- Guard against duplicate policy if migration is re-applied
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'processed_logto_events'
+      AND policyname = 'service_role_only'
+  ) THEN
+    CREATE POLICY "service_role_only" ON processed_logto_events
+      USING (false)
+      WITH CHECK (false);
+  END IF;
+END;
+$$;
 
 -- Auto-clean events older than 30 days to keep table small
 CREATE INDEX IF NOT EXISTS idx_processed_logto_events_processed_at
