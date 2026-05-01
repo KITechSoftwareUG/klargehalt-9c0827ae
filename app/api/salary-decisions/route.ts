@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { createClient } from '@/lib/supabase/server';
-import { logAuditEntry } from '@/lib/audit-log';
 
 const justificationFactorSchema = z.object({
   type: z.enum(['experience', 'education', 'performance', 'market_rate', 'seniority', 'other']),
@@ -24,14 +23,21 @@ const createDecisionSchema = z.object({
   lawyer_review_id: z.string().uuid().nullable().optional(),
 });
 
+const supabaseAdmin = () =>
+  createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
   if (!context.isAuthenticated || !context.activeOrganizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabaseForRoleCheck = await createClient();
-  const { data: userRole } = await supabaseForRoleCheck
+  const supabase = supabaseAdmin();
+
+  const { data: userRole } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', context.user!.id)
@@ -57,8 +63,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = supabaseForRoleCheck;
-
   const { data, error } = await supabase
     .from('salary_decisions')
     .insert({
@@ -75,13 +79,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  void logAuditEntry(supabase, {
-    orgId: context.activeOrganizationId,
-    userId: context.user!.id,
+  void supabase.from('audit_logs').insert({
+    organization_id: context.activeOrganizationId,
+    user_id: context.user!.id,
     action: 'create',
-    entityType: 'salary_decisions',
-    entityId: data.id,
-    afterState: data,
+    entity_type: 'salary_decisions',
+    entity_id: data.id,
+    after_state: data,
   });
 
   return NextResponse.json({ success: true, data }, { status: 201 });
