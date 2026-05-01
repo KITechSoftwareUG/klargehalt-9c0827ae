@@ -1,9 +1,49 @@
 'use client';
 
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { ArrowRight, Mail, Phone, MapPin, Clock, CheckCircle2 } from 'lucide-react';
+
+const schema = z.object({
+    firstName: z.string().min(1, 'Pflichtfeld'),
+    lastName: z.string().min(1, 'Pflichtfeld'),
+    email: z.string().email('Ungültige E-Mail-Adresse'),
+    company: z.string().min(1, 'Pflichtfeld'),
+    size: z.string().min(1, 'Bitte wählen'),
+    role: z.string().optional(),
+    interest: z.string().optional(),
+    message: z.string().optional(),
+});
+
+type FormData = z.infer<typeof schema>;
 
 export default function ContactForm() {
+    const [submitted, setSubmitted] = useState(false);
+
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+        resolver: zodResolver(schema),
+    });
+
+    async function onSubmit(data: FormData) {
+        const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error ?? 'Fehler beim Senden. Bitte versuchen Sie es erneut.');
+            return;
+        }
+
+        setSubmitted(true);
+    }
+
     return (
         <section className="py-20 lg:py-28">
             <div className="max-w-7xl mx-auto px-5 sm:px-8">
@@ -54,7 +94,6 @@ export default function ContactForm() {
                             </div>
                         </div>
 
-                        {/* What to expect */}
                         <div className="bg-[var(--ep-gray-1)] rounded-xl p-6 border border-[var(--ep-gray-2)]">
                             <h3 className="text-sm font-bold text-[#071423] mb-4">Was passiert nach Ihrer Anfrage?</h3>
                             <div className="space-y-4">
@@ -76,59 +115,87 @@ export default function ContactForm() {
                     {/* Right — Form */}
                     <div className="lg:col-span-7">
                         <div className="bg-white rounded-2xl border border-[var(--ep-gray-2)] p-7 lg:p-10 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                            <h3 className="text-lg font-bold text-[#071423] tracking-tight mb-1">Demo anfragen</h3>
-                            <p className="text-xs text-[var(--ep-gray-3)] mb-7">Alle Felder mit * sind Pflichtfelder.</p>
-
-                            <form className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <FormField label="Vorname *" id="fn" placeholder="Max" />
-                                    <FormField label="Nachname *" id="ln" placeholder="Mustermann" />
-                                </div>
-                                <FormField label="Geschaeftliche E-Mail *" id="email" type="email" placeholder="m.mustermann@firma.de" />
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <FormField label="Unternehmen *" id="co" placeholder="Unternehmen GmbH" />
-                                    <div>
-                                        <label htmlFor="size" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Mitarbeiteranzahl *</label>
-                                        <select id="size" className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all cursor-pointer">
-                                            <option value="">Bitte waehlen</option>
-                                            <option value="1-50">1 - 50</option>
-                                            <option value="51-100">51 - 100</option>
-                                            <option value="101-250">101 - 250</option>
-                                            <option value="251-1000">251 - 1.000</option>
-                                            <option value="1000+">1.000+</option>
-                                        </select>
+                            {submitted ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
+                                    <div className="w-14 h-14 rounded-full bg-[var(--ep-teal-light)] flex items-center justify-center">
+                                        <CheckCircle2 className="w-7 h-7 text-[var(--ep-teal-dark)]" />
                                     </div>
+                                    <h3 className="text-lg font-bold text-[#071423]">Anfrage gesendet!</h3>
+                                    <p className="text-sm text-[var(--ep-gray-3)] max-w-[38ch]">
+                                        Vielen Dank. Wir melden uns innerhalb eines Werktags bei Ihnen.
+                                    </p>
                                 </div>
-                                <FormField label="Ihre Rolle" id="role" placeholder="z.B. HR-Leitung, Geschaeftsfuehrung" />
-                                <div>
-                                    <label htmlFor="interest" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Wofür interessieren Sie sich?</label>
-                                    <select id="interest" className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all cursor-pointer">
-                                        <option value="">Bitte waehlen</option>
-                                        <option value="demo">Live-Demo</option>
-                                        <option value="beratung">Compliance-Beratung</option>
-                                        <option value="preise">Individuelle Preisanfrage</option>
-                                        <option value="technisch">Technische Fragen</option>
-                                        <option value="sonstiges">Sonstiges</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="msg" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Nachricht (optional)</label>
-                                    <textarea
-                                        id="msg"
-                                        rows={4}
-                                        className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] placeholder:text-[var(--ep-gray-3)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all resize-none"
-                                        placeholder="Was moechten Sie wissen? Welche Herausforderung haben Sie aktuell?"
-                                    />
-                                </div>
-                                <Button className="w-full h-12 bg-[#071423] text-white hover:bg-[#0d1f33] rounded-lg text-sm font-semibold shadow-sm group cursor-pointer">
-                                    Anfrage absenden
-                                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                                </Button>
-                                <p className="text-[10px] text-[var(--ep-gray-3)] text-center">
-                                    Mit dem Absenden stimmen Sie unserer Datenschutzerklaerung zu.
-                                    Wir geben Ihre Daten nicht an Dritte weiter.
-                                </p>
-                            </form>
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-bold text-[#071423] tracking-tight mb-1">Demo anfragen</h3>
+                                    <p className="text-xs text-[var(--ep-gray-3)] mb-7">Alle Felder mit * sind Pflichtfelder.</p>
+
+                                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <FormField label="Vorname *" id="firstName" placeholder="Max" error={errors.firstName?.message} {...register('firstName')} />
+                                            <FormField label="Nachname *" id="lastName" placeholder="Mustermann" error={errors.lastName?.message} {...register('lastName')} />
+                                        </div>
+                                        <FormField label="Geschäftliche E-Mail *" id="email" type="email" placeholder="m.mustermann@firma.de" error={errors.email?.message} {...register('email')} />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <FormField label="Unternehmen *" id="company" placeholder="Unternehmen GmbH" error={errors.company?.message} {...register('company')} />
+                                            <div>
+                                                <label htmlFor="size" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Mitarbeiteranzahl *</label>
+                                                <select
+                                                    id="size"
+                                                    {...register('size')}
+                                                    className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all cursor-pointer"
+                                                >
+                                                    <option value="">Bitte wählen</option>
+                                                    <option value="1-50">1 - 50</option>
+                                                    <option value="51-100">51 - 100</option>
+                                                    <option value="101-250">101 - 250</option>
+                                                    <option value="251-1000">251 - 1.000</option>
+                                                    <option value="1000+">1.000+</option>
+                                                </select>
+                                                {errors.size && <p className="text-xs text-red-500 mt-1">{errors.size.message}</p>}
+                                            </div>
+                                        </div>
+                                        <FormField label="Ihre Rolle" id="role" placeholder="z.B. HR-Leitung, Geschäftsführung" {...register('role')} />
+                                        <div>
+                                            <label htmlFor="interest" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Wofür interessieren Sie sich?</label>
+                                            <select
+                                                id="interest"
+                                                {...register('interest')}
+                                                className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all cursor-pointer"
+                                            >
+                                                <option value="">Bitte wählen</option>
+                                                <option value="Live-Demo">Live-Demo</option>
+                                                <option value="Compliance-Beratung">Compliance-Beratung</option>
+                                                <option value="Individuelle Preisanfrage">Individuelle Preisanfrage</option>
+                                                <option value="Technische Fragen">Technische Fragen</option>
+                                                <option value="Sonstiges">Sonstiges</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="message" className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">Nachricht (optional)</label>
+                                            <textarea
+                                                id="message"
+                                                rows={4}
+                                                {...register('message')}
+                                                className="w-full px-3.5 py-2.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] placeholder:text-[var(--ep-gray-3)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all resize-none"
+                                                placeholder="Was möchten Sie wissen? Welche Herausforderung haben Sie aktuell?"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="w-full h-12 bg-[#071423] text-white hover:bg-[#0d1f33] rounded-lg text-sm font-semibold shadow-sm group cursor-pointer disabled:opacity-60"
+                                        >
+                                            {isSubmitting ? 'Wird gesendet…' : 'Anfrage absenden'}
+                                            {!isSubmitting && <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />}
+                                        </Button>
+                                        <p className="text-[10px] text-[var(--ep-gray-3)] text-center">
+                                            Mit dem Absenden stimmen Sie unserer Datenschutzerklärung zu.
+                                            Wir geben Ihre Daten nicht an Dritte weiter.
+                                        </p>
+                                    </form>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -137,16 +204,24 @@ export default function ContactForm() {
     );
 }
 
-function FormField({ label, id, type = 'text', placeholder }: { label: string; id: string; type?: string; placeholder: string }) {
+interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    label: string;
+    id: string;
+    error?: string;
+}
+
+function FormField({ label, id, type = 'text', placeholder, error, ...rest }: FormFieldProps) {
     return (
         <div>
             <label htmlFor={id} className="block text-xs font-medium text-[var(--ep-gray-4)] mb-1.5">{label}</label>
             <input
                 type={type}
                 id={id}
-                className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] placeholder:text-[var(--ep-gray-3)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all"
                 placeholder={placeholder}
+                className="w-full h-11 px-3.5 rounded-lg border border-[var(--ep-gray-2)] bg-white text-[#071423] placeholder:text-[var(--ep-gray-3)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ep-purple)]/20 focus:border-[var(--ep-purple)]/40 transition-all"
+                {...rest}
             />
+            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }

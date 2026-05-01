@@ -43,9 +43,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle, Scale, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle, Scale, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SalaryFactor, SalaryFactorType, SalaryJustification } from '@/lib/types/salary-justification';
+import { SalaryDecisionDialog } from '@/components/dashboard/SalaryDecisionDialog';
 import {
   SALARY_FACTOR_DISPLAY_LABELS,
   SALARY_SCORE_LABELS,
@@ -144,6 +145,9 @@ const EmployeesView = () => {
   // Salary justification state
   const [justificationFactors, setJustificationFactors] = useState<SalaryFactor[]>([]);
   const [justificationSummary, setJustificationSummary] = useState('');
+
+  // Decision dialog state
+  const [decisionEmployee, setDecisionEmployee] = useState<Employee | null>(null);
 
   // Invite state
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
@@ -850,6 +854,15 @@ const EmployeesView = () => {
                             : <Mail className="w-4 h-4" />}
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDecisionEmployee(employee)}
+                        title="Gehaltsentscheidung dokumentieren"
+                        className="text-primary hover:text-primary"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(employee)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -944,14 +957,14 @@ const EmployeesView = () => {
         </DialogContent>
       </Dialog>
 
-      {/* CSV Import help dialog */}
-      <Dialog open={false}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>CSV-Format</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+      {/* Salary Decision Dialog */}
+      {decisionEmployee && (
+        <SalaryDecisionDialog
+          employee={decisionEmployee}
+          open={decisionEmployee !== null}
+          onClose={() => setDecisionEmployee(null)}
+        />
+      )}
     </div>
   );
 };
