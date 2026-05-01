@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
+import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST() {
   const context = await getServerAuthContext();
@@ -70,6 +71,15 @@ export async function POST() {
     console.error('repair-role: insert failed', error);
     return NextResponse.json({ error: 'Failed to repair role' }, { status: 500 });
   }
+
+  void logAuditEntry(adminClient, {
+    orgId: context.activeOrganizationId,
+    userId: context.user.id,
+    action: 'create',
+    entityType: 'user_roles',
+    entityId: context.user.id,
+    afterState: { user_id: context.user.id, organization_id: context.activeOrganizationId, role: assignedRole, repaired: true },
+  });
 
   return NextResponse.json({ role: assignedRole, repaired: true });
 }

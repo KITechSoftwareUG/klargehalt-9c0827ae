@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logAuditEntry } from '@/lib/audit-log';
 import type { SalaryJustification } from '@/lib/types/salary-justification';
 
 export interface Employee {
@@ -118,6 +119,15 @@ export function useEmployees() {
 
       if (error) throw error;
 
+      void logAuditEntry(supabase, {
+        orgId,
+        userId: user.id,
+        action: 'create',
+        entityType: 'employees',
+        entityId: data.id,
+        afterState: data,
+      });
+
       toast.success('Mitarbeiter erfolgreich erstellt');
       await fetchEmployees();
       return data as Employee;
@@ -130,12 +140,31 @@ export function useEmployees() {
 
   const updateEmployee = async (id: string, formData: Partial<EmployeeFormData>): Promise<boolean> => {
     try {
+      // Fetch before state for audit trail
+      const { data: oldData } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('employees')
         .update({ ...formData, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
+
+      if (user && orgId) {
+        void logAuditEntry(supabase, {
+          orgId,
+          userId: user.id,
+          action: 'update',
+          entityType: 'employees',
+          entityId: id,
+          beforeState: oldData,
+          afterState: formData,
+        });
+      }
 
       toast.success('Mitarbeiter erfolgreich aktualisiert');
       await fetchEmployees();
@@ -149,12 +178,31 @@ export function useEmployees() {
 
   const deleteEmployee = async (id: string): Promise<boolean> => {
     try {
+      // Fetch before state for audit trail
+      const { data: oldData } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('employees')
         .update({ is_active: false, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
+
+      if (user && orgId) {
+        void logAuditEntry(supabase, {
+          orgId,
+          userId: user.id,
+          action: 'delete',
+          entityType: 'employees',
+          entityId: id,
+          beforeState: oldData,
+          afterState: { is_active: false },
+        });
+      }
 
       toast.success('Mitarbeiter erfolgreich archiviert');
       await fetchEmployees();

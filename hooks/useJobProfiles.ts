@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logAuditEntry } from '@/lib/audit-log';
 
 export type EvaluationMethod = 'hay' | 'korn_ferry' | 'mercer' | 'willis_towers_watson' | 'internal' | 'other';
 
@@ -118,6 +119,15 @@ export function useJobProfiles() {
 
       if (error) throw error;
 
+      void logAuditEntry(supabase, {
+        orgId,
+        userId: user.id,
+        action: 'create',
+        entityType: 'job_profiles',
+        entityId: data.id,
+        afterState: data,
+      });
+
       toast.success('Job-Profil erfolgreich erstellt');
       await fetchJobProfiles();
       return data;
@@ -130,12 +140,30 @@ export function useJobProfiles() {
 
   const updateJobProfile = async (id: string, formData: Partial<JobProfileFormData>): Promise<boolean> => {
     try {
+      const { data: oldData } = await supabase
+        .from('job_profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('job_profiles')
         .update(formData)
         .eq('id', id);
 
       if (error) throw error;
+
+      if (user && orgId) {
+        void logAuditEntry(supabase, {
+          orgId,
+          userId: user.id,
+          action: 'update',
+          entityType: 'job_profiles',
+          entityId: id,
+          beforeState: oldData,
+          afterState: formData,
+        });
+      }
 
       toast.success('Job-Profil erfolgreich aktualisiert');
       await fetchJobProfiles();
@@ -149,12 +177,29 @@ export function useJobProfiles() {
 
   const deleteJobProfile = async (id: string): Promise<boolean> => {
     try {
+      const { data: oldData } = await supabase
+        .from('job_profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('job_profiles')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      if (user && orgId) {
+        void logAuditEntry(supabase, {
+          orgId,
+          userId: user.id,
+          action: 'delete',
+          entityType: 'job_profiles',
+          entityId: id,
+          beforeState: oldData,
+        });
+      }
 
       toast.success('Job-Profil erfolgreich gelöscht');
       await fetchJobProfiles();
@@ -233,12 +278,27 @@ export function usePayBands(jobProfileId?: string) {
       return null;
     }
 
+    void logAuditEntry(supabase, {
+      orgId,
+      userId: user.id,
+      action: 'create',
+      entityType: 'pay_bands',
+      entityId: data.id,
+      afterState: data,
+    });
+
     toast.success('Gehaltsband erfolgreich erstellt');
     await fetchPayBands();
     return data;
   };
 
   const updatePayBand = async (id: string, formData: Partial<PayBandFormData>): Promise<boolean> => {
+    const { data: oldData } = await supabase
+      .from('pay_bands')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('pay_bands')
       .update(formData)
@@ -250,12 +310,30 @@ export function usePayBands(jobProfileId?: string) {
       return false;
     }
 
+    if (user && orgId) {
+      void logAuditEntry(supabase, {
+        orgId,
+        userId: user.id,
+        action: 'update',
+        entityType: 'pay_bands',
+        entityId: id,
+        beforeState: oldData,
+        afterState: formData,
+      });
+    }
+
     toast.success('Gehaltsband erfolgreich aktualisiert');
     await fetchPayBands();
     return true;
   };
 
   const deletePayBand = async (id: string): Promise<boolean> => {
+    const { data: oldData } = await supabase
+      .from('pay_bands')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
       .from('pay_bands')
       .delete()
@@ -265,6 +343,17 @@ export function usePayBands(jobProfileId?: string) {
       console.error('Error deleting pay band:', error);
       toast.error('Fehler beim Löschen des Gehaltsbands');
       return false;
+    }
+
+    if (user && orgId) {
+      void logAuditEntry(supabase, {
+        orgId,
+        userId: user.id,
+        action: 'delete',
+        entityType: 'pay_bands',
+        entityId: id,
+        beforeState: oldData,
+      });
     }
 
     toast.success('Gehaltsband erfolgreich gelöscht');
