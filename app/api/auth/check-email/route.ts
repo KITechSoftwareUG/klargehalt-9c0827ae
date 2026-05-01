@@ -8,7 +8,9 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+  const ip = req.headers.get('x-real-ip')
+    ?? req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+    ?? 'unknown';
   const allowed = await checkRateLimit(`check-email:${ip}`, 20, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });

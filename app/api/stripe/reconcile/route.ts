@@ -3,7 +3,7 @@ import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPER_ADMIN_USER_ID = 'zqf0ih9ji1m1'; // aalkh
+const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID ?? '';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);

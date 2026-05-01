@@ -35,7 +35,7 @@ export function TrialHeaderBadge(): JSX.Element | null {
 
   return (
     <Link
-      href="/abrechnung"
+      href="/dashboard/billing"
       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground px-3 py-1.5 rounded-full border border-border hover:bg-muted transition-colors"
     >
       <Clock className="h-3 w-3" />

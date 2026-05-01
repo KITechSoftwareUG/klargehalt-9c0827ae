@@ -92,10 +92,14 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const trialDaysRemaining = getTrialDaysRemaining(trialEndsAt?.toISOString() ?? null);
 
   const daysSinceExpired = getDaysSinceTrialExpired(trialEndsAt?.toISOString() ?? null);
+  // isExpired: trial ran out AND no paid period exists.
+  // Covers both status='trialing' (before hourly cron) and 'canceled' (after cron flips it).
+  // currentPeriodEnd being set means a real Stripe subscription existed — don't show trial overlay then.
   const isExpired =
-    status === 'trialing' &&
     trialEndsAt !== null &&
-    trialEndsAt <= new Date();
+    trialEndsAt <= new Date() &&
+    currentPeriodEnd === null &&
+    (status === 'trialing' || status === 'canceled');
   const isInGracePeriod = isExpired && daysSinceExpired < GRACE_PERIOD_DAYS;
   const gracePeriodDaysRemaining = isInGracePeriod
     ? Math.max(0, GRACE_PERIOD_DAYS - daysSinceExpired)
