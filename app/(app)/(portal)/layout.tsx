@@ -90,7 +90,7 @@ function getActiveView(pathname: string): AppView {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, role, loading, isLoaded, orgId, signOut } = useAuth();
+    const { user, role, profile, loading, isLoaded, orgId, signOut } = useAuth();
     const { isExpired } = useSubscription();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -202,11 +202,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <div className="border-t border-white/10 px-4 py-4 mt-auto">
                 <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary/80 to-purple-500/80 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                        {user?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
+                        {(profile?.full_name || user?.firstName)?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-medium text-white leading-tight">
-                            {user?.fullName || user?.firstName || user?.email?.split('@')[0]}
+                            {profile?.full_name || user?.fullName || user?.firstName || user?.email?.split('@')[0]}
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className={`h-1.5 w-1.5 rounded-full ${roleBadge?.dotColor}`} />
