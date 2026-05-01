@@ -41,7 +41,7 @@ export default function TrialExpiredOverlay() {
                     nutzen zu können, wählen Sie jetzt einen Plan.
                 </p>
                 <Button onClick={startCheckout} disabled={loading} className="w-full mb-3" size="lg">
-                    {loading ? 'Wird weitergeleitet...' : 'Jetzt upgraden — ab €99/Monat'}
+                    {loading ? 'Wird weitergeleitet...' : 'Jetzt upgraden — ab €299/Monat'}
                 </Button>
                 <p className="text-xs text-slate-400">
                     Ihre Daten bleiben 30 Tage nach Ablauf erhalten.

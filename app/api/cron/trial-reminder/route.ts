@@ -55,21 +55,26 @@ export async function GET(request: NextRequest) {
       const trialEndsAt = new Date(company.trial_ends_at as string);
       const daysLeft = Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-      const { data: admins } = await supabase
+      const { data: adminRoles } = await supabase
         .from('user_roles')
-        .select('user_id, profiles!inner(email, full_name)')
+        .select('user_id')
         .eq('organization_id', company.organization_id)
         .eq('role', 'admin');
 
-      if (!admins) continue;
+      if (!adminRoles || adminRoles.length === 0) continue;
 
-      for (const admin of admins) {
-        const profileRaw = admin.profiles as unknown;
-        const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
-        if (!profile?.email) continue;
+      const userIds = adminRoles.map((r) => r.user_id as string);
+      const { data: adminProfiles } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .in('user_id', userIds);
 
+      if (!adminProfiles) continue;
+
+      for (const profile of adminProfiles) {
+        if (!profile.email) continue;
         try {
-          await sendTrialEndingEmail(profile.email, profile.full_name, daysLeft, company.name as string);
+          await sendTrialEndingEmail(profile.email, profile.full_name as string, daysLeft, company.name as string);
           totalSent++;
         } catch (emailError) {
           console.error(`Cron trial-reminder: Failed to send to ${profile.email}`, emailError);
