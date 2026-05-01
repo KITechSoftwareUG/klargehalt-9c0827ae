@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSalaryDecisions, SalaryDecisionFormData, JustificationFactor } from '@/hooks/useSalaryDecisions';
+import { useLawyerReviews, SCOPE_TYPE_LABELS, VERDICT_LABELS } from '@/hooks/useLawyerReviews';
 import type { Employee } from '@/hooks/useEmployees';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,7 @@ interface Props {
 
 export function SalaryDecisionDialog({ employee, open, onClose }: Props) {
   const { decisions, loading, createDecision } = useSalaryDecisions(employee.id);
+  const { reviews: lawyerReviews } = useLawyerReviews();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -73,6 +75,7 @@ export function SalaryDecisionDialog({ employee, open, onClose }: Props) {
     new_salary: employee.base_salary,
     justification_text: '',
     justification_factors: [],
+    lawyer_review_id: null,
   });
 
   const addFactor = () => {
@@ -114,6 +117,7 @@ export function SalaryDecisionDialog({ employee, open, onClose }: Props) {
         new_salary: employee.base_salary,
         justification_text: '',
         justification_factors: [],
+        lawyer_review_id: null,
       });
     }
   };
@@ -324,6 +328,34 @@ export function SalaryDecisionDialog({ employee, open, onClose }: Props) {
                 </div>
               ))}
             </div>
+
+            {/* Lawyer Review Link */}
+            {lawyerReviews.length > 0 && (
+              <div className="grid gap-2">
+                <Label>Anwaltliche Prüfung verknüpfen <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Select
+                  value={form.lawyer_review_id ?? 'none'}
+                  onValueChange={v => setForm(p => ({ ...p, lawyer_review_id: v === 'none' ? null : v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Keine Verknüpfung" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Keine Verknüpfung —</SelectItem>
+                    {lawyerReviews.map(r => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {SCOPE_TYPE_LABELS[r.scope_type]}
+                        {r.scope_label ? ` · ${r.scope_label}` : ''}
+                        {' · '}
+                        {VERDICT_LABELS[r.verdict]}
+                        {' · '}
+                        {new Date(r.signed_at).toLocaleDateString('de-DE')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowForm(false)}>Abbrechen</Button>

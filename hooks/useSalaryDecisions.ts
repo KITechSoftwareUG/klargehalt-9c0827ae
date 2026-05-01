@@ -94,24 +94,25 @@ export function useSalaryDecisions(employeeId?: string) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('salary_decisions')
-        .insert({
+      const response = await fetch('/api/salary-decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           ...formData,
-          organization_id: orgId,
-          decided_by_user_id: user.id,
-          decided_at: formData.decided_at ?? new Date().toISOString(),
           justification_factors: formData.justification_factors ?? [],
           comparator_data: formData.comparator_data ?? {},
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json() as { success?: boolean; data?: SalaryDecision; error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? `HTTP ${response.status}`);
+      }
 
       toast.success('Gehaltsentscheidung dokumentiert');
       await fetchDecisions();
-      return data as SalaryDecision;
+      return result.data ?? null;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error creating salary decision:', error);

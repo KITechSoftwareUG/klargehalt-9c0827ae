@@ -232,10 +232,10 @@ export async function POST(request: NextRequest) {
 
   // Idempotency: deduplicate using hookId + createdAt as a stable event fingerprint.
   // Logto does not provide a unique event ID, so we derive one from the webhook metadata.
-  const eventFingerprint = `logto:${hookId}:${createdAt}`;
+  const eventFingerprint = `${hookId}:${createdAt}`;
   const supabase = getAdminClient();
   const { data: alreadyProcessed } = await supabase
-    .from('processed_stripe_events')
+    .from('processed_logto_events')
     .select('event_id')
     .eq('event_id', eventFingerprint)
     .maybeSingle();
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
 
     // Mark event as processed to prevent duplicate processing on retries
     await supabase
-      .from('processed_stripe_events')
+      .from('processed_logto_events')
       .insert({ event_id: eventFingerprint })
       .throwOnError();
 

@@ -126,6 +126,8 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
             });
             const data = await res.json() as { exists?: boolean; error?: string };
             if (data.exists) {
+                // Preserve plan intent so onboarding can pick it up after sign-in
+                setPlanIntentCookie();
                 router.push(`/auth/sign-in?login_hint=${encodeURIComponent(trimmed)}`);
             } else {
                 // Preserve plan intent before leaving this page
