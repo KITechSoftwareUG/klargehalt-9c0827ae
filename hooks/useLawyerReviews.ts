@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { logAuditEntry } from '@/lib/audit-log';
 
 // ============================================================================
 // TYPES
@@ -141,6 +142,16 @@ export function useLawyerReviews() {
 
         const created = data as LawyerReview;
         setReviews((prev) => [created, ...prev]);
+
+        void logAuditEntry(supabase, {
+          orgId,
+          userId: user.id,
+          action: 'create',
+          entityType: 'lawyer_reviews',
+          entityId: created.id,
+          afterState: created,
+        });
+
         toast({
           title: 'Bewertung erstellt',
           description: `Rechtliche Bewertung "${SCOPE_TYPE_LABELS[created.scope_type]}" wurde erfasst.`,

@@ -4,6 +4,7 @@ import { getServerAuthContext } from '@/lib/auth/server';
 import { ACTIVE_ORG_COOKIE } from '@/lib/logto';
 import { createOrganizationWithMembership } from '@/lib/logto-management';
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
+import { logAuditEntry } from '@/lib/audit-log';
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -55,6 +56,15 @@ export async function POST(request: NextRequest) {
       });
       if (roleError) {
         console.error('Failed to insert admin role for new org creator:', roleError);
+      } else {
+        void logAuditEntry(adminClient, {
+          orgId: organization.id,
+          userId: context.user.id,
+          action: 'create',
+          entityType: 'user_roles',
+          entityId: context.user.id,
+          afterState: { user_id: context.user.id, organization_id: organization.id, role: 'admin' },
+        });
       }
     }
 
