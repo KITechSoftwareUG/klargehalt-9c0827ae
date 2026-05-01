@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTrialEndingEmail } from '@/lib/email';
@@ -6,8 +7,16 @@ const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 export async function GET(request: NextRequest) {
-  const secret = request.headers.get('x-cron-secret');
-  if (secret !== process.env.CRON_SECRET) {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) {
+    console.error('[cron] CRON_SECRET not configured — rejecting all requests');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+  const incoming = request.headers.get('x-cron-secret') ?? '';
+  const a = Buffer.from(incoming);
+  const b = Buffer.from(expected);
+  const valid = a.length === b.length && timingSafeEqual(a, b);
+  if (!valid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -28,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('id, name, trial_ends_at')
+      .select('id, organization_id, name, trial_ends_at')
       .eq('subscription_status', 'trialing')
       .gte('trial_ends_at', windowMin)
       .lte('trial_ends_at', windowMax);
@@ -49,7 +58,7 @@ export async function GET(request: NextRequest) {
       const { data: admins } = await supabase
         .from('user_roles')
         .select('user_id, profiles!inner(email, full_name)')
-        .eq('organization_id', company.id)
+        .eq('organization_id', company.organization_id)
         .eq('role', 'admin');
 
       if (!admins) continue;

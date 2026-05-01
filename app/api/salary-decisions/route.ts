@@ -30,6 +30,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const supabaseForRoleCheck = await createClient();
+  const { data: userRole } = await supabaseForRoleCheck
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', context.user!.id)
+    .eq('organization_id', context.activeOrganizationId)
+    .maybeSingle();
+
+  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -45,7 +57,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = supabaseForRoleCheck;
 
   const { data, error } = await supabase
     .from('salary_decisions')

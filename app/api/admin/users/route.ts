@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPER_ADMIN_USER_ID = 'zqf0ih9ji1m1'; // aalkh
+const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID ?? '';
 
 async function getLogtoM2MToken(): Promise<string> {
     const res = await fetch(`${process.env.LOGTO_ENDPOINT}/oidc/token`, {

@@ -11,14 +11,18 @@ const REQUIRED_ENV_VARS = [
   'LOGTO_COOKIE_SECRET',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
+  'CRON_SECRET',
+  'SUPER_ADMIN_USER_ID',
 ] as const;
 
 function validateRequiredEnvVars() {
   const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    // Log but don't throw — a missing optional service key shouldn't crash the app;
-    // individual service modules (email.ts, stripe, etc.) throw at call time.
-    console.error(`[startup] Missing required environment variables: ${missing.join(', ')}`);
+    const msg = `[startup] Missing required environment variables: ${missing.join(', ')}`;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(msg);
+    }
+    console.error(msg);
   }
 }
 

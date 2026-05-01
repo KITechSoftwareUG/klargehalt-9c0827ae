@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Resend } from 'resend';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const schema = z.object({
     firstName: z.string().min(1),
@@ -13,7 +14,15 @@ const schema = z.object({
     message: z.string().optional(),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const ip = request.headers.get('x-real-ip')
+      ?? request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+      ?? 'unknown';
+    const allowed = await checkRateLimit(`contact:${ip}`, 5, 60 * 60 * 1000);
+    if (!allowed) {
+        return NextResponse.json({ error: 'Zu viele Anfragen' }, { status: 429 });
+    }
+
     let body: unknown;
     try {
         body = await request.json();
