@@ -5,6 +5,7 @@ import { ACTIVE_ORG_COOKIE } from '@/lib/logto';
 import { createOrganizationWithMembership } from '@/lib/logto-management';
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 import { logAuditEntry } from '@/lib/audit-log';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -14,6 +15,11 @@ export async function POST(request: NextRequest) {
       { error: 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.' },
       { status: 401 }
     );
+  }
+
+  const rateLimitKey = `org-create:${context.user.id}`;
+  if (!(await checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   const { name } = await request.json();
