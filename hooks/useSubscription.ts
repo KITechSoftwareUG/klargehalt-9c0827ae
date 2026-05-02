@@ -42,7 +42,7 @@ export interface UseSubscriptionReturn extends SubscriptionState {
 
 
 export const useSubscription = (): UseSubscriptionReturn => {
-  const { supabase, orgId, loading: authLoading } = useAuth();
+  const { orgId, loading: authLoading } = useAuth();
   const [rawTier, setRawTier] = useState<SubscriptionTier>('basis');
   const [status, setStatus] = useState<SubscriptionStatus>('trialing');
   const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null);
@@ -57,11 +57,20 @@ export const useSubscription = (): UseSubscriptionReturn => {
     }
 
     try {
-      const { data } = await supabase
-        .from('companies')
-        .select('subscription_tier, subscription_status, trial_ends_at, current_period_end, stripe_customer_id')
-        .eq('organization_id', orgId)
-        .maybeSingle();
+      // Use API route so server-side createClient() carries the org JWT via cookie,
+      // bypassing the client-side Supabase singleton that only has the anon key.
+      const res = await fetch('/api/subscription')
+      if (!res.ok) {
+        console.error('Failed to fetch subscription:', res.status)
+        return
+      }
+      const { data } = await res.json() as { data: {
+        subscription_tier: string | null
+        subscription_status: string | null
+        trial_ends_at: string | null
+        current_period_end: string | null
+        stripe_customer_id: string | null
+      } | null }
 
       if (data) {
         setRawTier((data.subscription_tier as SubscriptionTier) || 'basis');
@@ -75,7 +84,7 @@ export const useSubscription = (): UseSubscriptionReturn => {
     } finally {
       setLoading(false);
     }
-  }, [supabase, orgId]);
+  }, [orgId]);
 
   useEffect(() => {
     if (!authLoading) {
