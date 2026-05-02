@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       {
         customer: customerId,
         mode: 'subscription',
+        currency: 'eur',
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${baseUrl}/dashboard?checkout=success`,
         cancel_url: `${baseUrl}/dashboard?checkout=canceled`,

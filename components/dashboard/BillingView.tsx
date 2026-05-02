@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PLANS } from '@/lib/subscription';
 
 export default function BillingView() {
     const sub = useSubscription();
@@ -51,8 +52,11 @@ export default function BillingView() {
         return <div className="flex justify-center py-24"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
     }
 
-    const yearlyBasis = 990;
-    const yearlyPro = 2990;
+    const basisMonthly = PLANS.basis.priceMonthly!;
+    const basisYearly = PLANS.basis.priceYearly!;
+    const proMonthly = PLANS.professional.priceMonthly!;
+    const proYearly = PLANS.professional.priceYearly!;
+    const maxYearlyDiscount = Math.round((1 - proYearly / (proMonthly * 12)) * 100);
 
     return (
         <div className="space-y-6">
@@ -119,7 +123,7 @@ export default function BillingView() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="font-semibold text-slate-900">Plan upgraden</h3>
-                            <p className="text-sm text-slate-500">Jährliche Zahlung spart bis zu 17%</p>
+                            <p className="text-sm text-slate-500">Jährliche Zahlung spart bis zu {maxYearlyDiscount}%</p>
                         </div>
                         {/* Billing interval toggle */}
                         <div className="flex items-center bg-slate-100 rounded-full p-1 gap-1">
@@ -142,7 +146,7 @@ export default function BillingView() {
                                 }`}
                             >
                                 Jährlich
-                                <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">−17%</span>
+                                <span className="ml-1.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">−{maxYearlyDiscount}%</span>
                             </button>
                         </div>
                     </div>
@@ -154,11 +158,11 @@ export default function BillingView() {
                                     <div>
                                         <p className="font-semibold text-slate-900">Basis</p>
                                         <p className="text-2xl font-bold mt-1">
-                                            {billingInterval === 'monthly' ? '€99' : `€${Math.round(yearlyBasis / 12)}`}
+                                            {billingInterval === 'monthly' ? `€${basisMonthly}` : `€${Math.round(basisYearly / 12)}`}
                                             <span className="text-sm font-normal text-slate-500">/Monat</span>
                                         </p>
                                         {billingInterval === 'yearly' && (
-                                            <p className="text-xs text-slate-500">€{yearlyBasis}/Jahr — eine Jahresrechnung</p>
+                                            <p className="text-xs text-slate-500">€{basisYearly}/Jahr — eine Jahresrechnung</p>
                                         )}
                                     </div>
                                     <ul className="text-sm text-slate-600 space-y-1">
@@ -178,11 +182,11 @@ export default function BillingView() {
                                     <div>
                                         <p className="font-semibold text-slate-900">Professional</p>
                                         <p className="text-2xl font-bold mt-1">
-                                            {billingInterval === 'monthly' ? '€299' : `€${Math.round(yearlyPro / 12)}`}
+                                            {billingInterval === 'monthly' ? `€${proMonthly}` : `€${Math.round(proYearly / 12)}`}
                                             <span className="text-sm font-normal text-slate-500">/Monat</span>
                                         </p>
                                         {billingInterval === 'yearly' && (
-                                            <p className="text-xs text-slate-500">€{yearlyPro}/Jahr — eine Jahresrechnung</p>
+                                            <p className="text-xs text-slate-500">€{proYearly}/Jahr — eine Jahresrechnung</p>
                                         )}
                                     </div>
                                     <ul className="text-sm text-slate-600 space-y-1">
