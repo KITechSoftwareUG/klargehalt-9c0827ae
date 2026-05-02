@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useJobProfiles, usePayBands, PayBand, PayBandFormData } from '@/hooks/useJobProfiles';
 import { useJobLevels } from '@/hooks/useJobLevels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -244,8 +246,15 @@ const PayBandsView = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -258,6 +267,9 @@ const PayBandsView = () => {
         <p className="text-muted-foreground text-center mb-4">
           Erstellen Sie zuerst Job-Profile, bevor Sie Gehaltsbänder definieren können.
         </p>
+        <Button asChild variant="hero">
+          <Link href="/jobprofile">Zu Job-Profilen</Link>
+        </Button>
       </div>
     );
   }
