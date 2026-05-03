@@ -54,12 +54,21 @@ export async function POST(request: NextRequest) {
 
     const resend = new Resend(apiKey);
 
+    const safeFirst = escapeHtml(firstName);
+    const safeLast = escapeHtml(lastName);
+    const safeEmail = escapeHtml(email);
+    const safeCompany = escapeHtml(company);
+    const safeSize = escapeHtml(size);
+    const safeRole = role ? escapeHtml(role) : '';
+    const safeInterest = interest ? escapeHtml(interest) : '';
+    const safeMessage = message ? escapeHtml(message) : '';
+
     try {
         await resend.emails.send({
             from: 'KlarGehalt Website <noreply@klargehalt.de>',
             to: 'info@klargehalt.de',
             replyTo: email,
-            subject: `Demo-Anfrage von ${firstName} ${lastName} (${company})`,
+            subject: `Demo-Anfrage von ${safeFirst} ${safeLast} (${safeCompany})`,
             html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
                     <div style="background: #071423; padding: 28px 32px; border-radius: 8px 8px 0 0;">
@@ -67,14 +76,14 @@ export async function POST(request: NextRequest) {
                     </div>
                     <div style="padding: 32px; background: #f8fafc; border-radius: 0 0 8px 8px;">
                         <table style="width: 100%; border-collapse: collapse;">
-                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569; width: 140px;">Name</td><td style="padding: 6px 0; color: #071423;">${firstName} ${lastName}</td></tr>
-                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">E-Mail</td><td style="padding: 6px 0; color: #071423;"><a href="mailto:${email}">${email}</a></td></tr>
-                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Unternehmen</td><td style="padding: 6px 0; color: #071423;">${company}</td></tr>
-                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Mitarbeiter</td><td style="padding: 6px 0; color: #071423;">${size}</td></tr>
-                            ${role ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Rolle</td><td style="padding: 6px 0; color: #071423;">${role}</td></tr>` : ''}
-                            ${interest ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Interesse</td><td style="padding: 6px 0; color: #071423;">${interest}</td></tr>` : ''}
+                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569; width: 140px;">Name</td><td style="padding: 6px 0; color: #071423;">${safeFirst} ${safeLast}</td></tr>
+                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">E-Mail</td><td style="padding: 6px 0; color: #071423;"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Unternehmen</td><td style="padding: 6px 0; color: #071423;">${safeCompany}</td></tr>
+                            <tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Mitarbeiter</td><td style="padding: 6px 0; color: #071423;">${safeSize}</td></tr>
+                            ${safeRole ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Rolle</td><td style="padding: 6px 0; color: #071423;">${safeRole}</td></tr>` : ''}
+                            ${safeInterest ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #475569;">Interesse</td><td style="padding: 6px 0; color: #071423;">${safeInterest}</td></tr>` : ''}
                         </table>
-                        ${message ? `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;"><p style="color: #475569; line-height: 1.6; white-space: pre-wrap;">${message}</p>` : ''}
+                        ${safeMessage ? `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;"><p style="color: #475569; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>` : ''}
                     </div>
                 </div>
             `,
