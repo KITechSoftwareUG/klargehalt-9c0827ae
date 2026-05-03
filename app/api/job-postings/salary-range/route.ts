@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 
 export async function GET(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'job_profile_id ist erforderlich' }, { status: 400 });
   }
 
-  const supabase = await createClient(orgId);
+  const supabase = createServiceClient();
 
   let query = supabase
     .from('pay_bands')

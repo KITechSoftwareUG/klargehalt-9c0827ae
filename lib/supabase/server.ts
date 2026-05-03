@@ -3,13 +3,15 @@
  * Re-export from utils/supabase/server for consistency
  */
 
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { getOrganizationToken } from '@logto/next/server-actions';
 import { getLogtoConfig } from '@/lib/logto';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function createClient(organizationId?: string | null) {
     const cookieStore = await cookies();
@@ -19,8 +21,8 @@ export async function createClient(organizationId?: string | null) {
         : null;
 
     return createServerClient(
-        supabaseUrl!,
-        supabaseKey!,
+        supabaseUrl,
+        supabaseAnonKey,
         {
             cookies: {
                 getAll() {
@@ -45,4 +47,14 @@ export async function createClient(organizationId?: string | null) {
             },
         },
     );
+}
+
+/**
+ * Service-role Supabase client for API routes that have already validated auth
+ * via getServerAuthContext(). Bypasses RLS — callers MUST filter by organization_id.
+ */
+export function createServiceClient() {
+    return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    });
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
@@ -10,7 +10,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createServiceClient();
 
     // Only admins can manage billing
     const { data: userRole } = await supabase
