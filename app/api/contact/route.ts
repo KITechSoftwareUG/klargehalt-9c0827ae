@@ -4,15 +4,24 @@ import { Resend } from 'resend';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 const schema = z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    email: z.string().email(),
-    company: z.string().min(1),
-    size: z.string().min(1),
-    role: z.string().optional(),
-    interest: z.string().optional(),
-    message: z.string().optional(),
+    firstName: z.string().min(1).max(100),
+    lastName: z.string().min(1).max(100),
+    email: z.string().email().max(254),
+    company: z.string().min(1).max(200),
+    size: z.string().min(1).max(50),
+    role: z.string().max(100).optional(),
+    interest: z.string().max(200).optional(),
+    message: z.string().max(5000).optional(),
 });
+
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 export async function POST(request: NextRequest) {
     const ip = request.headers.get('x-real-ip')

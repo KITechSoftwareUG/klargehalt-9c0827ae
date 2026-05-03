@@ -12,3 +12,11 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /onboarding
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /callback
+
+Sitemap: https://klargehalt.de/sitemap.xml

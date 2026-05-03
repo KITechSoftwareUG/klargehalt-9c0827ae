@@ -94,6 +94,16 @@ export function AuthLauncher({ mode }: AuthLauncherProps) {
         router.replace(target);
     }, [isLoaded, isSignedIn, organizations, router]);
 
+    // Persist ?plan= as cookie on page load for BOTH sign-in and sign-up.
+    // Without this, a user landing on /sign-in?plan=professional and clicking
+    // a link (e.g. "Passwort vergessen", "Jetzt registrieren") loses the plan intent.
+    useEffect(() => {
+        const plan = searchParams.get('plan');
+        if (plan) {
+            document.cookie = `kg_intent_plan=${encodeURIComponent(plan)}; path=/; max-age=3600; samesite=lax`;
+        }
+    }, [searchParams]);
+
     const alreadyAuthenticated = isLoaded && isSignedIn;
 
     function setPlanIntentCookie() {

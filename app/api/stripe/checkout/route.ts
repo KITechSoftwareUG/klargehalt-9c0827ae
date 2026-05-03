@@ -3,12 +3,18 @@ import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { type SubscriptionTier, getStripePriceId, PLANS } from '@/lib/subscription';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
     const context = await getServerAuthContext();
     if (!context.isAuthenticated || !context.activeOrganizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitKey = `stripe-checkout:${context.activeOrganizationId}`;
+    if (!(await checkRateLimit(rateLimitKey, 10, 60 * 60 * 1000))) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     // Use service role client to bypass RLS for the admin check.
@@ -81,6 +87,7 @@ export async function POST(request: NextRequest) {
       {
         customer: customerId,
         mode: 'subscription',
+        currency: 'eur',
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${baseUrl}/dashboard?checkout=success`,
         cancel_url: `${baseUrl}/dashboard?checkout=canceled`,
