@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { logAuditEntry } from '@/lib/audit-log';
 import type { SalaryJustification } from '@/lib/types/salary-justification';
 
 export interface Employee {
@@ -66,10 +65,10 @@ export interface EmployeeFormData {
 export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchEmployees = async () => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || !orgId) {
       setEmployees([]);
       setLoading(false);
       return;
@@ -77,20 +76,10 @@ export function useEmployees() {
 
     setLoading(true);
     try {
-      let query = supabase.from('employees').select('*');
-
-      if (orgId) {
-        query = query.eq('organization_id', orgId);
-      } else {
-        query = query.or(`organization_id.is.null,created_by.eq.${user.id}`);
-      }
-
-      query = query.eq('is_active', true);
-
-      const { data, error } = await query.order('last_name');
-
-      if (error) throw error;
-      setEmployees((data || []) as Employee[]);
+      const res = await fetch('/api/employees');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Employee[];
+      setEmployees(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching employees:', error);
@@ -107,30 +96,16 @@ export function useEmployees() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('employees')
-        .insert({
-          ...formData,
-          organization_id: orgId,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      void logAuditEntry(supabase, {
-        orgId,
-        userId: user.id,
-        action: 'create',
-        entityType: 'employees',
-        entityId: data.id,
-        afterState: data,
+      const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Employee;
       toast.success('Mitarbeiter erfolgreich erstellt');
       await fetchEmployees();
-      return data as Employee;
+      return data;
     } catch (error: unknown) {
       console.error('Error creating employee:', error);
       toast.error('Fehler beim Erstellen des Mitarbeiters');
@@ -140,32 +115,12 @@ export function useEmployees() {
 
   const updateEmployee = async (id: string, formData: Partial<EmployeeFormData>): Promise<boolean> => {
     try {
-      // Fetch before state for audit trail
-      const { data: oldData } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      const { error } = await supabase
-        .from('employees')
-        .update({ ...formData, updated_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      if (user && orgId) {
-        void logAuditEntry(supabase, {
-          orgId,
-          userId: user.id,
-          action: 'update',
-          entityType: 'employees',
-          entityId: id,
-          beforeState: oldData,
-          afterState: formData,
-        });
-      }
-
+      const res = await fetch(`/api/employees/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Mitarbeiter erfolgreich aktualisiert');
       await fetchEmployees();
       return true;
@@ -178,32 +133,8 @@ export function useEmployees() {
 
   const deleteEmployee = async (id: string): Promise<boolean> => {
     try {
-      // Fetch before state for audit trail
-      const { data: oldData } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      const { error } = await supabase
-        .from('employees')
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      if (user && orgId) {
-        void logAuditEntry(supabase, {
-          orgId,
-          userId: user.id,
-          action: 'delete',
-          entityType: 'employees',
-          entityId: id,
-          beforeState: oldData,
-          afterState: { is_active: false },
-        });
-      }
-
+      const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Mitarbeiter erfolgreich archiviert');
       await fetchEmployees();
       return true;

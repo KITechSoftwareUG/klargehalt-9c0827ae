@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { logAuditEntry } from '@/lib/audit-log';
 
 export type EvaluationMethod = 'hay' | 'korn_ferry' | 'mercer' | 'willis_towers_watson' | 'internal' | 'other';
 
@@ -71,10 +70,10 @@ export interface PayBandFormData {
 export function useJobProfiles() {
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchJobProfiles = async () => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || !orgId) {
       setJobProfiles([]);
       setLoading(false);
       return;
@@ -82,16 +81,10 @@ export function useJobProfiles() {
 
     setLoading(true);
     try {
-      let query = supabase.from('job_profiles').select('*');
-
-      if (orgId) {
-        query = query.eq('organization_id', orgId);
-      }
-
-      const { data, error } = await query.order('title');
-
-      if (error) throw error;
-      setJobProfiles(data || []);
+      const res = await fetch('/api/job-profiles');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as JobProfile[];
+      setJobProfiles(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching job profiles:', error);
@@ -108,26 +101,13 @@ export function useJobProfiles() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('job_profiles')
-        .insert({
-          ...formData,
-          organization_id: orgId,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      void logAuditEntry(supabase, {
-        orgId,
-        userId: user.id,
-        action: 'create',
-        entityType: 'job_profiles',
-        entityId: data.id,
-        afterState: data,
+      const res = await fetch('/api/job-profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as JobProfile;
       toast.success('Job-Profil erfolgreich erstellt');
       await fetchJobProfiles();
       return data;
@@ -140,31 +120,12 @@ export function useJobProfiles() {
 
   const updateJobProfile = async (id: string, formData: Partial<JobProfileFormData>): Promise<boolean> => {
     try {
-      const { data: oldData } = await supabase
-        .from('job_profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      const { error } = await supabase
-        .from('job_profiles')
-        .update(formData)
-        .eq('id', id);
-
-      if (error) throw error;
-
-      if (user && orgId) {
-        void logAuditEntry(supabase, {
-          orgId,
-          userId: user.id,
-          action: 'update',
-          entityType: 'job_profiles',
-          entityId: id,
-          beforeState: oldData,
-          afterState: formData,
-        });
-      }
-
+      const res = await fetch(`/api/job-profiles/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Job-Profil erfolgreich aktualisiert');
       await fetchJobProfiles();
       return true;
@@ -177,30 +138,8 @@ export function useJobProfiles() {
 
   const deleteJobProfile = async (id: string): Promise<boolean> => {
     try {
-      const { data: oldData } = await supabase
-        .from('job_profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      const { error } = await supabase
-        .from('job_profiles')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      if (user && orgId) {
-        void logAuditEntry(supabase, {
-          orgId,
-          userId: user.id,
-          action: 'delete',
-          entityType: 'job_profiles',
-          entityId: id,
-          beforeState: oldData,
-        });
-      }
-
+      const res = await fetch(`/api/job-profiles/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Job-Profil erfolgreich gelöscht');
       await fetchJobProfiles();
       return true;
@@ -230,31 +169,27 @@ export function useJobProfiles() {
 export function usePayBands(jobProfileId?: string) {
   const [payBands, setPayBands] = useState<PayBand[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchPayBands = async () => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user || !orgId) return;
 
     setLoading(true);
-    let query = supabase.from('pay_bands').select('*');
+    const url = jobProfileId
+      ? `/api/pay-bands?job_profile_id=${jobProfileId}`
+      : '/api/pay-bands';
 
-    if (orgId) {
-      query = query.eq('organization_id', orgId);
-    }
-
-    if (jobProfileId) {
-      query = query.eq('job_profile_id', jobProfileId);
-    }
-
-    const { data, error } = await query.order('created_at');
-
-    if (error) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as PayBand[];
+      setPayBands(data);
+    } catch (error: unknown) {
       console.error('Error fetching pay bands:', error);
       toast.error('Fehler beim Laden der Gehaltsbänder');
-    } else {
-      setPayBands(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const createPayBand = async (formData: PayBandFormData): Promise<PayBand | null> => {
@@ -263,109 +198,61 @@ export function usePayBands(jobProfileId?: string) {
       return null;
     }
 
-    const { data, error } = await supabase
-      .from('pay_bands')
-      .insert({
-        ...formData,
-        organization_id: orgId,
-      })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await fetch('/api/pay-bands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as PayBand;
+      toast.success('Gehaltsband erfolgreich erstellt');
+      await fetchPayBands();
+      return data;
+    } catch (error: unknown) {
       console.error('Error creating pay band:', error);
       toast.error('Fehler beim Erstellen des Gehaltsbands');
       return null;
     }
-
-    void logAuditEntry(supabase, {
-      orgId,
-      userId: user.id,
-      action: 'create',
-      entityType: 'pay_bands',
-      entityId: data.id,
-      afterState: data,
-    });
-
-    toast.success('Gehaltsband erfolgreich erstellt');
-    await fetchPayBands();
-    return data;
   };
 
   const updatePayBand = async (id: string, formData: Partial<PayBandFormData>): Promise<boolean> => {
-    const { data: oldData } = await supabase
-      .from('pay_bands')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    const { error } = await supabase
-      .from('pay_bands')
-      .update(formData)
-      .eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/pay-bands/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Gehaltsband erfolgreich aktualisiert');
+      await fetchPayBands();
+      return true;
+    } catch (error: unknown) {
       console.error('Error updating pay band:', error);
       toast.error('Fehler beim Aktualisieren des Gehaltsbands');
       return false;
     }
-
-    if (user && orgId) {
-      void logAuditEntry(supabase, {
-        orgId,
-        userId: user.id,
-        action: 'update',
-        entityType: 'pay_bands',
-        entityId: id,
-        beforeState: oldData,
-        afterState: formData,
-      });
-    }
-
-    toast.success('Gehaltsband erfolgreich aktualisiert');
-    await fetchPayBands();
-    return true;
   };
 
   const deletePayBand = async (id: string): Promise<boolean> => {
-    const { data: oldData } = await supabase
-      .from('pay_bands')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    const { error } = await supabase
-      .from('pay_bands')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/pay-bands/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success('Gehaltsband erfolgreich gelöscht');
+      await fetchPayBands();
+      return true;
+    } catch (error: unknown) {
       console.error('Error deleting pay band:', error);
       toast.error('Fehler beim Löschen des Gehaltsbands');
       return false;
     }
-
-    if (user && orgId) {
-      void logAuditEntry(supabase, {
-        orgId,
-        userId: user.id,
-        action: 'delete',
-        entityType: 'pay_bands',
-        entityId: id,
-        beforeState: oldData,
-      });
-    }
-
-    toast.success('Gehaltsband erfolgreich gelöscht');
-    await fetchPayBands();
-    return true;
   };
 
   useEffect(() => {
-    if (isLoaded && user) {
+    if (isLoaded && user && orgId) {
       fetchPayBands();
     }
-  }, [isLoaded, user, jobProfileId]);
+  }, [isLoaded, user, jobProfileId, orgId]);
 
   return {
     payBands,

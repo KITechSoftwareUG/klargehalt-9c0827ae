@@ -85,7 +85,7 @@ const LOADING_STATE: SetupReadiness = {
 };
 
 export function useSetupReadiness(): SetupReadiness {
-  const { supabase, orgId, loading: authLoading } = useAuth();
+  const { orgId, loading: authLoading } = useAuth();
   const [readiness, setReadiness] = useState<SetupReadiness>(LOADING_STATE);
 
   const fetchCounts = useCallback(async () => {
@@ -97,25 +97,20 @@ export function useSetupReadiness(): SetupReadiness {
     setReadiness((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const [deptResult, levelsResult, profilesResult, bandsResult, employeesResult] =
-        await Promise.all([
-          supabase.from('departments').select('id', { count: 'exact', head: true }),
-          supabase.from('job_levels').select('id', { count: 'exact', head: true }),
-          supabase.from('job_profiles').select('id', { count: 'exact', head: true }),
-          supabase.from('pay_bands').select('id', { count: 'exact', head: true }),
-          supabase.from('employees').select('id', { count: 'exact', head: true }),
-        ]);
+      const res = await fetch('/api/setup-readiness');
+      if (!res.ok) throw new Error('Failed to fetch setup readiness');
+      const counts = await res.json() as Record<string, number>;
 
-      const counts: Record<SetupStepId, number> = {
-        departments: deptResult.count ?? 0,
-        levels: levelsResult.count ?? 0,
-        profiles: profilesResult.count ?? 0,
-        bands: bandsResult.count ?? 0,
-        employees: employeesResult.count ?? 0,
+      const countMap: Record<SetupStepId, number> = {
+        departments: counts.departments ?? 0,
+        levels: counts.levels ?? 0,
+        profiles: counts.profiles ?? 0,
+        bands: counts.bands ?? 0,
+        employees: counts.employees ?? 0,
       };
 
       const steps: SetupStep[] = STEP_CONFIG.map((config) => {
-        const count = counts[config.id];
+        const count = countMap[config.id];
         return {
           ...config,
           count,
@@ -137,7 +132,6 @@ export function useSetupReadiness(): SetupReadiness {
         isLoading: false,
       });
     } catch {
-      // On error, build steps with all zeros so the UI still renders
       const steps: SetupStep[] = STEP_CONFIG.map((config) => ({
         ...config,
         count: 0,
@@ -153,7 +147,7 @@ export function useSetupReadiness(): SetupReadiness {
         isLoading: false,
       });
     }
-  }, [supabase, orgId, authLoading]);
+  }, [orgId, authLoading]);
 
   useEffect(() => {
     void fetchCounts();
