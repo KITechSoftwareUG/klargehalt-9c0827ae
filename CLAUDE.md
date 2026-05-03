@@ -138,7 +138,7 @@ Real enforcement is always Supabase RLS — frontend gating is UX only.
 
 ## Subscription & Feature Flags
 
-Tiers: `basis` (€149/mo, €990/yr) | `professional` (€299/mo, €2990/yr) | `enterprise` (on request).
+Tiers: `basis` (€149/mo, €1490/yr) | `professional` (€299/mo, €2690/yr) | `enterprise` (on request).
 14-day trial at `professional`. `getEffectiveTier()`: `active`/`trialing` → full | `past_due`/`canceled` → `basis`.
 
 | Feature flag | Tier |

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionTier } from '@/lib/subscription';
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error('Stripe webhook: Signature verification failed', err);
+    Sentry.captureException(err, { tags: { route: 'webhook_stripe', stage: 'signature_verify' } });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -248,6 +250,10 @@ export async function POST(request: NextRequest) {
       .insert({ event_id: event.id });
   } catch (error) {
     console.error(`Stripe webhook: error processing ${event.type}`, error);
+    Sentry.captureException(error, {
+      tags: { route: 'webhook_stripe' },
+      extra: { event_type: event.type, event_id: event.id },
+    });
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
   }
 
