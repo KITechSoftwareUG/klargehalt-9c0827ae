@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { getServerAuthContext } from '@/lib/auth/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 type AuthContext = Awaited<ReturnType<typeof getServerAuthContext>>;
 
@@ -74,6 +75,21 @@ export function pickFields(
   return Object.fromEntries(
     allowlist.filter((f) => f in body).map((f) => [f, body[f]])
   );
+}
+
+/**
+ * Looks up the UUID of the companies row for an org.
+ * Required for tables that have company_id NOT NULL (job_profiles, employees,
+ * pay_bands, audit_logs).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getCompanyId(orgId: string, supabase: SupabaseClient<any, any, any>): Promise<string | null> {
+  const { data } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 // ── Per-entity write allowlists ───────────────────────────────────────────────

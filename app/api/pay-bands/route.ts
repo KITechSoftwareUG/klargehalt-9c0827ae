@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { guardOrgMember, guardRole, pickFields, PAY_BAND_WRITE_FIELDS } from '@/lib/auth/api-guard';
+import { guardOrgMember, guardRole, pickFields, getCompanyId, PAY_BAND_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
 
 export async function GET(request: NextRequest) {
@@ -44,9 +44,14 @@ export async function POST(request: NextRequest) {
   const safeBody = pickFields(body, PAY_BAND_WRITE_FIELDS);
   const supabase = createServiceClient();
 
+  const companyId = await getCompanyId(orgId, supabase);
+  if (!companyId) {
+    return NextResponse.json({ error: 'Keine Firma für diese Organisation gefunden' }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from('pay_bands')
-    .insert({ ...safeBody, organization_id: orgId })
+    .insert({ ...safeBody, organization_id: orgId, company_id: companyId })
     .select()
     .single();
 
@@ -57,6 +62,7 @@ export async function POST(request: NextRequest) {
 
   void logAuditEntry(supabase, {
     orgId,
+    companyId,
     userId,
     action: 'create',
     entityType: 'pay_bands',

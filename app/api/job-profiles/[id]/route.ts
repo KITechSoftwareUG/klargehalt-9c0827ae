@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { guardRole, pickFields, JOB_PROFILE_WRITE_FIELDS } from '@/lib/auth/api-guard';
+import { guardRole, pickFields, getCompanyId, JOB_PROFILE_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,15 +37,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 });
   }
 
-  void logAuditEntry(supabase, {
-    orgId,
-    userId,
-    action: 'update',
-    entityType: 'job_profiles',
-    entityId: id,
-    beforeState: oldData,
-    afterState: safeBody,
-  });
+  const companyId = await getCompanyId(orgId, supabase);
+  if (companyId) {
+    void logAuditEntry(supabase, {
+      orgId, companyId, userId,
+      action: 'update',
+      entityType: 'job_profiles',
+      entityId: id,
+      beforeState: oldData,
+      afterState: safeBody,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }
@@ -81,14 +83,16 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 });
   }
 
-  void logAuditEntry(supabase, {
-    orgId,
-    userId,
-    action: 'delete',
-    entityType: 'job_profiles',
-    entityId: id,
-    beforeState: oldData,
-  });
+  const companyId = await getCompanyId(orgId, supabase);
+  if (companyId) {
+    void logAuditEntry(supabase, {
+      orgId, companyId, userId,
+      action: 'delete',
+      entityType: 'job_profiles',
+      entityId: id,
+      beforeState: oldData,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }
