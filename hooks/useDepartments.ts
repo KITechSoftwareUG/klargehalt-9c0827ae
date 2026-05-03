@@ -18,10 +18,10 @@ export interface DepartmentFormData {
 export function useDepartments() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchDepartments = async () => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || !orgId) {
       setDepartments([]);
       setLoading(false);
       return;
@@ -29,18 +29,12 @@ export function useDepartments() {
 
     setLoading(true);
     try {
-      let query = supabase.from('departments').select('*');
-
-      if (orgId) {
-        query = query.eq('organization_id', orgId);
-      }
-
-      const { data, error } = await query.order('name');
-
-      if (error) throw error;
-      setDepartments(data || []);
+      const res = await fetch('/api/departments');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Department[];
+      setDepartments(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : (error as { message?: string })?.message ?? 'Unbekannter Fehler';
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching departments:', error);
       toast.error(`Fehler beim Laden der Abteilungen: ${message}`);
     } finally {
@@ -55,17 +49,13 @@ export function useDepartments() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('departments')
-        .insert({
-          ...formData,
-          organization_id: orgId,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const res = await fetch('/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Department;
       toast.success('Abteilung erfolgreich erstellt');
       await fetchDepartments();
       return data;
@@ -78,13 +68,12 @@ export function useDepartments() {
 
   const updateDepartment = async (id: string, formData: Partial<DepartmentFormData>): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('departments')
-        .update(formData)
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/departments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Abteilung erfolgreich aktualisiert');
       await fetchDepartments();
       return true;
@@ -97,13 +86,8 @@ export function useDepartments() {
 
   const deleteDepartment = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('departments')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Abteilung erfolgreich gelöscht');
       await fetchDepartments();
       return true;

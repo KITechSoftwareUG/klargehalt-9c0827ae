@@ -17,10 +17,10 @@ export interface JobLevelFormData {
 export function useJobLevels() {
   const [jobLevels, setJobLevels] = useState<JobLevel[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchJobLevels = async () => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || !orgId) {
       setJobLevels([]);
       setLoading(false);
       return;
@@ -28,18 +28,12 @@ export function useJobLevels() {
 
     setLoading(true);
     try {
-      let query = supabase.from('job_levels').select('*');
-
-      if (orgId) {
-        query = query.eq('organization_id', orgId);
-      }
-
-      const { data, error } = await query.order('rank');
-
-      if (error) throw error;
-      setJobLevels(data || []);
+      const res = await fetch('/api/job-levels');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as JobLevel[];
+      setJobLevels(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : (error as { message?: string })?.message ?? 'Unbekannter Fehler';
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching job levels:', error);
       toast.error(`Fehler beim Laden der Karrierestufen: ${message}`);
     } finally {
@@ -54,17 +48,13 @@ export function useJobLevels() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('job_levels')
-        .insert({
-          ...formData,
-          organization_id: orgId,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const res = await fetch('/api/job-levels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as JobLevel;
       toast.success('Karrierestufe erfolgreich erstellt');
       await fetchJobLevels();
       return data;
@@ -77,13 +67,12 @@ export function useJobLevels() {
 
   const updateJobLevel = async (id: string, formData: Partial<JobLevelFormData>): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('job_levels')
-        .update(formData)
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/job-levels/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Karrierestufe erfolgreich aktualisiert');
       await fetchJobLevels();
       return true;
@@ -96,13 +85,8 @@ export function useJobLevels() {
 
   const deleteJobLevel = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('job_levels')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/job-levels/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Karrierestufe erfolgreich gelöscht');
       await fetchJobLevels();
       return true;

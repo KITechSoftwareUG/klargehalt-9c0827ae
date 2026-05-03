@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-// Canonical companies columns
 export interface Company {
   id: string;
   organization_id: string;
@@ -30,10 +29,10 @@ export interface CompanyFormData {
 export function useCompany() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchCompany = async () => {
-    if (!isLoaded || !user) {
+    if (!isLoaded || !user || !orgId) {
       setCompany(null);
       setLoading(false);
       return;
@@ -41,22 +40,14 @@ export function useCompany() {
 
     setLoading(true);
     try {
-      let query = supabase.from('companies').select('*');
-
-      if (orgId) {
-        query = query.eq('organization_id', orgId);
-      } else {
-        // Fallback: Demo-Firma (ohne Org-ID)
-        query = query.is('organization_id', null).limit(1);
-      }
-
-      const { data, error } = await query.maybeSingle();
-
-      if (error) throw error;
-      setCompany(data as Company | null);
-    } catch (error: any) {
-      console.error('Detailed error fetching company:', error);
-      toast.error(`Fehler beim Laden der Firmendaten: ${error.message || 'Unbekannter Fehler'}`);
+      const res = await fetch('/api/company');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Company | null;
+      setCompany(data);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      console.error('Error fetching company:', error);
+      toast.error(`Fehler beim Laden der Firmendaten: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -69,34 +60,20 @@ export function useCompany() {
     }
 
     try {
-
-      const companyData = {
-        ...formData,
-        organization_id: orgId,
-        created_by: user.id,
-        country: formData.country || 'DE',
-      };
-
-      const { data, error } = await supabase
-        .from('companies')
-        .insert(companyData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Optional: Sync back to profile
-      await supabase
-        .from('profiles')
-        .update({ company_name: formData.name })
-        .eq('user_id', user.id);
-
+      const res = await fetch('/api/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as Company;
       toast.success('Firma erfolgreich erstellt');
-      setCompany(data as Company);
-      return data as Company;
-    } catch (error: any) {
+      setCompany(data);
+      return data;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error creating company:', error);
-      toast.error(`Fehler beim Erstellen der Firma: ${error.message}`);
+      toast.error(`Fehler beim Erstellen der Firma: ${message}`);
       return null;
     }
   };
@@ -108,19 +85,19 @@ export function useCompany() {
     }
 
     try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ ...formData, updated_at: new Date().toISOString() })
-        .eq('id', company.id);
-
-      if (error) throw error;
-
+      const res = await fetch('/api/company', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Firma erfolgreich aktualisiert');
       await fetchCompany();
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error updating company:', error);
-      toast.error(`Fehler beim Aktualisieren der Firma: ${error.message}`);
+      toast.error(`Fehler beim Aktualisieren der Firma: ${message}`);
       return false;
     }
   };
@@ -133,9 +110,9 @@ export function useCompany() {
 
   return {
     company,
-    currentCompany: company, // Alias für Konsistenz
+    currentCompany: company,
     loading,
-    isLoading: loading, // Alias für Konsistenz
+    isLoading: loading,
     fetchCompany,
     createCompany,
     updateCompany,
