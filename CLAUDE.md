@@ -22,17 +22,17 @@ Target: German/EU companies (100–500 employees) proving fair salaries. Buyer: 
 
 ---
 
-## Build Status (2026-04-21)
+## Build Status (2026-05-04)
 
-**Done:** Job Profiles, Pay Bands, Job Levels, Departments, Pay Gap Report, HR Pay Equity, Audit Logs, Lawyer Dashboard/Reviews/Badge, Joint Assessment, Compliance Score, RBAC, Stripe Billing, Super-Admin Panel.
+**Done:** Job Profiles, Pay Bands, Job Levels, Departments, Pay Gap Report, HR Pay Equity, Audit Logs, Lawyer Dashboard/Reviews/Badge, Joint Assessment, Compliance Score, RBAC, Stripe Billing, Super-Admin Panel, salary decision documentation.
 
-**CRITICAL MISSING — the product core:**
+**Product core status:**
 
-| Gap | Status |
+| Area | Status |
 |---|---|
-| `salary_decisions` table + append-only trail | ❌ not built |
-| Decision Documentation UI in EmployeesView | ❌ not built |
-| Lawyer ↔ Decision link | ❌ not built |
+| `salary_decisions` table + append-only trail | ✅ built |
+| Decision Documentation UI in EmployeesView | ✅ built |
+| Lawyer ↔ Decision link | ✅ built via optional `lawyer_review_id` |
 
 `salary_decisions` schema (append-only, no UPDATE/DELETE via RLS):
 ```

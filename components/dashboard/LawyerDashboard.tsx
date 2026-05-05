@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Scale,
   Shield,
@@ -43,6 +44,9 @@ import type {
   ReviewVerdict,
   CreateLawyerReviewInput,
 } from '@/hooks/useLawyerReviews';
+import { useComplianceAssessments } from '@/hooks/useComplianceAssessments';
+import { useAuth } from '@/hooks/useAuth';
+import LawyerAssessmentPanel from '@/components/dashboard/LawyerAssessmentPanel';
 
 // ============================================================================
 // HELPERS
@@ -274,6 +278,8 @@ function ReviewCard({ review }: { review: LawyerReview }) {
 
 export default function LawyerDashboard() {
   const { reviews, loading, createReview } = useLawyerReviews();
+  const { user } = useAuth();
+  const { assessments } = useComplianceAssessments();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Stats
@@ -282,7 +288,16 @@ export default function LawyerDashboard() {
   const remediationCount = reviews.filter((r) => r.verdict === 'needs_remediation').length;
   const rejectedCount = reviews.filter((r) => r.verdict === 'rejected').length;
 
-  return (
+  // Count open compliance assessments assigned to this lawyer
+  const openAssessmentCount = useMemo(() => {
+    const openStatuses = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED']);
+    return assessments.filter(
+      (a) => a.lawyer_id === user?.id && openStatuses.has(a.status),
+    ).length;
+  }, [assessments, user?.id]);
+
+  // The existing reviews tab content, extracted for clarity
+  const reviewsTabContent = (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -408,5 +423,29 @@ export default function LawyerDashboard() {
         onSubmit={createReview}
       />
     </div>
+  );
+
+  return (
+    <Tabs defaultValue="reviews" className="space-y-6">
+      <TabsList className="w-full sm:w-auto">
+        <TabsTrigger value="reviews">Rechtliche Bewertungen</TabsTrigger>
+        <TabsTrigger value="assessments" className="gap-2">
+          Compliance-Prüfungen
+          {openAssessmentCount > 0 && (
+            <Badge className="h-5 min-w-5 rounded-full px-1.5 text-xs bg-amber-500 text-white border-0">
+              {openAssessmentCount}
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="reviews" className="mt-0">
+        {reviewsTabContent}
+      </TabsContent>
+
+      <TabsContent value="assessments" className="mt-0">
+        <LawyerAssessmentPanel />
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -179,3 +179,215 @@ export async function sendPaymentFailedEmail(
     `,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Compliance Workflow Notifications
+// ---------------------------------------------------------------------------
+
+export async function sendAssessmentSubmittedToLawyer(
+  lawyerEmail: string,
+  lawyerName: string,
+  companyName: string,
+  assessmentTitle: string,
+  assessmentUrl: string,
+): Promise<void> {
+  const displayName = lawyerName || 'dort';
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to: lawyerEmail,
+    subject: `Neue Compliance-Prüfung eingereicht — ${assessmentTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+          <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Anwaltsprüfung</p>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #071423; margin-top: 0;">Neue Prüfung eingereicht</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, <strong>${companyName}</strong> hat eine Compliance-Prüfung zur
+            anwaltlichen Begutachtung eingereicht.
+          </p>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Prüfung</p>
+            <p style="margin: 6px 0 0; font-size: 16px; font-weight: 600; color: #0f172a;">${assessmentTitle}</p>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Unternehmen: ${companyName}</p>
+          </div>
+          <p style="color: #475569; line-height: 1.6;">
+            Bitte prüfen Sie die eingereichten Unterlagen und erteilen Sie entweder eine Freigabe
+            oder fordern Sie Korrekturen an.
+          </p>
+          <a href="${assessmentUrl}"
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Prüfung öffnen
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen?
+            <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendChangesRequestedToHR(
+  hrEmail: string,
+  hrName: string,
+  assessmentTitle: string,
+  lawyerNote: string,
+  assessmentUrl: string,
+): Promise<void> {
+  const displayName = hrName || 'dort';
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to: hrEmail,
+    subject: `Korrekturen erforderlich — ${assessmentTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+          <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Compliance-Prüfung</p>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #b45309; margin-top: 0;">Korrekturen angefordert</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, der Anwalt hat für Ihre Compliance-Prüfung
+            <strong>${assessmentTitle}</strong> Korrekturen angefordert.
+          </p>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 13px; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Hinweis vom Anwalt</p>
+            <p style="margin: 8px 0 0; font-size: 15px; color: #1c1917; line-height: 1.6;">${lawyerNote}</p>
+          </div>
+          <p style="color: #475569; line-height: 1.6;">
+            Bitte nehmen Sie die angeforderten Änderungen vor und reichen Sie die Prüfung erneut ein.
+          </p>
+          <a href="${assessmentUrl}"
+             style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Prüfung bearbeiten
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen?
+            <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendAssessmentValidatedToHR(
+  hrEmail: string,
+  hrName: string,
+  assessmentTitle: string,
+  assessmentUrl: string,
+): Promise<void> {
+  const displayName = hrName || 'dort';
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to: hrEmail,
+    subject: `Prüfung freigegeben — ${assessmentTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+          <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Compliance-Prüfung</p>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #059669; margin-top: 0;">Prüfung freigegeben</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, der Anwalt hat Ihre Compliance-Prüfung
+            <strong>${assessmentTitle}</strong> freigegeben.
+          </p>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="margin: 0; font-size: 28px;">✓</p>
+            <p style="margin: 8px 0 0; font-size: 15px; font-weight: 600; color: #065f46;">Freigegeben</p>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #047857;">${assessmentTitle}</p>
+          </div>
+          <p style="color: #475569; line-height: 1.6;">
+            Im nächsten Schritt kann der Anwalt ein rechtsgültiges Zertifikat ausstellen.
+            Sie werden benachrichtigt, sobald das Zertifikat verfügbar ist.
+          </p>
+          <a href="${assessmentUrl}"
+             style="display: inline-block; background: #059669; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Prüfung ansehen
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen?
+            <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendCertificateIssuedToHR(
+  hrEmail: string,
+  hrName: string,
+  companyName: string,
+  assessmentTitle: string,
+  validUntil: string,
+  assessmentUrl: string,
+): Promise<void> {
+  const displayName = hrName || 'dort';
+  const validUntilFormatted = new Date(validUntil).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to: hrEmail,
+    subject: `Zertifikat ausgestellt — ${assessmentTitle}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+          <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Compliance-Zertifikat</p>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #065f46; margin-top: 0;">Ihr Zertifikat ist ausgestellt</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, für <strong>${companyName}</strong> wurde ein
+            Compliance-Zertifikat ausgestellt.
+          </p>
+
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #6ee7b7; border-radius: 12px; padding: 28px; margin: 28px 0; text-align: center;">
+            <div style="display: inline-block; background: #065f46; color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;">
+              Von externem Rechtsberater geprüft
+            </div>
+            <h3 style="color: #065f46; margin: 0 0 8px; font-size: 18px;">${assessmentTitle}</h3>
+            <p style="color: #047857; margin: 0 0 20px; font-size: 14px;">${companyName}</p>
+            <div style="background: white; border-radius: 8px; padding: 16px; display: inline-block; min-width: 200px;">
+              <p style="margin: 0; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Gültig bis</p>
+              <p style="margin: 6px 0 0; font-size: 22px; font-weight: 700; color: #065f46;">${validUntilFormatted}</p>
+            </div>
+          </div>
+
+          <p style="color: #475569; line-height: 1.6;">
+            Das Zertifikat dokumentiert, dass Ihre Entgeltstrukturen von einem unabhängigen externen
+            Rechtsberater geprüft wurden. Es ist als Nachweis im Rahmen der EU-Entgelttransparenzrichtlinie
+            (2023/970) verwendbar.
+          </p>
+          <a href="${assessmentUrl}"
+             style="display: inline-block; background: #065f46; color: white; padding: 14px 28px;
+                    border-radius: 6px; text-decoration: none; font-weight: 700; margin-top: 8px; font-size: 15px;">
+            Zertifikat abrufen
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen?
+            <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}

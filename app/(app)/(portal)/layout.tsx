@@ -9,7 +9,7 @@ import Link from 'next/link';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
     Building2, Scale, LayoutDashboard,
-    Layers, ShieldCheck, Building, KeyRound, Menu,
+    Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
@@ -28,7 +28,8 @@ type AppView =
     | 'mein-gehalt'
     | 'abrechnung'
     | 'einstellungen'
-    | 'audit';
+    | 'audit'
+    | 'compliance-workflow';
 
 const ROLE_LABELS: Record<string, { label: string; dotColor: string }> = {
     admin:      { label: 'Administrator', dotColor: 'bg-emerald-400' },
@@ -38,16 +39,17 @@ const ROLE_LABELS: Record<string, { label: string; dotColor: string }> = {
 };
 
 const VIEW_TO_PATH: Record<AppView, string> = {
-    dashboard:      '/dashboard',
-    mitarbeiter:    '/mitarbeiter',
-    gehaltsbaender: '/gehaltsbaender',
-    jobprofile:     '/jobprofile',
-    karrierestufen: '/karrierestufen',
-    abteilungen:    '/abteilungen',
-    'mein-gehalt':  '/mein-gehalt',
-    abrechnung:     '/abrechnung',
-    einstellungen:  '/einstellungen',
-    audit:          '/audit',
+    dashboard:             '/dashboard',
+    mitarbeiter:           '/mitarbeiter',
+    gehaltsbaender:        '/gehaltsbaender',
+    jobprofile:            '/jobprofile',
+    karrierestufen:        '/karrierestufen',
+    abteilungen:           '/abteilungen',
+    'mein-gehalt':         '/mein-gehalt',
+    abrechnung:            '/abrechnung',
+    einstellungen:         '/einstellungen',
+    audit:                 '/audit',
+    'compliance-workflow': '/compliance-workflow',
 };
 
 type NavItem = {
@@ -66,7 +68,8 @@ const MAIN_NAV: NavItem[] = [
     { label: 'Gehaltsbänder',  icon: Scale,           view: 'gehaltsbaender', group: 'System aufbauen' },
     { label: 'Mitarbeiter',    icon: Users,           view: 'mitarbeiter',    group: 'System aufbauen' },
     // Compliance-Kern
-    { label: 'Dashboard',      icon: ShieldCheck,     view: 'dashboard',      group: 'Compliance'      },
+    { label: 'Dashboard',           icon: ShieldCheck, view: 'dashboard',            group: 'Compliance' },
+    { label: 'Compliance-Prüfungen', icon: FileCheck,  view: 'compliance-workflow',  group: 'Compliance' },
     // Admin
     { label: 'Abrechnung',     icon: CreditCard,      view: 'abrechnung',     group: 'Admin', adminOnly: true },
     { label: 'Einstellungen',  icon: Settings,        view: 'einstellungen',  group: 'Admin', adminOnly: true },
@@ -74,7 +77,8 @@ const MAIN_NAV: NavItem[] = [
 ];
 
 const LAWYER_NAV: NavItem[] = [
-    { label: 'Audit-Log', icon: Shield, view: 'audit', group: 'Anwalt' },
+    { label: 'Compliance-Prüfungen', icon: FileCheck, view: 'compliance-workflow', group: 'Anwalt' },
+    { label: 'Audit-Log',            icon: Shield,    view: 'audit',               group: 'Anwalt' },
 ];
 
 const SUPER_ADMIN_USER_ID = 'zqf0ih9ji1m1';
