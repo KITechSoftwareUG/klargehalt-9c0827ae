@@ -115,8 +115,8 @@ export const JOB_PROFILE_WRITE_FIELDS = [
 export const JOB_LEVEL_WRITE_FIELDS = ['name', 'rank'] as const;
 
 export const PAY_BAND_WRITE_FIELDS = [
-  'job_profile_id', 'job_level_id', 'min_salary', 'max_salary', 'currency',
-  'is_active', 'effective_from', 'effective_to',
+  'name', 'job_profile_id', 'job_level_id', 'min_salary', 'max_salary', 'mid_salary',
+  'currency', 'description', 'is_active', 'effective_from', 'effective_to',
 ] as const;
 
 export const COMPANY_WRITE_FIELDS = [
