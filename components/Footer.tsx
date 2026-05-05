@@ -7,12 +7,14 @@ const links = {
     { label: 'Funktionen', href: '/funktionen' },
     { label: 'Sicherheit', href: '/sicherheit' },
     { label: 'Preise', href: '/preise' },
-    { label: 'Kontakt', href: '/kontakt' },
+    { label: 'EU-Richtlinie', href: '/eu-richtlinie' },
   ],
   Unternehmen: [
     { label: 'Über uns', href: '/ueber-uns' },
-    { label: 'EU-Richtlinie', href: '/eu-richtlinie' },
+    { label: 'Partner werden', href: '/partner' },
+    { label: 'Für Anwälte', href: '/anwalt' },
     { label: 'Karriere', href: '/kontakt' },
+    { label: 'Kontakt', href: '/kontakt' },
   ],
   Rechtliches: [
     { label: 'Datenschutz', href: '#' },

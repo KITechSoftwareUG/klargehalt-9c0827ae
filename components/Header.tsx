@@ -17,6 +17,13 @@ const navItems = [
     ],
   },
   { label: 'EU-Richtlinie', href: '/eu-richtlinie' },
+  {
+    label: 'Partner',
+    children: [
+      { label: 'Partner werden', href: '/partner', desc: 'Für Berater & Dienstleister' },
+      { label: 'Für Anwälte', href: '/anwalt', desc: 'Anwaltsnetzwerk & Prüfungen' },
+    ],
+  },
   { label: 'Über uns', href: '/ueber-uns' },
   { label: 'Kontakt', href: '/kontakt' },
 ];
@@ -24,9 +31,9 @@ const navItems = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownTimeout = useRef<NodeJS.Timeout | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -37,8 +44,8 @@ export default function Header() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
       }
     };
     document.addEventListener('click', handleClick);
@@ -47,13 +54,13 @@ export default function Header() {
 
   const isActive = (href: string) => pathname === href;
 
-  const handleDropdownEnter = () => {
+  const handleDropdownEnter = (label: string) => {
     if (dropdownTimeout.current) clearTimeout(dropdownTimeout.current);
-    setDropdownOpen(true);
+    setActiveDropdown(label);
   };
 
   const handleDropdownLeave = () => {
-    dropdownTimeout.current = setTimeout(() => setDropdownOpen(false), 150);
+    dropdownTimeout.current = setTimeout(() => setActiveDropdown(null), 150);
   };
 
   return (
@@ -79,27 +86,26 @@ export default function Header() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav ref={navRef} className="hidden lg:flex items-center gap-1">
             {navItems.map((item) =>
               'children' in item && item.children ? (
                 <div
                   key={item.label}
-                  ref={dropdownRef}
                   className="relative"
-                  onMouseEnter={handleDropdownEnter}
+                  onMouseEnter={() => handleDropdownEnter(item.label)}
                   onMouseLeave={handleDropdownLeave}
                 >
                   <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    onClick={() => setActiveDropdown(activeDropdown === item.label ? null : item.label)}
                     className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white transition-colors cursor-pointer"
                   >
                     {item.label}
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`} />
                   </button>
 
                   <div
                     className={`absolute top-full left-0 mt-2 w-72 bg-[#0d1f33] rounded-xl border border-white/10 shadow-2xl overflow-hidden transition-all duration-200 ${
-                      dropdownOpen
+                      activeDropdown === item.label
                         ? 'opacity-100 translate-y-0 pointer-events-auto'
                         : 'opacity-0 -translate-y-1 pointer-events-none'
                     }`}
@@ -109,7 +115,7 @@ export default function Header() {
                         <Link
                           key={child.href}
                           href={getMarketingUrl(child.href)}
-                          onClick={() => setDropdownOpen(false)}
+                          onClick={() => setActiveDropdown(null)}
                           className={`block px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                             isActive(child.href) ? 'bg-white/10' : 'hover:bg-white/5'
                           }`}

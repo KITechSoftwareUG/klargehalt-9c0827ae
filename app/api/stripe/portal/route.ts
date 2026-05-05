@@ -2,32 +2,21 @@ import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
+import { guardRole } from '@/lib/auth/api-guard';
 
 export async function POST() {
   try {
-    const context = await getServerAuthContext();
-    if (!context.isAuthenticated || !context.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+	    const context = await getServerAuthContext();
+	    const guard = await guardRole(context, ['admin']);
+	    if (guard instanceof NextResponse) return guard;
 
     const supabase = createServiceClient();
 
-    // Only admins can manage billing
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', context.user!.id)
-      .eq('organization_id', context.activeOrganizationId)
-      .maybeSingle();
-
-    if (!userRole || userRole.role !== 'admin') {
-      return NextResponse.json({ error: 'Only admins can manage billing' }, { status: 403 });
-    }
-    const { data: company } = await supabase
-      .from('companies')
-      .select('stripe_customer_id')
-      .eq('organization_id', context.activeOrganizationId)
-      .single();
+	    const { data: company } = await supabase
+	      .from('companies')
+	      .select('stripe_customer_id')
+	      .eq('organization_id', guard.orgId)
+	      .single();
 
     if (!company?.stripe_customer_id) {
       return NextResponse.json({ error: 'No billing account found' }, { status: 404 });

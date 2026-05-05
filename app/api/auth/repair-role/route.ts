@@ -10,7 +10,9 @@
  */
 
 import { NextResponse } from 'next/server';
+import { getOrganizationToken } from '@logto/next/server-actions';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { getLogtoConfig } from '@/lib/logto';
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 import { logAuditEntry } from '@/lib/audit-log';
 
@@ -21,11 +23,13 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Verify the user is actually a Logto member of this org (not a forged cookie)
-  const isMember = context.organizations.some(
-    (org) => org.id === context.activeOrganizationId
-  );
-  if (!isMember) {
+  // Verify against Logto directly. The active-org cookie is only a selector and
+  // can lag JWT claims after onboarding, so claims alone cannot be the authority.
+  const organizationToken = await getOrganizationToken(
+    getLogtoConfig(),
+    context.activeOrganizationId,
+  ).catch(() => null);
+  if (!organizationToken) {
     return NextResponse.json(
       { error: 'Forbidden: not a member of this organization' },
       { status: 403 }

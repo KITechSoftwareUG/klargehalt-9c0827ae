@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardRole } from '@/lib/auth/api-guard';
 
 const supabaseAdmin = () =>
   createServiceClient(
@@ -13,24 +14,28 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; commentId: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardRole(context, ['admin', 'hr_manager']);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
 
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
+  const { id, commentId } = await params;
+
+  const { data: assessment, error: assessmentError } = await supabase
+    .from('compliance_assessments')
+    .select('id')
+    .eq('id', id)
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
-  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (assessmentError) {
+    console.error('compliance_assessments select error:', assessmentError);
+    return NextResponse.json({ error: assessmentError.message }, { status: 500 });
   }
 
-  const { id, commentId } = await params;
+  if (!assessment) {
+    return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+  }
 
   const { data: comment, error } = await supabase
     .from('legal_review_comments')
@@ -40,6 +45,7 @@ export async function PATCH(
     })
     .eq('id', commentId)
     .eq('assessment_id', id)
+    .eq('organization_id', guard.orgId)
     .select()
     .single();
 

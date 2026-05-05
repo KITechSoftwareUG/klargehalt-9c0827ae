@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 
 export async function GET() {
   try {
-    const { isAuthenticated, user, activeOrganizationId } = await getServerAuthContext();
+    const context = await getServerAuthContext();
+    const guard = await guardOrgMember(context);
+    if (guard instanceof NextResponse) return guard;
 
-    if (!isAuthenticated || !user || !activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { orgId } = guard;
 
     const supabase = createServiceClient();
 
@@ -17,7 +18,7 @@ export async function GET() {
       .select(
         'subscription_tier, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id'
       )
-      .eq('organization_id', activeOrganizationId)
+      .eq('organization_id', orgId)
       .maybeSingle();
 
     if (error) {

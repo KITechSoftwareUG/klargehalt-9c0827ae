@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEffectiveTier, hasFeature, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 import puppeteer from 'puppeteer';
 
 export async function GET(request: NextRequest) {
@@ -25,11 +26,20 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch company info
-  const { data: company } = await supabase
-    .from('companies')
-    .select('name, subscription_tier')
-    .eq('organization_id', orgId)
-    .maybeSingle();
+	  const { data: company } = await supabase
+	    .from('companies')
+	    .select('name, subscription_tier, subscription_status, trial_ends_at')
+	    .eq('organization_id', orgId)
+	    .maybeSingle();
+
+	  const effectiveTier = getEffectiveTier(
+	    (company?.subscription_tier as SubscriptionTier | null) ?? 'basis',
+	    (company?.subscription_status as SubscriptionStatus | null) ?? 'canceled',
+	    company?.trial_ends_at ?? null,
+	  );
+	  if (!hasFeature(effectiveTier, 'pdf_reports')) {
+	    return NextResponse.json({ error: 'Professional plan required for PDF reports' }, { status: 402 });
+	  }
 
   // Fetch latest pay gap snapshots
   const { data: snapshots } = await supabase

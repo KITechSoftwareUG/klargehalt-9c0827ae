@@ -12,8 +12,6 @@ import {
 import { Search, Users, Building2, ShieldCheck } from 'lucide-react';
 import type { AdminUser } from '@/app/api/admin/users/route';
 
-const SUPER_ADMIN_USER_ID = 'zqf0ih9ji1m1';
-
 const TIER_LABELS: Record<string, string> = {
     basis: 'Basis',
     professional: 'Professional',
@@ -45,20 +43,39 @@ export default function AdminPage() {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [fetching, setFetching] = useState(true);
     const [search, setSearch] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!loading && user?.id !== SUPER_ADMIN_USER_ID) {
-            router.replace('/dashboard');
+        if (loading || !user) {
+            return;
         }
-    }, [loading, user, router]);
 
-    useEffect(() => {
-        if (user?.id !== SUPER_ADMIN_USER_ID) return;
         fetch('/api/admin/users')
-            .then(r => r.json())
-            .then((data: AdminUser[]) => setUsers(data))
+            .then(async (response) => {
+                if (response.status === 403) {
+                    router.replace('/dashboard');
+                    return null;
+                }
+                if (!response.ok) {
+                    throw new Error('Admin-Daten konnten nicht geladen werden');
+                }
+
+                const data: unknown = await response.json();
+                if (!Array.isArray(data)) {
+                    throw new Error('Unerwartete Antwort vom Admin-Endpunkt');
+                }
+
+                return data as AdminUser[];
+            })
+            .then((data) => {
+                if (data) setUsers(data);
+            })
+            .catch((err) => {
+                console.error('Failed to load admin users', err);
+                setError(err instanceof Error ? err.message : 'Admin-Daten konnten nicht geladen werden');
+            })
             .finally(() => setFetching(false));
-    }, [user]);
+    }, [loading, user, router]);
 
     const filtered = users.filter(u => {
         const q = search.toLowerCase();
@@ -74,6 +91,14 @@ export default function AdminPage() {
         return (
             <div className="space-y-4">
                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {error}
             </div>
         );
     }

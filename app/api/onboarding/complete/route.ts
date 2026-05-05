@@ -58,12 +58,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'fullName and companyName are required' }, { status: 400 });
   }
 
-  const admin = getAdmin();
-  const userId = context.user.id;
+	  const admin = getAdmin();
+	  const userId = context.user.id;
 
-  try {
-    let organizationId: string | null = context.organizations[0]?.id ?? null;
-    let organizationName: string | null = context.organizations[0]?.name ?? null;
+	  try {
+	    // Existing organizations come only from Logto claims. Never derive the
+	    // onboarding target from kg_active_org; callers can forge request cookies.
+	    let organizationId: string | null = context.organizations[0]?.id ?? null;
+	    let organizationName: string | null = context.organizations[0]?.name ?? null;
 
     if (!organizationId) {
       try {
@@ -110,13 +112,13 @@ export async function POST(request: NextRequest) {
     if (existingCompany) {
       const { data, error } = await admin
         .from('companies')
-        .update({
-          name: companyName,
-          industry: industry ?? null,
-          size: companySize,
-          subscription_tier: TRIAL_TIER,
-          subscription_status: 'trialing',
-          trial_ends_at: trialEndsAt.toISOString(),
+	        .update({
+	          name: companyName,
+	          industry: industry ?? null,
+	          employee_size_band: companySize,
+	          subscription_tier: TRIAL_TIER,
+	          subscription_status: 'trialing',
+	          trial_ends_at: trialEndsAt.toISOString(),
         })
         .eq('id', existingCompany.id)
         .select('id')
@@ -126,12 +128,12 @@ export async function POST(request: NextRequest) {
     } else {
       const { data, error } = await admin
         .from('companies')
-        .insert({
-          name: companyName,
-          industry: industry ?? null,
-          size: companySize,
-          organization_id: organizationId,
-          created_by: userId,
+	        .insert({
+	          name: companyName,
+	          industry: industry ?? null,
+	          employee_size_band: companySize,
+	          organization_id: organizationId,
+	          created_by: userId,
           subscription_tier: TRIAL_TIER,
           subscription_status: 'trialing',
           trial_ends_at: trialEndsAt.toISOString(),

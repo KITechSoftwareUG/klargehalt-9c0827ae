@@ -5,10 +5,10 @@ import { getAppUrl } from "@/utils/url";
 
 const plans = [
   {
-    name: "Basis",
-    desc: "Bis 50 Mitarbeiter",
-    price: "99",
-    yearlyPrice: "83",
+	    name: "Basis",
+	    desc: "Bis 50 Mitarbeiter",
+	    price: "149",
+	    yearlyPrice: "124",
     period: "/mo",
     features: ["Gehaltsbänder & Job-Profile", "Mitarbeiter-Selbstauskunft", "CSV-Import", "Basis Audit-Trail", "E-Mail Support", "1 Admin + 1 HR-Manager"],
     cta: "Kostenlos testen",

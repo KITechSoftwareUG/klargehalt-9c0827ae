@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardRole } from '@/lib/auth/api-guard';
+import { getEffectiveTier, hasFeature, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 
 const justificationFactorSchema = z.object({
   type: z.enum(['experience', 'education', 'performance', 'market_rate', 'seniority', 'other']),
@@ -31,21 +33,24 @@ const supabaseAdmin = () =>
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardRole(context, ['admin', 'hr_manager']);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
 
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
+  const { data: company } = await supabase
+    .from('companies')
+    .select('subscription_tier, subscription_status, trial_ends_at')
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
-  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const effectiveTier = getEffectiveTier(
+    (company?.subscription_tier as SubscriptionTier | null) ?? 'basis',
+    (company?.subscription_status as SubscriptionStatus | null) ?? 'canceled',
+    company?.trial_ends_at ?? null,
+  );
+  if (!hasFeature(effectiveTier, 'decision_documentation')) {
+    return NextResponse.json({ error: 'Professional plan required for decision documentation' }, { status: 402 });
   }
 
   let body: unknown;
@@ -66,9 +71,9 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabase
     .from('salary_decisions')
     .insert({
-      ...parsed.data,
-      organization_id: context.activeOrganizationId,
-      decided_by_user_id: context.user!.id,
+	      ...parsed.data,
+	      organization_id: guard.orgId,
+	      decided_by_user_id: guard.userId,
       decided_at: parsed.data.decided_at ?? new Date().toISOString(),
     })
     .select()
@@ -80,8 +85,8 @@ export async function POST(request: NextRequest) {
   }
 
   void supabase.from('audit_logs').insert({
-    organization_id: context.activeOrganizationId,
-    user_id: context.user!.id,
+	    organization_id: guard.orgId,
+	    user_id: guard.userId,
     action: 'create',
     entity_type: 'salary_decisions',
     entity_id: data.id,

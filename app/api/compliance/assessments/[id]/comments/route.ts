@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardRole } from '@/lib/auth/api-guard';
 
 const supabaseAdmin = () =>
   createServiceClient(
@@ -20,17 +21,33 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardRole(context, ['admin', 'hr_manager', 'lawyer']);
+  if (guard instanceof NextResponse) return guard;
 
   const { id } = await params;
   const supabase = supabaseAdmin();
+
+  const { data: assessment, error: assessmentError } = await supabase
+    .from('compliance_assessments')
+    .select('id')
+    .eq('id', id)
+    .eq('organization_id', guard.orgId)
+    .maybeSingle();
+
+  if (assessmentError) {
+    console.error('compliance_assessments select error:', assessmentError);
+    return NextResponse.json({ error: assessmentError.message }, { status: 500 });
+  }
+
+  if (!assessment) {
+    return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+  }
 
   const { data, error } = await supabase
     .from('legal_review_comments')
     .select('*')
     .eq('assessment_id', id)
+    .eq('organization_id', guard.orgId)
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -46,22 +63,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const guard = await guardRole(context, ['lawyer']);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
-
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
-    .maybeSingle();
-
-  if (!userRole || userRole.role !== 'lawyer') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   let body: unknown;
   try {
@@ -80,13 +85,29 @@ export async function POST(
 
   const { id } = await params;
 
+  const { data: assessment, error: assessmentError } = await supabase
+    .from('compliance_assessments')
+    .select('id')
+    .eq('id', id)
+    .eq('organization_id', guard.orgId)
+    .maybeSingle();
+
+  if (assessmentError) {
+    console.error('compliance_assessments select error:', assessmentError);
+    return NextResponse.json({ error: assessmentError.message }, { status: 500 });
+  }
+
+  if (!assessment) {
+    return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+  }
+
   const { data, error } = await supabase
     .from('legal_review_comments')
     .insert({
       ...parsed.data,
       assessment_id: id,
-      organization_id: context.activeOrganizationId,
-      lawyer_id: context.user!.id,
+      organization_id: guard.orgId,
+      lawyer_id: guard.userId,
     })
     .select()
     .single();

@@ -99,20 +99,12 @@ export const getServerAuthContext = async () => {
   const jwtOrganizations = getOrganizationsFromClaims(context.claims);
   const activeOrganizationId = await getActiveOrganizationIdFromCookies();
 
-  // JWT may not contain the org yet (Logto updates it on next login).
-  // If the cookie has an org that's not in the JWT, include it so the app works
-  // immediately after onboarding. Real enforcement is via Supabase RLS.
-  const organizations =
-    activeOrganizationId && !jwtOrganizations.some(({ id }) => id === activeOrganizationId)
-      ? [...jwtOrganizations, { id: activeOrganizationId, name: null }]
-      : jwtOrganizations;
-
   return {
     ...context,
     user,
-    organizations,
+    organizations: jwtOrganizations,
     activeOrganizationId,
     activeOrganization:
-      organizations.find(({ id }) => id === activeOrganizationId) ?? null,
+      jwtOrganizations.find(({ id }) => id === activeOrganizationId) ?? null,
   };
 };

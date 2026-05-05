@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole, pickFields, getCompanyId, EMPLOYEE_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
+import { getEffectiveTier, getPlanLimits, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 
 export async function GET() {
   const context = await getServerAuthContext();
@@ -37,12 +38,40 @@ export async function POST(request: NextRequest) {
   const safeBody = pickFields(body, EMPLOYEE_WRITE_FIELDS);
   const supabase = createServiceClient();
 
-  const companyId = await getCompanyId(orgId, supabase);
-  if (!companyId) {
-    return NextResponse.json({ error: 'Keine Firma für diese Organisation gefunden' }, { status: 400 });
-  }
+	  const companyId = await getCompanyId(orgId, supabase);
+	  if (!companyId) {
+	    return NextResponse.json({ error: 'Keine Firma für diese Organisation gefunden' }, { status: 400 });
+	  }
 
-  const { data, error } = await supabase
+	  const { data: company } = await supabase
+	    .from('companies')
+	    .select('subscription_tier, subscription_status, trial_ends_at')
+	    .eq('id', companyId)
+	    .maybeSingle();
+	  const effectiveTier = getEffectiveTier(
+	    (company?.subscription_tier as SubscriptionTier | null) ?? 'basis',
+	    (company?.subscription_status as SubscriptionStatus | null) ?? 'canceled',
+	    company?.trial_ends_at ?? null,
+	  );
+	  const limits = getPlanLimits(effectiveTier);
+	  if (limits.maxEmployees !== -1) {
+	    const { count, error: countError } = await supabase
+	      .from('employees')
+	      .select('id', { count: 'exact', head: true })
+	      .eq('organization_id', orgId)
+	      .eq('is_active', true);
+
+	    if (countError) {
+	      console.error('employees count error:', countError);
+	      return NextResponse.json({ error: 'Fehler beim Prüfen des Mitarbeiterlimits' }, { status: 500 });
+	    }
+
+	    if ((count ?? 0) >= limits.maxEmployees) {
+	      return NextResponse.json({ error: 'Mitarbeiterlimit erreicht. Bitte upgraden Sie Ihren Plan.' }, { status: 402 });
+	    }
+	  }
+
+	  const { data, error } = await supabase
     .from('employees')
     .insert({ ...safeBody, organization_id: orgId, company_id: companyId, created_by: userId })
     .select()
