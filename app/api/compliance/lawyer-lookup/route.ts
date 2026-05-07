@@ -1,79 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
 
-type LogtoUserResponse = {
+export type LawyerEntry = {
   id: string;
-  primaryEmail?: string | null;
-  name?: string | null;
+  email: string;
+  name: string;
 };
 
-const emailQuerySchema = z.object({
-  email: z.string().email('Ungültige E-Mail-Adresse'),
-});
-
-let _tokenCache: { token: string; expiresAt: number } | null = null;
-let _refreshPromise: Promise<string> | null = null;
-
-const getManagementToken = async (): Promise<string> => {
-  const now = Date.now();
-  if (_tokenCache && _tokenCache.expiresAt > now + 5000) {
-    return _tokenCache.token;
-  }
-
-  if (_refreshPromise) {
-    return _refreshPromise;
-  }
-
-  _refreshPromise = (async () => {
-    const endpoint = process.env.LOGTO_ENDPOINT;
-    const clientId = process.env.LOGTO_M2M_APP_ID;
-    const clientSecret = process.env.LOGTO_M2M_APP_SECRET;
-    const resource =
-      process.env.LOGTO_MANAGEMENT_API_RESOURCE ?? 'https://admin.logto.app/api';
-
-    if (!endpoint || !clientId || !clientSecret) {
-      throw new Error(
-        'Missing required Logto M2M environment variables (LOGTO_ENDPOINT, LOGTO_M2M_APP_ID, LOGTO_M2M_APP_SECRET)',
-      );
-    }
-
-    const response = await fetch(`${endpoint}/oidc/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: clientId,
-        client_secret: clientSecret,
-        resource,
-        scope: 'all',
-      }),
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Failed to fetch Logto management token: ${response.status} ${errorText}`,
-      );
-    }
-
-    const data = (await response.json()) as {
-      access_token?: string;
-      expires_in?: number;
-    };
-    const token = data.access_token;
-    if (!token) throw new Error('Logto management token response missing access_token');
-
-    const ttl = (data.expires_in ?? 3600) - 60;
-    _tokenCache = { token, expiresAt: Date.now() + ttl * 1000 };
-    return token;
-  })().finally(() => {
-    _refreshPromise = null;
-  });
-
-  return _refreshPromise;
+type SupabaseAuthUser = {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
 };
 
 const supabaseAdmin = () =>
@@ -82,75 +20,86 @@ const supabaseAdmin = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-export async function GET(request: NextRequest) {
+function resolveName(
+  user: SupabaseAuthUser,
+  fallbackEmail: string,
+): string {
+  const meta = user.user_metadata ?? {};
+  const name = meta['name'] ?? meta['full_name'];
+  if (typeof name === 'string' && name.trim().length > 0) {
+    return name.trim();
+  }
+  return fallbackEmail.split('@')[0];
+}
+
+export async function GET(): Promise<NextResponse> {
   const context = await getServerAuthContext();
+
   if (!context.isAuthenticated || !context.activeOrganizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabase = supabaseAdmin();
 
-  const { data: userRole } = await supabase
+  const { data: callerRole } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', context.user!.id)
     .eq('organization_id', context.activeOrganizationId)
     .maybeSingle();
 
-  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
+  if (!callerRole || !['admin', 'hr_manager'].includes(callerRole.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const rawEmail = searchParams.get('email') ?? '';
+  const { data: lawyerRows, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('organization_id', context.activeOrganizationId)
+    .eq('role', 'lawyer');
 
-  const parsed = emailQuerySchema.safeParse({ email: rawEmail });
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Ungültige E-Mail-Adresse', details: parsed.error.flatten() },
-      { status: 422 },
-    );
+  if (rolesError) {
+    console.error('lawyer-lookup: failed to query user_roles:', rolesError.message);
+    return NextResponse.json({ error: 'Datenbankfehler' }, { status: 500 });
   }
 
-  const { email } = parsed.data;
-
-  try {
-    const token = await getManagementToken();
-    const endpoint = process.env.LOGTO_ENDPOINT!;
-
-    const response = await fetch(
-      `${endpoint}/api/users?search=${encodeURIComponent(email)}&searchFields[]=primaryEmail`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Logto user search failed: ${response.status} ${errorText}`);
-      return NextResponse.json({ error: 'Suche fehlgeschlagen' }, { status: 502 });
-    }
-
-    const users = (await response.json()) as LogtoUserResponse[];
-    const user = users.find(
-      (u) => u.primaryEmail?.toLowerCase() === email.toLowerCase(),
-    );
-
-    if (!user) {
-      return NextResponse.json({ found: false });
-    }
-
-    return NextResponse.json({
-      found: true,
-      user: {
-        id: user.id,
-        name: user.name ?? null,
-        email: user.primaryEmail ?? email,
-      },
-    });
-  } catch (error) {
-    console.error('lawyer-lookup error:', error instanceof Error ? error.message : error);
-    return NextResponse.json({ error: 'Suche fehlgeschlagen' }, { status: 500 });
+  if (!lawyerRows || lawyerRows.length === 0) {
+    return NextResponse.json({ lawyers: [] });
   }
+
+  const lawyers: LawyerEntry[] = [];
+
+  await Promise.all(
+    lawyerRows.map(async (row: { user_id: string }) => {
+      try {
+        const { data, error } = await supabase.auth.admin.getUserById(row.user_id);
+
+        if (error || !data.user) {
+          console.error(
+            `lawyer-lookup: getUserById failed for ${row.user_id}:`,
+            error?.message ?? 'no user returned',
+          );
+          return;
+        }
+
+        const authUser = data.user as SupabaseAuthUser;
+        const email = authUser.email ?? '';
+
+        lawyers.push({
+          id: row.user_id,
+          email,
+          name: resolveName(authUser, email || row.user_id),
+        });
+      } catch (err) {
+        console.error(
+          `lawyer-lookup: unexpected error for ${row.user_id}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }),
+  );
+
+  lawyers.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  return NextResponse.json({ lawyers });
 }

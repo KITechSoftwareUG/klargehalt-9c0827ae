@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -40,7 +47,6 @@ import {
   Award,
   ArrowRight,
   Printer,
-  Loader2,
 } from 'lucide-react';
 import { useComplianceAssessments } from '@/hooks/useComplianceAssessments';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,6 +60,17 @@ import {
   type AssessmentDetail,
   type ComplianceAssessmentStatus,
 } from '@/lib/types/compliance-workflow';
+
+type LawyerEntry = { id: string; email: string; name: string };
+
+type LawyerLookupResponse = { lawyers: LawyerEntry[] };
+
+async function fetchOrgLawyers(): Promise<LawyerEntry[]> {
+  const res = await fetch('/api/compliance/lawyer-lookup');
+  if (!res.ok) return [];
+  const data = (await res.json()) as LawyerLookupResponse;
+  return data.lawyers ?? [];
+}
 
 // ============================================================================
 // HELPERS
@@ -446,15 +463,17 @@ function CertificatePanel({ detail }: CertificatePanelProps) {
               {snapshot.snapshot_data.employees_count}
             </span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="mt-4 print:hidden"
+          <a
+            href={`/compliance-workflow/certificate/${snapshot.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block"
           >
-            <Printer className="h-4 w-4 mr-2" />
-            Als PDF drucken
-          </Button>
+            <Button variant="outline" size="sm">
+              <Printer className="h-4 w-4 mr-2" />
+              Zertifikat drucken / PDF
+            </Button>
+          </a>
         </div>
       </div>
     </div>
@@ -487,6 +506,8 @@ function ActionButtons({
   const [resubmitNote, setResubmitNote] = useState('');
   const [lawyerIdInput, setLawyerIdInput] = useState(detail.lawyer_id ?? '');
   const [showLawyerInput, setShowLawyerInput] = useState(false);
+  const [lawyers, setLawyers] = useState<LawyerEntry[]>([]);
+  const [lawyersLoading, setLawyersLoading] = useState(false);
 
   if (!isHR) return null;
 
@@ -517,17 +538,36 @@ function ActionButtons({
                 <>
                   <div className="space-y-1">
                     <Label className="text-xs">
-                      Anwalt Logto User-ID
-                      <span className="ml-1 text-muted-foreground font-normal">
-                        (Logto User-ID des Anwalts)
+                      Anwalt{' '}
+                      <span className="font-normal text-muted-foreground">
+                        (optional)
                       </span>
                     </Label>
-                    <Input
+                    <Select
                       value={lawyerIdInput}
-                      onChange={(e) => setLawyerIdInput(e.target.value)}
-                      placeholder="user_xxxxxxxxxxxxxxxxxxxx"
-                      disabled={transitioning}
-                    />
+                      onValueChange={setLawyerIdInput}
+                      disabled={transitioning || lawyersLoading}
+                    >
+                      <SelectTrigger className="text-sm">
+                        <SelectValue
+                          placeholder={
+                            lawyersLoading
+                              ? 'Wird geladen...'
+                              : lawyers.length === 0
+                                ? 'Keine Anwaelte in dieser Organisation'
+                                : '— Anwalt auswaehlen —'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">— Spaeter zuweisen —</SelectItem>
+                        {lawyers.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name} ({l.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -540,9 +580,13 @@ function ActionButtons({
                     </Button>
                     <Button
                       size="sm"
-                      disabled={transitioning || !lawyerIdInput.trim()}
+                      disabled={transitioning}
                       onClick={() =>
-                        onTransition(t.to, undefined, lawyerIdInput.trim())
+                        onTransition(
+                          t.to,
+                          undefined,
+                          lawyerIdInput.trim() || undefined,
+                        )
                       }
                     >
                       <Scale className="mr-2 h-4 w-4" />
@@ -556,7 +600,14 @@ function ActionButtons({
                 <Button
                   size="sm"
                   className="w-full sm:w-auto"
-                  onClick={() => setShowLawyerInput(true)}
+                  onClick={() => {
+                    setShowLawyerInput(true);
+                    setLawyersLoading(true);
+                    fetchOrgLawyers()
+                      .then(setLawyers)
+                      .catch(() => setLawyers([]))
+                      .finally(() => setLawyersLoading(false));
+                  }}
                   disabled={transitioning}
                 >
                   <Scale className="mr-2 h-4 w-4" />
@@ -815,16 +866,8 @@ function NewAssessmentDialog({
   onCreate,
 }: NewAssessmentDialogProps) {
   const [submitting, setSubmitting] = useState(false);
-
-  const [lawyerEmail, setLawyerEmail] = useState('');
-  const [lawyerLookupState, setLawyerLookupState] = useState<
-    'idle' | 'loading' | 'found' | 'not_found' | 'error'
-  >('idle');
-  const [foundLawyer, setFoundLawyer] = useState<{
-    id: string;
-    name: string | null;
-    email: string;
-  } | null>(null);
+  const [lawyers, setLawyers] = useState<LawyerEntry[]>([]);
+  const [lawyersLoading, setLawyersLoading] = useState(false);
 
   const {
     register,
@@ -842,47 +885,20 @@ function NewAssessmentDialog({
     },
   });
 
+  useEffect(() => {
+    if (!open) return;
+    setLawyersLoading(true);
+    fetchOrgLawyers()
+      .then(setLawyers)
+      .catch(() => setLawyers([]))
+      .finally(() => setLawyersLoading(false));
+  }, [open]);
+
   const handleClose = () => {
     reset();
-    setLawyerEmail('');
-    setLawyerLookupState('idle');
-    setFoundLawyer(null);
+    setLawyers([]);
+    setLawyersLoading(false);
     onClose();
-  };
-
-  const lookupLawyer = async () => {
-    if (!lawyerEmail.trim()) return;
-    setLawyerLookupState('loading');
-    try {
-      const res = await fetch(
-        `/api/compliance/lawyer-lookup?email=${encodeURIComponent(lawyerEmail)}`,
-      );
-      const data = (await res.json()) as
-        | { found: true; user: { id: string; name: string | null; email: string } }
-        | { found: false }
-        | { error: string };
-
-      if ('error' in data) {
-        setFoundLawyer(null);
-        setValue('lawyer_id', '');
-        setLawyerLookupState('error');
-        return;
-      }
-
-      if (data.found) {
-        setFoundLawyer(data.user);
-        setValue('lawyer_id', data.user.id);
-        setLawyerLookupState('found');
-      } else {
-        setFoundLawyer(null);
-        setValue('lawyer_id', '');
-        setLawyerLookupState('not_found');
-      }
-    } catch {
-      setFoundLawyer(null);
-      setValue('lawyer_id', '');
-      setLawyerLookupState('error');
-    }
   };
 
   const onSubmit = async (values: NewAssessmentFormValues) => {
@@ -943,61 +959,38 @@ function NewAssessmentDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label>
               Anwalt{' '}
               <span className="text-xs font-normal text-muted-foreground">
                 (optional)
               </span>
             </Label>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="anwalt@kanzlei.de"
-                value={lawyerEmail}
-                disabled={submitting}
-                onChange={(e) => {
-                  setLawyerEmail(e.target.value);
-                  setLawyerLookupState('idle');
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    void lookupLawyer();
+            <Select
+              disabled={submitting || lawyersLoading}
+              onValueChange={(value) => setValue('lawyer_id', value)}
+              defaultValue=""
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    lawyersLoading
+                      ? 'Wird geladen...'
+                      : lawyers.length === 0
+                        ? 'Keine Anwaelte in dieser Organisation'
+                        : '— Spaeter zuweisen —'
                   }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void lookupLawyer()}
-                disabled={submitting || !lawyerEmail || lawyerLookupState === 'loading'}
-              >
-                {lawyerLookupState === 'loading' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Suchen'
-                )}
-              </Button>
-            </div>
-
-            {lawyerLookupState === 'found' && foundLawyer && (
-              <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{foundLawyer.name ?? foundLawyer.email}</span>
-              </div>
-            )}
-            {lawyerLookupState === 'not_found' && (
-              <p className="text-sm text-red-600">
-                Kein Nutzer mit dieser E-Mail gefunden.
-              </p>
-            )}
-            {lawyerLookupState === 'error' && (
-              <p className="text-sm text-red-600">
-                Suche fehlgeschlagen. Bitte erneut versuchen.
-              </p>
-            )}
-
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">— Spaeter zuweisen —</SelectItem>
+                {lawyers.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name} ({l.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <input type="hidden" {...register('lawyer_id')} />
           </div>
 

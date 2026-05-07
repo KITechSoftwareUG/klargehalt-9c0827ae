@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { VALID_TRANSITIONS, type ComplianceAssessmentStatus, type ActorRole } from '@/lib/types/compliance-workflow';
+import { VALID_TRANSITIONS, type ComplianceAssessmentStatus, type ActorRole, type GapFlags } from '@/lib/types/compliance-workflow';
 import {
   sendAssessmentSubmittedToLawyer,
   sendChangesRequestedToHR,
@@ -15,110 +15,164 @@ const supabaseAdmin = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-const avg = (arr: number[]): number =>
-  arr.reduce((a, b) => a + b, 0) / arr.length;
+async function computeAnalysis(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  orgId: string,
+): Promise<{ risk_score: number; gap_flags: GapFlags }> {
+  // Run all 4 queries in parallel
+  const [
+    genderRows,
+    missingJustRows,
+    outOfRangeRow,
+    deptGenderRows,
+  ] = await Promise.all([
+    // 1. Gender gap — org-level average salaries by gender
+    supabase
+      .from('employees')
+      .select('gender, base_salary')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .not('base_salary', 'is', null)
+      .in('gender', ['male', 'female']),
+
+    // 2. Missing justifications — employees with salary but no salary_decisions entry
+    supabase
+      .from('employees')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .not('base_salary', 'is', null),
+
+    // 3. Bands out of range — employees outside their pay_band limits
+    supabase
+      .from('employees')
+      .select('id, base_salary, pay_bands!inner(min_salary, max_salary)')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .not('base_salary', 'is', null)
+      .not('pay_band_id', 'is', null),
+
+    // 4. Department-level gender gap — for high_risk_departments
+    supabase
+      .from('employees')
+      .select('department_id, gender, base_salary')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .not('base_salary', 'is', null)
+      .not('department_id', 'is', null)
+      .in('gender', ['male', 'female']),
+  ]);
+
+  // ── 1. gender_gap_exceeded ──────────────────────────────────────────────────
+  const genderData = genderRows.data ?? [];
+  const maleSalaries = genderData
+    .filter((r) => r.gender === 'male')
+    .map((r) => r.base_salary as number);
+  const femaleSalaries = genderData
+    .filter((r) => r.gender === 'female')
+    .map((r) => r.base_salary as number);
+
+  const avgMale =
+    maleSalaries.length > 0
+      ? maleSalaries.reduce((a, b) => a + b, 0) / maleSalaries.length
+      : 0;
+  const avgFemale =
+    femaleSalaries.length > 0
+      ? femaleSalaries.reduce((a, b) => a + b, 0) / femaleSalaries.length
+      : 0;
+
+  const gap_pct =
+    avgMale > 0 && avgFemale > 0
+      ? (Math.abs(avgMale - avgFemale) / Math.max(avgMale, avgFemale)) * 100
+      : 0;
+  const gender_gap_exceeded = gap_pct > 5;
+
+  // ── 2. missing_justifications ───────────────────────────────────────────────
+  const allActiveWithSalary = missingJustRows.data ?? [];
+  const employeeIds = allActiveWithSalary.map((e) => e.id as string);
+
+  let employeesWithDecisions = new Set<string>();
+  if (employeeIds.length > 0) {
+    const { data: decisionRows } = await supabase
+      .from('salary_decisions')
+      .select('employee_id')
+      .eq('organization_id', orgId)
+      .in('employee_id', employeeIds);
+    employeesWithDecisions = new Set(
+      (decisionRows ?? []).map((d) => d.employee_id as string),
+    );
+  }
+  const missing_justifications = employeeIds.filter(
+    (id) => !employeesWithDecisions.has(id),
+  ).length;
+
+  // ── 3. bands_out_of_range ───────────────────────────────────────────────────
+  // Supabase returns joined relations as arrays; cast via unknown to handle that.
+  type OutOfRangeRow = {
+    id: string;
+    base_salary: number;
+    pay_bands: { min_salary: number; max_salary: number } | { min_salary: number; max_salary: number }[];
+  };
+  const outOfRangeData = (outOfRangeRow.data ?? []) as unknown as OutOfRangeRow[];
+  const bands_out_of_range = outOfRangeData.filter((e) => {
+    const band = Array.isArray(e.pay_bands) ? e.pay_bands[0] : e.pay_bands;
+    if (!band) return false;
+    return e.base_salary < band.min_salary || e.base_salary > band.max_salary;
+  }).length;
+
+  // ── 4. high_risk_departments ────────────────────────────────────────────────
+  type DeptRow = { department_id: string; gender: string; base_salary: number };
+  const deptData = (deptGenderRows.data ?? []) as DeptRow[];
+
+  const deptAccumulator: Record<string, { male: number[]; female: number[] }> = {};
+  for (const row of deptData) {
+    if (!deptAccumulator[row.department_id]) {
+      deptAccumulator[row.department_id] = { male: [], female: [] };
+    }
+    if (row.gender === 'male') {
+      deptAccumulator[row.department_id].male.push(row.base_salary);
+    } else {
+      deptAccumulator[row.department_id].female.push(row.base_salary);
+    }
+  }
+
+  const high_risk_departments: string[] = [];
+  for (const [deptId, salaries] of Object.entries(deptAccumulator)) {
+    if (salaries.male.length === 0 || salaries.female.length === 0) continue;
+    const deptAvgMale = salaries.male.reduce((a, b) => a + b, 0) / salaries.male.length;
+    const deptAvgFemale = salaries.female.reduce((a, b) => a + b, 0) / salaries.female.length;
+    const deptGap =
+      (Math.abs(deptAvgMale - deptAvgFemale) / Math.max(deptAvgMale, deptAvgFemale)) * 100;
+    if (deptGap > 5) {
+      high_risk_departments.push(deptId);
+    }
+  }
+
+  // ── 5. risk_score ───────────────────────────────────────────────────────────
+  let score = 0;
+  if (gender_gap_exceeded) score += 40;
+  score += Math.min(30, missing_justifications * 3);
+  score += Math.min(30, bands_out_of_range * 2);
+  const risk_score = Math.min(100, score);
+
+  const gap_flags: GapFlags = {
+    gender_gap_exceeded,
+    missing_justifications,
+    bands_out_of_range,
+    high_risk_departments,
+  };
+
+  return { risk_score, gap_flags };
+}
 
 async function computeAndStoreAnalysis(
   supabase: ReturnType<typeof supabaseAdmin>,
   assessmentId: string,
   orgId: string,
-): Promise<void> {
+): Promise<{ risk_score: number | null; gap_flags: GapFlags | null }> {
   try {
-    // Step 1: Load employees
-    const { data: employees, error: empError } = await supabase
-      .from('employees')
-      .select('id, gender, base_salary, pay_band_id, department_id, salary_justification')
-      .eq('organization_id', orgId)
-      .eq('is_active', true);
+    const { risk_score, gap_flags } = await computeAnalysis(supabase, orgId);
 
-    if (empError) {
-      console.error('computeAndStoreAnalysis: employees fetch error:', empError);
-      return;
-    }
-
-    const empList = employees ?? [];
-
-    // Step 2: Load pay bands
-    const { data: payBands, error: bandsError } = await supabase
-      .from('pay_bands')
-      .select('id, min_annual, max_annual')
-      .eq('organization_id', orgId);
-
-    if (bandsError) {
-      console.error('computeAndStoreAnalysis: pay_bands fetch error:', bandsError);
-      return;
-    }
-
-    const payBandMap = (payBands ?? []).reduce<Record<string, { min: number; max: number }>>(
-      (acc, band) => {
-        acc[band.id] = { min: band.min_annual as number, max: band.max_annual as number };
-        return acc;
-      },
-      {},
-    );
-
-    // Step 3: Compute metrics
-    const maleEmployees = empList.filter(
-      (e) => e.gender === 'male' && (e.base_salary as number) > 0,
-    );
-    const femaleEmployees = empList.filter(
-      (e) => e.gender === 'female' && (e.base_salary as number) > 0,
-    );
-
-    const maleAvg =
-      maleEmployees.length > 0
-        ? avg(maleEmployees.map((e) => e.base_salary as number))
-        : 0;
-    const femaleAvg =
-      femaleEmployees.length > 0
-        ? avg(femaleEmployees.map((e) => e.base_salary as number))
-        : 0;
-
-    const gapPercent =
-      maleAvg > 0 && femaleAvg > 0
-        ? Math.abs(maleAvg - femaleAvg) / Math.max(maleAvg, femaleAvg)
-        : 0;
-    const gender_gap_exceeded = gapPercent > 0.05;
-
-    const missing_justifications = empList.filter(
-      (e) =>
-        !e.salary_justification ||
-        (e.salary_justification as string).trim().length < 5,
-    ).length;
-
-    const out_of_range = empList.filter((e) => {
-      if (!e.pay_band_id || !payBandMap[e.pay_band_id as string]) return false;
-      const { min, max } = payBandMap[e.pay_band_id as string];
-      return (e.base_salary as number) < min || (e.base_salary as number) > max;
-    });
-    const bands_out_of_range = out_of_range.length;
-
-    const deptOutOfRange = out_of_range.reduce<Record<string, number>>((acc, e) => {
-      if (e.department_id) {
-        acc[e.department_id as string] = (acc[e.department_id as string] ?? 0) + 1;
-      }
-      return acc;
-    }, {});
-    const high_risk_departments = Object.entries(deptOutOfRange)
-      .filter(([, count]) => count > 2)
-      .map(([deptId]) => deptId);
-
-    let score = 100;
-    if (gender_gap_exceeded) score -= 30;
-    score -= Math.min(missing_justifications * 2, 20);
-    score -= Math.min(bands_out_of_range * 3, 30);
-    score -= Math.min(high_risk_departments.length * 5, 20);
-    const risk_score = Math.max(0, score);
-
-    const gap_flags = {
-      gender_gap_exceeded,
-      missing_justifications,
-      bands_out_of_range,
-      high_risk_departments,
-      gender_gap_percent: Math.round(gapPercent * 1000) / 10,
-    };
-
-    // Step 4: Update assessment
     const { error: updateError } = await supabase
       .from('compliance_assessments')
       .update({ risk_score, gap_flags })
@@ -127,9 +181,13 @@ async function computeAndStoreAnalysis(
 
     if (updateError) {
       console.error('computeAndStoreAnalysis: assessment update error:', updateError);
+      return { risk_score: null, gap_flags: null };
     }
+
+    return { risk_score, gap_flags };
   } catch (err: unknown) {
     console.error('computeAndStoreAnalysis: unexpected error:', err);
+    return { risk_score: null, gap_flags: null };
   }
 }
 
@@ -218,11 +276,25 @@ export async function POST(
     );
   }
 
+  // When transitioning to ANALYZED, compute risk metrics first so they are
+  // written in the same UPDATE as the status change.
+  let analyzedRiskScore: number | null = null;
+  let analyzedGapFlags: GapFlags | null = null;
+  if (toStatus === 'ANALYZED') {
+    const result = await computeAndStoreAnalysis(supabase, id, context.activeOrganizationId);
+    analyzedRiskScore = result.risk_score;
+    analyzedGapFlags = result.gap_flags;
+  }
+
   const updatePayload: Record<string, unknown> = { status: toStatus };
   if (toStatus === 'CERTIFIED_SNAPSHOT') {
     updatePayload.expires_at = new Date(
       Date.now() + 12 * 30 * 24 * 60 * 60 * 1000,
     ).toISOString();
+  }
+  if (toStatus === 'ANALYZED') {
+    updatePayload.risk_score = analyzedRiskScore;
+    updatePayload.gap_flags = analyzedGapFlags;
   }
 
   const { error: updateError } = await supabase
@@ -251,11 +323,6 @@ export async function POST(
   if (transitionError) {
     console.error('assessment_transitions insert error:', transitionError);
     return NextResponse.json({ error: transitionError.message }, { status: 500 });
-  }
-
-  // Wenn Übergang → ANALYZED: Risikoanalyse berechnen und Assessment updaten
-  if (toStatus === 'ANALYZED') {
-    await computeAndStoreAnalysis(supabase, id, context.activeOrganizationId);
   }
 
   // Fire-and-forget email notifications — never block the response
