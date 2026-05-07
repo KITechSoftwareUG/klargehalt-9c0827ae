@@ -377,5 +377,5 @@ export async function POST(
     }
   })();
 
-  return NextResponse.json({ transition }, { status: 201 });
+  return NextResponse.json({ success: true, data: transition }, { status: 201 });
 }

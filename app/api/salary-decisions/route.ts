@@ -84,14 +84,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  void supabase.from('audit_logs').insert({
-	    organization_id: guard.orgId,
-	    user_id: guard.userId,
-    action: 'create',
-    entity_type: 'salary_decisions',
-    entity_id: data.id,
-    after_state: data,
-  });
-
   return NextResponse.json({ success: true, data }, { status: 201 });
 }

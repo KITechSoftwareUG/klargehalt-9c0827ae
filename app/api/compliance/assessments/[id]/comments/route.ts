@@ -55,7 +55,7 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data });
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(
@@ -117,5 +117,5 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data }, { status: 201 });
+  return NextResponse.json({ success: true, data }, { status: 201 });
 }

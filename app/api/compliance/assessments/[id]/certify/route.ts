@@ -205,5 +205,5 @@ export async function POST(
     }
   })();
 
-  return NextResponse.json({ snapshot }, { status: 201 });
+  return NextResponse.json({ success: true, data: snapshot }, { status: 201 });
 }

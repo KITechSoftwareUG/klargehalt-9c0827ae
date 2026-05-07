@@ -75,9 +75,12 @@ export async function GET(
   }
 
   return NextResponse.json({
-    assessment,
-    transitions: transitions ?? [],
-    comments: comments ?? [],
-    snapshot: snapshot ?? null,
+    success: true,
+    data: {
+      ...assessment,
+      transitions: transitions ?? [],
+      comments: comments ?? [],
+      snapshot: snapshot ?? null,
+    },
   });
 }

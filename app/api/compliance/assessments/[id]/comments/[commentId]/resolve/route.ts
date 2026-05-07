@@ -58,5 +58,5 @@ export async function PATCH(
     return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ comment });
+  return NextResponse.json({ success: true, data: comment });
 }

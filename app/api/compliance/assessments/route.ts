@@ -35,7 +35,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data });
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(request: NextRequest) {
@@ -102,5 +102,5 @@ export async function POST(request: NextRequest) {
     console.error('assessment_transitions insert error:', transitionError);
   }
 
-  return NextResponse.json({ data: assessment }, { status: 201 });
+  return NextResponse.json({ success: true, data: assessment }, { status: 201 });
 }
