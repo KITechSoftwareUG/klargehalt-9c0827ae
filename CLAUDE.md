@@ -2,7 +2,7 @@
 
 ## What This Is
 
-**KlarGehalt** — B2B SaaS for EU pay-transparency compliance (Entgelttransparenzrichtlinie 2023/970).
+**klargehalt** — B2B SaaS for EU pay-transparency compliance (Entgelttransparenzrichtlinie 2023/970).
 Target: German/EU companies (100–500 employees) proving fair salaries. Buyer: CEO or HR Lead.
 
 **We sell:** "If someone asks or sues — you are prepared. And an external lawyer has already reviewed it."

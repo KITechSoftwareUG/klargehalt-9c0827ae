@@ -15,6 +15,124 @@ const supabaseAdmin = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
+const avg = (arr: number[]): number =>
+  arr.reduce((a, b) => a + b, 0) / arr.length;
+
+async function computeAndStoreAnalysis(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  assessmentId: string,
+  orgId: string,
+): Promise<void> {
+  try {
+    // Step 1: Load employees
+    const { data: employees, error: empError } = await supabase
+      .from('employees')
+      .select('id, gender, base_salary, pay_band_id, department_id, salary_justification')
+      .eq('organization_id', orgId)
+      .eq('is_active', true);
+
+    if (empError) {
+      console.error('computeAndStoreAnalysis: employees fetch error:', empError);
+      return;
+    }
+
+    const empList = employees ?? [];
+
+    // Step 2: Load pay bands
+    const { data: payBands, error: bandsError } = await supabase
+      .from('pay_bands')
+      .select('id, min_annual, max_annual')
+      .eq('organization_id', orgId);
+
+    if (bandsError) {
+      console.error('computeAndStoreAnalysis: pay_bands fetch error:', bandsError);
+      return;
+    }
+
+    const payBandMap = (payBands ?? []).reduce<Record<string, { min: number; max: number }>>(
+      (acc, band) => {
+        acc[band.id] = { min: band.min_annual as number, max: band.max_annual as number };
+        return acc;
+      },
+      {},
+    );
+
+    // Step 3: Compute metrics
+    const maleEmployees = empList.filter(
+      (e) => e.gender === 'male' && (e.base_salary as number) > 0,
+    );
+    const femaleEmployees = empList.filter(
+      (e) => e.gender === 'female' && (e.base_salary as number) > 0,
+    );
+
+    const maleAvg =
+      maleEmployees.length > 0
+        ? avg(maleEmployees.map((e) => e.base_salary as number))
+        : 0;
+    const femaleAvg =
+      femaleEmployees.length > 0
+        ? avg(femaleEmployees.map((e) => e.base_salary as number))
+        : 0;
+
+    const gapPercent =
+      maleAvg > 0 && femaleAvg > 0
+        ? Math.abs(maleAvg - femaleAvg) / Math.max(maleAvg, femaleAvg)
+        : 0;
+    const gender_gap_exceeded = gapPercent > 0.05;
+
+    const missing_justifications = empList.filter(
+      (e) =>
+        !e.salary_justification ||
+        (e.salary_justification as string).trim().length < 5,
+    ).length;
+
+    const out_of_range = empList.filter((e) => {
+      if (!e.pay_band_id || !payBandMap[e.pay_band_id as string]) return false;
+      const { min, max } = payBandMap[e.pay_band_id as string];
+      return (e.base_salary as number) < min || (e.base_salary as number) > max;
+    });
+    const bands_out_of_range = out_of_range.length;
+
+    const deptOutOfRange = out_of_range.reduce<Record<string, number>>((acc, e) => {
+      if (e.department_id) {
+        acc[e.department_id as string] = (acc[e.department_id as string] ?? 0) + 1;
+      }
+      return acc;
+    }, {});
+    const high_risk_departments = Object.entries(deptOutOfRange)
+      .filter(([, count]) => count > 2)
+      .map(([deptId]) => deptId);
+
+    let score = 100;
+    if (gender_gap_exceeded) score -= 30;
+    score -= Math.min(missing_justifications * 2, 20);
+    score -= Math.min(bands_out_of_range * 3, 30);
+    score -= Math.min(high_risk_departments.length * 5, 20);
+    const risk_score = Math.max(0, score);
+
+    const gap_flags = {
+      gender_gap_exceeded,
+      missing_justifications,
+      bands_out_of_range,
+      high_risk_departments,
+      gender_gap_percent: Math.round(gapPercent * 1000) / 10,
+    };
+
+    // Step 4: Update assessment
+    const { error: updateError } = await supabase
+      .from('compliance_assessments')
+      .update({ risk_score, gap_flags })
+      .eq('id', assessmentId)
+      .eq('organization_id', orgId);
+
+    if (updateError) {
+      console.error('computeAndStoreAnalysis: assessment update error:', updateError);
+    }
+  } catch (err: unknown) {
+    console.error('computeAndStoreAnalysis: unexpected error:', err);
+  }
+}
+
 const transitionSchema = z.object({
   to: z.string(),
   note: z.string().optional(),
@@ -133,6 +251,11 @@ export async function POST(
   if (transitionError) {
     console.error('assessment_transitions insert error:', transitionError);
     return NextResponse.json({ error: transitionError.message }, { status: 500 });
+  }
+
+  // Wenn Übergang → ANALYZED: Risikoanalyse berechnen und Assessment updaten
+  if (toStatus === 'ANALYZED') {
+    await computeAndStoreAnalysis(supabase, id, context.activeOrganizationId);
   }
 
   // Fire-and-forget email notifications — never block the response

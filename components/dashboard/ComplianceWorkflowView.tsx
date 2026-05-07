@@ -39,6 +39,8 @@ import {
   RotateCcw,
   Award,
   ArrowRight,
+  Printer,
+  Loader2,
 } from 'lucide-react';
 import { useComplianceAssessments } from '@/hooks/useComplianceAssessments';
 import { useAuth } from '@/hooks/useAuth';
@@ -406,7 +408,7 @@ function CertificatePanel({ detail }: CertificatePanelProps) {
   const { snapshot } = detail;
 
   return (
-    <div className="rounded-xl border-2 border-green-300 bg-green-50 p-6">
+    <div id="certificate-panel" className="rounded-xl border-2 border-green-300 bg-green-50 p-6">
       <div className="flex items-start gap-4">
         <div className="rounded-full bg-green-200 p-3">
           <Award className="h-7 w-7 text-green-700" />
@@ -444,17 +446,15 @@ function CertificatePanel({ detail }: CertificatePanelProps) {
               {snapshot.snapshot_data.employees_count}
             </span>
           </div>
-          {snapshot.pdf_url && (
-            <a
-              href={snapshot.pdf_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 hover:underline"
-            >
-              <FileText className="h-4 w-4" />
-              Zertifikat herunterladen
-            </a>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="mt-4 print:hidden"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Als PDF drucken
+          </Button>
         </div>
       </div>
     </div>
@@ -816,10 +816,21 @@ function NewAssessmentDialog({
 }: NewAssessmentDialogProps) {
   const [submitting, setSubmitting] = useState(false);
 
+  const [lawyerEmail, setLawyerEmail] = useState('');
+  const [lawyerLookupState, setLawyerLookupState] = useState<
+    'idle' | 'loading' | 'found' | 'not_found' | 'error'
+  >('idle');
+  const [foundLawyer, setFoundLawyer] = useState<{
+    id: string;
+    name: string | null;
+    email: string;
+  } | null>(null);
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<NewAssessmentFormValues>({
     resolver: zodResolver(newAssessmentSchema),
@@ -833,7 +844,45 @@ function NewAssessmentDialog({
 
   const handleClose = () => {
     reset();
+    setLawyerEmail('');
+    setLawyerLookupState('idle');
+    setFoundLawyer(null);
     onClose();
+  };
+
+  const lookupLawyer = async () => {
+    if (!lawyerEmail.trim()) return;
+    setLawyerLookupState('loading');
+    try {
+      const res = await fetch(
+        `/api/compliance/lawyer-lookup?email=${encodeURIComponent(lawyerEmail)}`,
+      );
+      const data = (await res.json()) as
+        | { found: true; user: { id: string; name: string | null; email: string } }
+        | { found: false }
+        | { error: string };
+
+      if ('error' in data) {
+        setFoundLawyer(null);
+        setValue('lawyer_id', '');
+        setLawyerLookupState('error');
+        return;
+      }
+
+      if (data.found) {
+        setFoundLawyer(data.user);
+        setValue('lawyer_id', data.user.id);
+        setLawyerLookupState('found');
+      } else {
+        setFoundLawyer(null);
+        setValue('lawyer_id', '');
+        setLawyerLookupState('not_found');
+      }
+    } catch {
+      setFoundLawyer(null);
+      setValue('lawyer_id', '');
+      setLawyerLookupState('error');
+    }
   };
 
   const onSubmit = async (values: NewAssessmentFormValues) => {
@@ -894,22 +943,62 @@ function NewAssessmentDialog({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="lawyer_id">
+          <div className="space-y-2">
+            <Label>
               Anwalt{' '}
               <span className="text-xs font-normal text-muted-foreground">
                 (optional)
               </span>
             </Label>
-            <Input
-              id="lawyer_id"
-              placeholder="Logto User-ID des Anwalts"
-              disabled={submitting}
-              {...register('lawyer_id')}
-            />
-            <p className="text-xs text-muted-foreground">
-              Logto User-ID des zugeordneten externen Anwalts
-            </p>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="anwalt@kanzlei.de"
+                value={lawyerEmail}
+                disabled={submitting}
+                onChange={(e) => {
+                  setLawyerEmail(e.target.value);
+                  setLawyerLookupState('idle');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void lookupLawyer();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void lookupLawyer()}
+                disabled={submitting || !lawyerEmail || lawyerLookupState === 'loading'}
+              >
+                {lawyerLookupState === 'loading' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Suchen'
+                )}
+              </Button>
+            </div>
+
+            {lawyerLookupState === 'found' && foundLawyer && (
+              <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>{foundLawyer.name ?? foundLawyer.email}</span>
+              </div>
+            )}
+            {lawyerLookupState === 'not_found' && (
+              <p className="text-sm text-red-600">
+                Kein Nutzer mit dieser E-Mail gefunden.
+              </p>
+            )}
+            {lawyerLookupState === 'error' && (
+              <p className="text-sm text-red-600">
+                Suche fehlgeschlagen. Bitte erneut versuchen.
+              </p>
+            )}
+
+            <input type="hidden" {...register('lawyer_id')} />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
