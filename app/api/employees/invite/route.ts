@@ -12,14 +12,16 @@ export async function POST(request: NextRequest) {
 
   // Only admins can invite employees
   const supabase = await createClient();
-  const { data: roleRow } = await supabase
-    .from('user_roles')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: roleRow } = await (supabase as any)
+    .from('organization_members')
     .select('role')
     .eq('user_id', context.user?.id)
     .eq('organization_id', context.activeOrganizationId)
+    .eq('status', 'active')
     .maybeSingle();
 
-  if (!roleRow || !['admin', 'hr_manager'].includes(roleRow.role)) {
+  if (!roleRow || !['owner', 'admin', 'hr_manager'].includes(roleRow.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

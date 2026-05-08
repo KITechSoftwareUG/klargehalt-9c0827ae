@@ -10,7 +10,7 @@ const plans = [
 	    price: "149",
 	    yearlyPrice: "124",
     period: "/mo",
-    features: ["Gehaltsbänder & Job-Profile", "Mitarbeiter-Selbstauskunft", "CSV-Import", "Basis Audit-Trail", "E-Mail Support", "1 Admin + 1 HR-Manager"],
+    features: ["Gehaltsbänder & Job-Profile", "Auditfähige Dokumentation", "CSV-Import", "Basis Audit-Trail", "E-Mail Support", "1 Admin + 1 HR-Manager"],
     cta: "Kostenlos testen",
     href: getAppUrl("/sign-up?plan=basis"),
     featured: false,

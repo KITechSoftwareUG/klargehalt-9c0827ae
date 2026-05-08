@@ -197,6 +197,16 @@ async function handleUserDeleted(user: LogtoUserData) {
     console.error('Webhook: Failed to delete user roles', roleError);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: memberError } = await (supabase as any)
+    .from('organization_members')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (memberError) {
+    console.error('Webhook: Failed to delete organization_members', memberError);
+  }
+
   const { error: profileError } = await supabase
     .from('profiles')
     .delete()

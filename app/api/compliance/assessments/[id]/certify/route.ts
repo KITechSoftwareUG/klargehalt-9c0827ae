@@ -15,6 +15,11 @@ const certifySchema = z.object({
   valid_months: z.number().int().min(1).max(36).default(12),
 });
 
+const getDisplayName = (user: NonNullable<Awaited<ReturnType<typeof getServerAuthContext>>['user']>) =>
+  user.fullName || user.firstName || user.email || 'Externer Rechtsberater';
+
+const getAppUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.klargehalt.de';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -41,7 +46,7 @@ export async function POST(
 
   const { data: assessment, error: assessmentError } = await supabase
     .from('compliance_assessments')
-    .select('id, status, organization_id, title, initiated_by')
+    .select('id, status, organization_id, title, initiated_by, period_from, period_to')
     .eq('id', id)
     .eq('organization_id', context.activeOrganizationId)
     .maybeSingle();
@@ -148,6 +153,29 @@ export async function POST(
   if (snapshotError) {
     console.error('certified_snapshots insert error:', snapshotError);
     return NextResponse.json({ error: snapshotError.message }, { status: 500 });
+  }
+
+  const snapshotUrl = `${getAppUrl()}/compliance-workflow/certificate/${snapshot.id}`;
+  const { error: reviewError } = await supabase
+    .from('lawyer_reviews')
+    .insert({
+      organization_id: orgId,
+      reviewed_by: context.user!.id,
+      reviewed_by_name: getDisplayName(context.user!),
+      scope_type: 'pay_gap_report',
+      scope_id: snapshot.id,
+      scope_label: assessment.title ?? 'Pay-Gap-Bericht',
+      verdict: 'approved',
+      notes: lawyer_statement,
+      recommendations: `Zertifizierter Snapshot: ${snapshotUrl}`,
+      document_hash: snapshot.id,
+      review_period_start: assessment.period_from,
+      review_period_end: assessment.period_to,
+    });
+
+  if (reviewError) {
+    console.error('lawyer_reviews insert error:', reviewError);
+    return NextResponse.json({ error: reviewError.message }, { status: 500 });
   }
 
   const { error: updateError } = await supabase

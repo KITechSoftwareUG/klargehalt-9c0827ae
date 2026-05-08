@@ -118,6 +118,15 @@ export async function GET(request: NextRequest) {
 
   const filteredSnapshots = (snapshots ?? []).filter((s) => !s.is_suppressed).slice(0, 20);
 
+  const { data: latestLawyerReview } = await supabase
+    .from('lawyer_reviews')
+    .select('id, reviewed_by_name, scope_id, scope_label, verdict, notes, recommendations, document_hash, review_period_start, review_period_end, signed_at')
+    .eq('organization_id', orgId)
+    .eq('scope_type', 'pay_gap_report')
+    .order('signed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const html = generateReportHtml({
     companyName,
     reportDate,
@@ -133,6 +142,21 @@ export async function GET(request: NextRequest) {
     quartiles,
     deptStats: Object.values(deptAgg),
     snapshots: filteredSnapshots,
+    lawyerReview: latestLawyerReview
+      ? {
+          id: latestLawyerReview.id as string,
+          reviewedByName: latestLawyerReview.reviewed_by_name as string,
+          scopeId: latestLawyerReview.scope_id as string | null,
+          scopeLabel: latestLawyerReview.scope_label as string | null,
+          verdict: latestLawyerReview.verdict as string,
+          notes: latestLawyerReview.notes as string | null,
+          recommendations: latestLawyerReview.recommendations as string | null,
+          documentHash: latestLawyerReview.document_hash as string | null,
+          reviewPeriodStart: latestLawyerReview.review_period_start as string | null,
+          reviewPeriodEnd: latestLawyerReview.review_period_end as string | null,
+          signedAt: latestLawyerReview.signed_at as string,
+        }
+      : null,
   });
 
   let browser;
@@ -164,6 +188,9 @@ export async function GET(request: NextRequest) {
         overall_gap: overallGap,
         variable_gap_pct: variableGapPct,
         quartiles,
+        lawyer_review_id: latestLawyerReview?.id ?? null,
+        lawyer_review_signed_at: latestLawyerReview?.signed_at ?? null,
+        lawyer_review_verdict: latestLawyerReview?.verdict ?? null,
       },
     });
 
@@ -196,6 +223,37 @@ interface ReportParams {
   quartiles: { q: string; malePct: number | null; femalePct: number | null }[];
   deptStats: { name: string; male: number; female: number; diverse: number; total: number }[];
   snapshots: Array<Record<string, unknown>>;
+  lawyerReview: LawyerReviewProof | null;
+}
+
+interface LawyerReviewProof {
+  id: string;
+  reviewedByName: string;
+  scopeId: string | null;
+  scopeLabel: string | null;
+  verdict: string;
+  notes: string | null;
+  recommendations: string | null;
+  documentHash: string | null;
+  reviewPeriodStart: string | null;
+  reviewPeriodEnd: string | null;
+  signedAt: string;
+}
+
+const LAWYER_VERDICT_LABELS: Record<string, string> = {
+  approved: 'Freigegeben',
+  compliant_with_notes: 'Konform mit Hinweisen',
+  needs_remediation: 'Nachbesserung erforderlich',
+  rejected: 'Nicht freigegeben',
+};
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatEur(val: unknown): string {
@@ -215,6 +273,65 @@ function quartileColor(pct: number | null): string {
   if (pct >= 40 && pct <= 60) return '#16a34a'; // balanced
   if (pct >= 30 && pct <= 70) return '#d97706'; // skewed
   return '#dc2626'; // very skewed
+}
+
+function formatReportDate(iso: string | null): string {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.klargehalt.de';
+}
+
+function generateLawyerReviewSection(review: LawyerReviewProof | null): string {
+  if (!review) {
+    return `
+<div class="section">
+  <div class="section-title">7. Anwaltliche Prüfung</div>
+  <div class="warning-box">
+    <strong>Nicht geprüft:</strong> Für diesen Pay-Gap-Bericht liegt noch keine datierte anwaltliche Prüfung vor.
+    Für externe Verwendung sollte eine Prüfung im Compliance-Workflow eingeholt werden.
+  </div>
+</div>`;
+  }
+
+  const label = LAWYER_VERDICT_LABELS[review.verdict] ?? review.verdict;
+  const period = review.reviewPeriodStart || review.reviewPeriodEnd
+    ? `${formatReportDate(review.reviewPeriodStart)} bis ${formatReportDate(review.reviewPeriodEnd)}`
+    : 'Nicht angegeben';
+  const documentUrl = review.scopeId
+    ? `${getAppUrl()}/compliance-workflow/certificate/${encodeURIComponent(review.scopeId)}`
+    : null;
+
+  return `
+<div class="section">
+  <div class="section-title">7. Anwaltliche Prüfung</div>
+  <div class="lawyer-proof">
+    <div class="lawyer-proof-header">
+      <div>
+        <div class="lawyer-proof-badge">Anwaltlich geprüft</div>
+        <div class="lawyer-proof-title">${escapeHtml(label)}</div>
+      </div>
+      <div class="lawyer-proof-date">${formatReportDate(review.signedAt)}</div>
+    </div>
+    <table style="margin-top:12px">
+      <tbody>
+        <tr><th>Geprüft von</th><td>${escapeHtml(review.reviewedByName)}</td></tr>
+        <tr><th>Prüfgegenstand</th><td>${escapeHtml(review.scopeLabel ?? 'Pay-Gap-Bericht')}</td></tr>
+        <tr><th>Prüfzeitraum</th><td>${escapeHtml(period)}</td></tr>
+        ${documentUrl ? `<tr><th>Gutachten</th><td><a href="${escapeHtml(documentUrl)}">${escapeHtml(documentUrl)}</a></td></tr>` : ''}
+        ${review.documentHash ? `<tr><th>Dokument-Hash</th><td style="font-family:monospace;font-size:8pt">${escapeHtml(review.documentHash)}</td></tr>` : ''}
+      </tbody>
+    </table>
+    ${review.notes ? `<p class="lawyer-proof-text"><strong>Hinweis:</strong> ${escapeHtml(review.notes)}</p>` : ''}
+    ${review.recommendations ? `<p class="lawyer-proof-text"><strong>Empfehlung:</strong> ${escapeHtml(review.recommendations)}</p>` : ''}
+  </div>
+</div>`;
 }
 
 function generateVariablePaySection(p: ReportParams): string {
@@ -396,6 +513,12 @@ function generateReportHtml(p: ReportParams): string {
     .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 8pt; color: #94a3b8; }
     .warning-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 9pt; color: #9a3412; }
     .ok-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 16px; margin: 16px 0; font-size: 9pt; color: #166534; }
+    .lawyer-proof { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 16px; }
+    .lawyer-proof-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .lawyer-proof-badge { display: inline-block; background: #dcfce7; color: #166534; border: 1px solid #86efac; border-radius: 999px; padding: 3px 8px; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .lawyer-proof-title { font-size: 14pt; font-weight: 800; color: #0f172a; margin-top: 6px; }
+    .lawyer-proof-date { font-size: 10pt; font-weight: 700; color: #334155; white-space: nowrap; }
+    .lawyer-proof-text { margin-top: 10px; font-size: 9pt; color: #334155; line-height: 1.6; }
     .page-break { page-break-before: always; }
   </style>
 </head>
@@ -519,6 +642,8 @@ ${generateQuartileSection(p)}
     Mandantentrennung: PostgreSQL Row Level Security. Zugriffsprotokoll: vollständiger Audit-Trail.
   </p>
 </div>
+
+${generateLawyerReviewSection(p.lawyerReview)}
 
 <div class="footer">
   <p>

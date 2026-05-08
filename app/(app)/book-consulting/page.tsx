@@ -20,7 +20,7 @@ type TimeSlot = '09:00' | '10:00' | '11:00' | '13:00' | '14:00' | '15:00' | '16:
 
 export default function BookConsultingPage() {
     const router = useRouter();
-    const { user, profile, supabase } = useAuth();
+    const { user, profile, supabase, orgId } = useAuth();
     const { toast } = useToast();
 
     const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -64,7 +64,7 @@ export default function BookConsultingPage() {
     ];
 
     const handleSubmit = async () => {
-        if (!user || !selectedDate) {
+        if (!user || !orgId || !selectedDate) {
             toast({
                 title: 'Fehler',
                 description: 'Bitte füllen Sie alle Pflichtfelder aus.',
@@ -80,6 +80,7 @@ export default function BookConsultingPage() {
                 .from('consultation_bookings')
                 .insert({
                     user_id: user.id,
+                    organization_id: orgId,
                     consultation_type: consultationType,
                     scheduled_date: selectedDate.toISOString().split('T')[0],
                     scheduled_time: selectedTime,

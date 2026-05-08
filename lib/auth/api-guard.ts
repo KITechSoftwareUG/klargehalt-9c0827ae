@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 type AuthContext = Awaited<ReturnType<typeof getServerAuthContext>>;
 
-export type OrgRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
+export type OrgRole = 'owner' | 'admin' | 'hr_manager' | 'employee' | 'lawyer' | 'auditor';
 
 export interface GuardedContext {
   orgId: string;
@@ -31,18 +31,19 @@ export async function guardOrgMember(
   const userId = context.user.id;
 
   const supabase = createServiceClient();
-  const { data: userRole } = await supabase
-    .from('user_roles')
+  const { data: member } = await supabase
+    .from('organization_members')
     .select('role')
     .eq('user_id', userId)
     .eq('organization_id', orgId)
+    .eq('status', 'active')
     .maybeSingle();
 
-  if (!userRole) {
+  if (!member) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  return { orgId, userId, role: userRole.role as OrgRole };
+  return { orgId, userId, role: member.role as OrgRole };
 }
 
 /**
@@ -56,7 +57,9 @@ export async function guardRole(
   const result = await guardOrgMember(context);
   if (result instanceof NextResponse) return result;
 
-  if (!allowedRoles.includes(result.role)) {
+  // owner has all admin privileges — treat it as admin for role checks
+  const effectiveRole: OrgRole = result.role === 'owner' ? 'admin' : result.role;
+  if (!allowedRoles.includes(effectiveRole) && !allowedRoles.includes(result.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

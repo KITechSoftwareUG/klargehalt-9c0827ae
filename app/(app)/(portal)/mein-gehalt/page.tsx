@@ -1,7 +1,5 @@
-'use client';
-
-import MySalaryComparisonView from '@/components/dashboard/MySalaryComparisonView';
+import { redirect } from 'next/navigation';
 
 export default function MeinGehaltPage() {
-    return <MySalaryComparisonView />;
+    redirect('/dashboard');
 }

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     `• Informationen über Ihr individuelles Gehaltsniveau zu erhalten\n` +
     `• Durchschnittliche Gehaltsdaten nach Geschlecht für gleichwertige Tätigkeiten anzufordern\n` +
     `• Den Gender Pay Gap in Ihrer Entgeltkategorie zu erfahren\n\n` +
-    `Um Ihr Auskunftsrecht auszuüben, wenden Sie sich an die HR-Abteilung oder nutzen Sie das Mitarbeiterportal.`;
+    `Um Ihr Auskunftsrecht auszuüben, wenden Sie sich an die HR-Abteilung.`;
 
   const { data, error } = await supabase
     .from('rights_notifications')

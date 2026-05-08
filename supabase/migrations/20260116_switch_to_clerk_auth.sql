@@ -5,6 +5,40 @@
 -- This ensures that "cannot alter type... used in a policy" errors are resolved,
 -- regardless of what the policies are named.
 
+CREATE TABLE IF NOT EXISTS onboarding_data (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  company_size TEXT NOT NULL CHECK (company_size IN ('1-50', '51-250', '251-1000', '1000+')),
+  consulting_option TEXT NOT NULL CHECK (consulting_option IN ('self-service', 'guided', 'full-service')),
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS consultation_bookings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  consultation_type TEXT NOT NULL CHECK (consultation_type IN ('video', 'phone', 'in-person')),
+  scheduled_date DATE NOT NULL,
+  scheduled_time TIME NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  company_name TEXT NOT NULL,
+  employee_count TEXT NOT NULL,
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+  consultant_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  meeting_link TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  confirmed_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ
+);
+
 -- 1. FORCE DROP ALL POLICIES
 DO $$ 
 DECLARE 
@@ -21,6 +55,8 @@ BEGIN
             'job_profiles', 
             'pay_bands', 
             'employees', 
+            'employee_assignments',
+            'salary_info',
             'info_requests', 
             'audit_logs', 
             'onboarding_data', 
@@ -54,6 +90,12 @@ ALTER TABLE audit_logs ALTER COLUMN user_id TYPE TEXT;
 ALTER TABLE onboarding_data ALTER COLUMN user_id TYPE TEXT;
 ALTER TABLE consultation_bookings ALTER COLUMN user_id TYPE TEXT;
 ALTER TABLE consultation_bookings ALTER COLUMN consultant_id TYPE TEXT;
+
+-- Older policies in this migration are company_id-based. Some active
+-- migration paths created these tables before those columns existed.
+ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS company_id UUID;
+ALTER TABLE job_profiles ADD COLUMN IF NOT EXISTS company_id UUID;
+ALTER TABLE pay_bands ADD COLUMN IF NOT EXISTS company_id UUID;
 
 -- 4. RECREATE RLS POLICIES (Compatible with Text IDs)
 -- We cast auth.uid()::text to ensure it matches the new TEXT columns.
@@ -152,13 +194,13 @@ CREATE POLICY "Users can update their own bookings" ON consultation_bookings FOR
 CREATE POLICY "Consultants can view all bookings" ON consultation_bookings FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM user_roles
-    WHERE user_id = auth.uid()::text AND role IN ('admin', 'consultant')
+    WHERE user_id = auth.uid()::text AND role = 'admin'
   )
 );
 CREATE POLICY "Consultants can update bookings" ON consultation_bookings FOR UPDATE USING (
   EXISTS (
     SELECT 1 FROM user_roles
-    WHERE user_id = auth.uid()::text AND role IN ('admin', 'consultant')
+    WHERE user_id = auth.uid()::text AND role = 'admin'
   )
 );
 

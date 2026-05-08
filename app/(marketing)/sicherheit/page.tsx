@@ -46,7 +46,7 @@ const layers = [
 const dsgvoArticles = [
     { article: 'Art. 5', title: 'Grundsätze', desc: 'Datenminimierung, Zweckbindung und Speicherbegrenzung sind in der Architektur verankert, nicht nur in Richtlinien.' },
     { article: 'Art. 6', title: 'Rechtsgrundlage', desc: 'Verarbeitung auf Basis des berechtigten Interesses (Compliance-Pflicht) und Vertragsdurchführung.' },
-    { article: 'Art. 15', title: 'Auskunftsrecht', desc: 'Mitarbeiter können ihre Daten einsehen. Automatisierte Auskunftsfunktion im Self-Service Portal.' },
+    { article: 'Art. 15', title: 'Auskunftsrecht', desc: 'Auskunftsprozesse werden durch HR dokumentiert und revisionssicher nachgehalten.' },
     { article: 'Art. 17', title: 'Recht auf Löschung', desc: 'Datenlösch-Workflows sind implementiert. Aufbewahrungsfristen werden automatisch ueberwacht.' },
     { article: 'Art. 25', title: 'Privacy by Design', desc: 'Datenschutz ist in die Architektur eingebaut — nicht nachträglich ergaenzt.' },
     { article: 'Art. 32', title: 'Technische Maßnahmen', desc: 'Verschlüsselung, Zugriffskontrolle und regelmäßige Sicherheitsüberprüfungen.' },

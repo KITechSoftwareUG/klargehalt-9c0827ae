@@ -48,7 +48,7 @@ export const PLANS: Record<SubscriptionTier, PlanDefinition> = {
       'CSV-Import',
       'Basis-Audit-Trail',
       '1 Admin + 1 HR-Manager',
-      'Mitarbeiter-Selbstauskunft',
+      'Auditfähige Dokumentation',
     ],
     description: 'Für kleine Unternehmen bis 50 Mitarbeiter',
   },

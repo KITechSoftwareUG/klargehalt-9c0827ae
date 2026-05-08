@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 
-type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
+type AppRole = 'owner' | 'admin' | 'hr_manager' | 'employee' | 'lawyer' | 'auditor';
 
 interface RoleGuardProps {
     /** Content is shown only if user has at least one of these roles */
@@ -29,7 +29,9 @@ export function RoleGuard({ roles, children, fallback = null }: RoleGuardProps) 
     if (loading) return null;
 
     // role can be null if not yet set — treat as no access
-    if (!role || !roles.includes(role as AppRole)) {
+    // owner has all admin privileges — treat as admin for role checks
+    const effectiveRole: AppRole = role === 'owner' ? 'admin' : (role as AppRole);
+    if (!role || (!roles.includes(effectiveRole) && !roles.includes(role as AppRole))) {
         return <>{fallback}</>;
     }
 
@@ -41,5 +43,8 @@ export function RoleGuard({ roles, children, fallback = null }: RoleGuardProps) 
  */
 export function useRoleAccess(...roles: AppRole[]) {
     const { role } = useAuth();
-    return !!role && roles.includes(role as AppRole);
+    if (!role) return false;
+    // owner has all admin privileges — treat as admin for role checks
+    const effectiveRole: AppRole = role === 'owner' ? 'admin' : (role as AppRole);
+    return roles.includes(effectiveRole) || roles.includes(role as AppRole);
 }

@@ -26,7 +26,7 @@ interface OnboardingCompletePayload {
   companySize: '1-50' | '51-250' | '251-1000';
   selectedPlan: SubscriptionTier;
   selfReportedRole: 'admin' | 'hr_manager';
-  consultingOption: 'self-service' | 'guided';
+  consultingOption: 'self_setup' | 'guided';
 }
 
 const getAdmin = () =>
@@ -156,26 +156,44 @@ export async function POST(request: NextRequest) {
     );
     if (profileError) throw profileError;
 
-    const { data: existingRole } = await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingMember } = await (admin as any)
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (existingMember) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: roleError } = await (admin as any)
+        .from('organization_members')
+        .update({ role: 'owner' })
+        .eq('id', existingMember.id);
+      if (roleError) throw roleError;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: roleError } = await (admin as any).from('organization_members').insert({
+        user_id: userId,
+        organization_id: organizationId,
+        role: 'owner',
+        status: 'active',
+      });
+      if (roleError) throw roleError;
+    }
+
+    // Backward compatibility: upsert into user_roles as 'admin'
+    const { data: existingUserRole } = await admin
       .from('user_roles')
       .select('id')
       .eq('user_id', userId)
       .eq('organization_id', organizationId)
       .maybeSingle();
-
-    if (existingRole) {
-      const { error: roleError } = await admin
-        .from('user_roles')
-        .update({ role: 'admin' })
-        .eq('id', existingRole.id);
-      if (roleError) throw roleError;
+    if (existingUserRole) {
+      await admin.from('user_roles').update({ role: 'admin' }).eq('id', existingUserRole.id);
     } else {
-      const { error: roleError } = await admin.from('user_roles').insert({
-        user_id: userId,
-        organization_id: organizationId,
-        role: 'admin',
-      });
-      if (roleError) throw roleError;
+      await admin.from('user_roles').insert({ user_id: userId, organization_id: organizationId, role: 'admin' });
     }
 
     const { error: onboardingError } = await admin.from('onboarding_data').upsert(

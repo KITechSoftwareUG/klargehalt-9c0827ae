@@ -35,6 +35,35 @@ ALTER TABLE IF EXISTS request_rate_limits RENAME TO _deprecated_request_rate_lim
 ALTER TABLE IF EXISTS audit_exports RENAME TO _deprecated_audit_exports;
 ALTER TABLE IF EXISTS anonymization_config RENAME TO _deprecated_anonymization_config;
 
+-- Drop policies on deprecated tables before dropping legacy auth helper
+-- functions they may still reference.
+DROP POLICY IF EXISTS "Admins can view company login attempts" ON _deprecated_login_attempts;
+DROP POLICY IF EXISTS "Users can view their own sessions" ON _deprecated_user_sessions;
+DROP POLICY IF EXISTS "System can manage sessions" ON _deprecated_user_sessions;
+DROP POLICY IF EXISTS "Admins can manage company SSO" ON _deprecated_sso_configurations;
+DROP POLICY IF EXISTS "Admins can manage salary components" ON _deprecated_salary_components;
+DROP POLICY IF EXISTS "HR Managers can manage salary components" ON _deprecated_salary_components;
+DROP POLICY IF EXISTS "Employees can view salary components" ON _deprecated_salary_components;
+
+DO $$
+DECLARE
+  legacy_policy RECORD;
+BEGIN
+  FOR legacy_policy IN
+    SELECT schemaname, tablename, policyname
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename LIKE '\_deprecated\_%' ESCAPE '\'
+  LOOP
+    EXECUTE format(
+      'DROP POLICY IF EXISTS %I ON %I.%I',
+      legacy_policy.policyname,
+      legacy_policy.schemaname,
+      legacy_policy.tablename
+    );
+  END LOOP;
+END $$;
+
 -- Drop dead functions (all reference auth.uid() which returns NULL with Logto JWTs)
 DROP FUNCTION IF EXISTS public.get_user_permissions();
 DROP FUNCTION IF EXISTS public.get_user_company_id();
@@ -74,11 +103,11 @@ DROP FUNCTION IF EXISTS public.get_info_request_response(UUID);
 DROP FUNCTION IF EXISTS public.handle_new_user();
 DROP FUNCTION IF EXISTS public.get_user_role(UUID);
 DROP FUNCTION IF EXISTS public.has_role(UUID, TEXT);
-DROP FUNCTION IF EXISTS public.update_updated_at_column();
-DROP FUNCTION IF EXISTS public.audit_job_profiles();
-DROP FUNCTION IF EXISTS public.audit_pay_bands();
+-- Shared by canonical updated_at triggers; keep it until those triggers are
+-- replaced by a non-legacy helper.
+-- Shared by canonical audit triggers on active tables.
 DROP FUNCTION IF EXISTS public.create_audit_log(TEXT, TEXT, TEXT, UUID, JSONB, JSONB);
-DROP FUNCTION IF EXISTS public.check_no_overlapping_assignments();
+-- Shared by active assignment exclusion trigger.
 DROP FUNCTION IF EXISTS public.get_next_job_profile_version(UUID);
 DROP FUNCTION IF EXISTS public.get_next_pay_band_version(UUID);
 DROP FUNCTION IF EXISTS public.create_job_profile_version(UUID, TEXT, TEXT, UUID, BOOLEAN, TEXT, TEXT);

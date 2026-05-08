@@ -88,7 +88,8 @@ export async function GET() {
     // Fetch Supabase data in parallel
     const [profilesRes, rolesRes, companiesRes] = await Promise.all([
         supabase.from('profiles').select('user_id, email, full_name'),
-        supabase.from('user_roles').select('user_id, role, organization_id'),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from('organization_members').select('user_id, role, organization_id').eq('status', 'active'),
         supabase.from('companies').select('organization_id, name, subscription_tier, subscription_status, trial_ends_at'),
     ]);
 

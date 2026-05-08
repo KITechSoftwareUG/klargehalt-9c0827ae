@@ -175,7 +175,7 @@ export const ROLE_LABELS: Record<string, string> = {
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
   admin: 'Vollzugriff auf alle Funktionen und Einstellungen',
   hr_manager: 'Verwaltung von Mitarbeitern, Gehältern und Job-Profilen',
-  employee: 'Einsicht in eigene Daten und Auskunftsanfragen',
+  employee: 'Kein Self-Service-Zugriff aktiviert',
   lawyer: 'Rechtliche Bewertungen und Compliance-Prüfungen',
 };
 

@@ -19,6 +19,11 @@ CREATE TABLE IF NOT EXISTS companies (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
+-- The table may already exist from older migrations. Keep this migration
+-- idempotent by ensuring columns referenced below are present.
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS size TEXT;
+
 -- Enable RLS
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 

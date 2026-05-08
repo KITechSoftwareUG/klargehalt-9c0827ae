@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, createContext, useContext, ReactNode } fr
 import { createClient, createSupabaseClient } from '@/utils/supabase/client';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-type AppRole = 'admin' | 'hr_manager' | 'employee' | 'lawyer';
+type AppRole = 'owner' | 'admin' | 'hr_manager' | 'employee' | 'lawyer' | 'auditor';
 
 type AuthUser = {
   id: string;
@@ -176,9 +176,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const roleQuery = supabase
-          .from('user_roles')
+          .from('organization_members')
           .select('role')
-          .eq('user_id', authState.user.id);
+          .eq('user_id', authState.user.id)
+          .eq('status', 'active');
 
         const scopedRoleQuery = activeOrganization?.id
           ? roleQuery.eq('organization_id', activeOrganization.id)

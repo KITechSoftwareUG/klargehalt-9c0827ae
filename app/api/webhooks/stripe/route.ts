@@ -101,19 +101,22 @@ export async function POST(request: NextRequest) {
           const companyId = updated1[0].id as string;
           const { data: company } = await supabase
             .from('companies')
-            .select('name')
+            .select('name, organization_id')
             .eq('id', companyId)
             .single();
           const companyName = (company?.name as string) || 'Ihr Unternehmen';
+          const organizationId = company?.organization_id as string | undefined;
 
-          const { data: admins } = await supabase
-            .from('user_roles')
-            .select('user_id, profiles!inner(email, full_name)')
-            .eq('organization_id', companyId)
-            .eq('role', 'admin');
+          if (organizationId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: admins } = await (supabase as any)
+              .from('organization_members')
+              .select('user_id, profiles!inner(email, full_name)')
+              .eq('organization_id', organizationId)
+              .eq('status', 'active')
+              .in('role', ['owner', 'admin']);
 
-          if (admins) {
-            for (const admin of admins) {
+            for (const admin of admins ?? []) {
               const profileRaw = admin.profiles as unknown;
               const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
               if (profile?.email) {
@@ -205,7 +208,7 @@ export async function POST(request: NextRequest) {
           .from('companies')
           .update({ subscription_status: 'past_due' })
           .eq('stripe_customer_id', customerId)
-          .select('id, name');
+          .select('id, name, organization_id');
 
         if (err4) throw err4;
         if (!updated4 || updated4.length === 0) {
@@ -214,16 +217,18 @@ export async function POST(request: NextRequest) {
 
         // Send payment failed email to all admins of the company
         if (updated4 && updated4.length > 0) {
-          const companyId = updated4[0].id as string;
+          const organizationId = updated4[0].organization_id as string | undefined;
           const companyName = (updated4[0].name as string) || 'Ihr Unternehmen';
-          const { data: admins } = await supabase
-            .from('user_roles')
-            .select('user_id, profiles!inner(email, full_name)')
-            .eq('organization_id', companyId)
-            .eq('role', 'admin');
+          if (organizationId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: admins } = await (supabase as any)
+              .from('organization_members')
+              .select('user_id, profiles!inner(email, full_name)')
+              .eq('organization_id', organizationId)
+              .eq('status', 'active')
+              .in('role', ['owner', 'admin']);
 
-          if (admins) {
-            for (const admin of admins) {
+            for (const admin of admins ?? []) {
               const profileRaw = admin.profiles as unknown;
               const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
               if (profile?.email) {

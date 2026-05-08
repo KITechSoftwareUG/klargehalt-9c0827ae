@@ -41,25 +41,29 @@ export async function GET(): Promise<NextResponse> {
 
   const supabase = supabaseAdmin();
 
-  const { data: callerRole } = await supabase
-    .from('user_roles')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: callerRole } = await (supabase as any)
+    .from('organization_members')
     .select('role')
     .eq('user_id', context.user!.id)
     .eq('organization_id', context.activeOrganizationId)
+    .eq('status', 'active')
     .maybeSingle();
 
-  if (!callerRole || !['admin', 'hr_manager'].includes(callerRole.role)) {
+  if (!callerRole || !['owner', 'admin', 'hr_manager'].includes(callerRole.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { data: lawyerRows, error: rolesError } = await supabase
-    .from('user_roles')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: lawyerRows, error: rolesError } = await (supabase as any)
+    .from('organization_members')
     .select('user_id')
     .eq('organization_id', context.activeOrganizationId)
+    .eq('status', 'active')
     .eq('role', 'lawyer');
 
   if (rolesError) {
-    console.error('lawyer-lookup: failed to query user_roles:', rolesError.message);
+    console.error('lawyer-lookup: failed to query organization_members:', rolesError.message);
     return NextResponse.json({ error: 'Datenbankfehler' }, { status: 500 });
   }
 

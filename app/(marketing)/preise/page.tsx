@@ -68,7 +68,7 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
         features: [
             { name: 'Admin-Nutzer', basis: '1', professional: '5', enterprise: 'Unbegrenzt' },
             { name: 'HR-Manager', basis: '1', professional: 'Unbegrenzt', enterprise: 'Unbegrenzt' },
-            { name: 'Mitarbeiter Self-Service (EntgTranspG)', basis: true, professional: true, enterprise: true },
+            { name: 'HR-geführter Auskunftsprozess', basis: true, professional: true, enterprise: true },
             { name: 'Multi-Faktor-Authentifizierung (TOTP)', basis: true, professional: true, enterprise: true },
             { name: 'Single Sign-On (SSO/SAML)', basis: false, professional: false, enterprise: true },
             { name: 'Auditor-Zugang (read-only)', basis: false, professional: false, enterprise: true },

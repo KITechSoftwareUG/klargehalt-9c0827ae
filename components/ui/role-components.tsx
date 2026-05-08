@@ -112,7 +112,7 @@ export const ROLE_STYLES: Record<AppRole, {
     text: 'text-status-success',
     border: 'border-status-success/30',
     label: 'Mitarbeiter',
-    description: 'Einsicht in eigene Daten und Auskunftsanfragen'
+    description: 'Kein Self-Service-Zugriff aktiviert'
   },
   lawyer: {
     bg: 'bg-purple-100',
@@ -173,10 +173,8 @@ import {
   Users, 
   Building2, 
   Scale, 
-  FileText, 
   TrendingUp, 
   Settings, 
-  UserCircle,
   Shield,
   ClipboardList
 } from 'lucide-react';
@@ -277,27 +275,7 @@ export function getNavigationForRole(role: AppRole | null): NavItem[] {
       ];
       
     case 'employee':
-      return [
-        ...baseItems,
-        { 
-          label: 'Meine Daten', 
-          icon: UserCircle, 
-          view: 'my-data',
-          description: 'Ihre persönlichen Informationen'
-        },
-        { 
-          label: 'Gehaltsvergleich', 
-          icon: Scale, 
-          view: 'comparison',
-          description: 'Anonymisierte Einordnung'
-        },
-        { 
-          label: 'Auskunftsanfragen', 
-          icon: FileText, 
-          view: 'requests',
-          description: 'Informationen anfordern'
-        },
-      ];
+      return [];
       
     case 'lawyer':
       return [
@@ -402,8 +380,8 @@ export function getWelcomeMessage(role: AppRole | null, name?: string): {
     case 'employee':
       return {
         greeting: `Guten Tag, ${displayName}`,
-        subtitle: 'Sie können hier Informationen zu Ihrer Vergütung einsehen und Anfragen stellen.',
-        tip: 'Gemäß EU-Richtlinie haben Sie Anspruch auf transparente Gehaltsinformationen.'
+        subtitle: 'Für Mitarbeiter ist kein Self-Service-Portal aktiviert.',
+        tip: 'KlarGehalt wird durch HR und Rechtsberater für Compliance-Nachweise genutzt.'
       };
       
     case 'lawyer':

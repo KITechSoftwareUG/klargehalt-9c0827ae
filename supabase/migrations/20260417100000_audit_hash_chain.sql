@@ -53,8 +53,8 @@ BEGIN
         COALESCE(NEW.id::text, '') || '|' ||
         COALESCE(NEW.organization_id, '') || '|' ||
         COALESCE(NEW.user_id, '') || '|' ||
-        COALESCE(NEW.action, '') || '|' ||
-        COALESCE(NEW.entity_type, '') || '|' ||
+        COALESCE(NEW.action::text, '') || '|' ||
+        COALESCE(NEW.entity_type::text, '') || '|' ||
         COALESCE(NEW.entity_id::text, '') || '|' ||
         COALESCE(NEW.before_state::text, '') || '|' ||
         COALESCE(NEW.after_state::text, '') || '|' ||
@@ -113,8 +113,8 @@ BEGIN
           COALESCE(_row.id::text, '') || '|' ||
           COALESCE(_row.organization_id, '') || '|' ||
           COALESCE(_row.user_id, '') || '|' ||
-          COALESCE(_row.action, '') || '|' ||
-          COALESCE(_row.entity_type, '') || '|' ||
+          COALESCE(_row.action::text, '') || '|' ||
+          COALESCE(_row.entity_type::text, '') || '|' ||
           COALESCE(_row.entity_id::text, '') || '|' ||
           COALESCE(_row.before_state::text, '') || '|' ||
           COALESCE(_row.after_state::text, '') || '|' ||

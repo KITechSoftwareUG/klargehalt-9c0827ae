@@ -49,11 +49,13 @@ export async function POST() {
   );
 
   // Check again server-side to be idempotent
-  const { data: existingRole } = await adminClient
-    .from('user_roles')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existingRole } = await (adminClient as any)
+    .from('organization_members')
     .select('id, role')
     .eq('user_id', context.user.id)
     .eq('organization_id', context.activeOrganizationId)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (existingRole) {
@@ -72,10 +74,12 @@ export async function POST() {
   const isOrgCreator = company?.created_by === context.user.id;
   const assignedRole = isOrgCreator ? 'admin' : 'employee';
 
-  const { error } = await adminClient.from('user_roles').insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any).from('organization_members').insert({
     user_id: context.user.id,
     organization_id: context.activeOrganizationId,
     role: assignedRole,
+    status: 'active',
   });
 
   if (error) {
@@ -87,7 +91,7 @@ export async function POST() {
     orgId: context.activeOrganizationId,
     userId: context.user.id,
     action: 'create',
-    entityType: 'user_roles',
+    entityType: 'organization_members',
     entityId: context.user.id,
     afterState: { user_id: context.user.id, organization_id: context.activeOrganizationId, role: assignedRole, repaired: true },
   });

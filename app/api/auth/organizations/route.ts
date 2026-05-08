@@ -47,19 +47,33 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
-    const { data: existingRole } = await adminClient
-      .from('user_roles')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existingRole } = await (adminClient as any)
+      .from('organization_members')
       .select('id')
       .eq('user_id', context.user.id)
       .eq('organization_id', organization.id)
+      .eq('status', 'active')
       .maybeSingle();
 
     if (!existingRole) {
-      const { error: roleError } = await adminClient.from('user_roles').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: roleError } = await (adminClient as any).from('organization_members').insert({
         user_id: context.user.id,
         organization_id: organization.id,
         role: 'admin',
+        status: 'active',
       });
+      // Backward compatibility: also insert into user_roles
+      if (!roleError) {
+        await adminClient.from('user_roles').insert({
+          user_id: context.user.id,
+          organization_id: organization.id,
+          role: 'admin',
+        }).then(({ error }) => {
+          if (error) console.error('Failed to insert admin role into user_roles (backward compat):', error);
+        });
+      }
       if (roleError) {
         console.error('Failed to insert admin role for new org creator:', roleError);
       } else {
@@ -67,9 +81,9 @@ export async function POST(request: NextRequest) {
           orgId: organization.id,
           userId: context.user.id,
           action: 'create',
-          entityType: 'user_roles',
+          entityType: 'organization_members',
           entityId: context.user.id,
-          afterState: { user_id: context.user.id, organization_id: organization.id, role: 'admin' },
+          afterState: { user_id: context.user.id, organization_id: organization.id, role: 'admin', status: 'active' },
         });
       }
     }

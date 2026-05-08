@@ -45,7 +45,7 @@ const VIEW_TO_ROUTE: Record<string, string> = {
   'pay-bands':            '/gehaltsbaender',
   departments:            '/abteilungen',
   'job-levels':           '/karrierestufen',
-  'my-salary':            '/mein-gehalt',
+  'my-salary':            '/dashboard',
   billing:                '/abrechnung',
   settings:               '/einstellungen',
   audit:                  '/audit',
@@ -96,12 +96,14 @@ const DashboardOverview = ({ onNavigate }: DashboardOverviewProps) => {
 
   React.useEffect(() => {
     if (!supabase || !orgId) return;
-    supabase
-      .from('user_roles')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('organization_members')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', orgId)
+      .eq('status', 'active')
       .eq('role', 'hr_manager')
-      .then(({ count, error }) => {
+      .then(({ count, error }: { count: number | null; error: unknown }) => {
         if (!error) setHasHRManager((count ?? 0) > 0);
       });
   }, [supabase, orgId]);

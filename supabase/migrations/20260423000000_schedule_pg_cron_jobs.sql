@@ -6,15 +6,6 @@
 --
 -- This migration is idempotent: it calls cron.schedule() which upserts by job name.
 
--- ─── 1. Nightly cleanup: delete data for orgs whose trial ended > 30 days ago ──
--- Runs daily at 02:00 UTC. Calls the function created in
--- 20260402000000_trial_expiry_cleanup.sql.
-SELECT cron.schedule(
-  'cleanup-expired-trials',
-  '0 2 * * *',
-  'SELECT public.cleanup_expired_trial_accounts()'
-);
-
 -- ─── 2. Mark trials as expired in-place (subscription_status update) ────────────
 -- Moves companies from status='trialing' to status='canceled' once trial_ends_at
 -- has passed. This ensures getEffectiveTier() downgrades to 'basis' without
@@ -38,11 +29,27 @@ $$;
 
 REVOKE ALL ON FUNCTION public.expire_ended_trials() FROM PUBLIC;
 
-SELECT cron.schedule(
-  'expire-ended-trials',
-  '15 * * * *',
-  'SELECT public.expire_ended_trials()'
-);
+DO $$
+BEGIN
+  IF to_regnamespace('cron') IS NULL THEN
+    RAISE NOTICE 'Skipping cron job scheduling because pg_cron is not enabled';
+    RETURN;
+  END IF;
+
+  -- Nightly cleanup: delete data for orgs whose trial ended > 30 days ago.
+  PERFORM cron.schedule(
+    'cleanup-expired-trials',
+    '0 2 * * *',
+    'SELECT public.cleanup_expired_trial_accounts()'
+  );
+
+  -- Mark ended trials every hour so getEffectiveTier() downgrades promptly.
+  PERFORM cron.schedule(
+    'expire-ended-trials',
+    '15 * * * *',
+    'SELECT public.expire_ended_trials()'
+  );
+END $$;
 
 -- Verify scheduled jobs:
 -- SELECT jobname, schedule, command FROM cron.job

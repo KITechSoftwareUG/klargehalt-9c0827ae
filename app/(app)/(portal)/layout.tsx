@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
-    Building2, Scale, LayoutDashboard,
+    Building2, Scale,
     Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -16,7 +16,6 @@ import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { MfaBanner } from '@/components/MfaBanner';
 import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay';
-import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
 
 type AppView =
     | 'dashboard'
@@ -185,23 +184,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 </div>
             )}
 
-            {role === 'employee' && (
-                <nav className="flex-1 px-4 py-4">
-                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Mein Portal</p>
-                    <Link
-                        href="/mein-gehalt"
-                        onClick={() => setMobileNavOpen(false)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                            activeView === 'mein-gehalt'
-                                ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`}
-                    >
-                        <LayoutDashboard className="h-4 w-4 shrink-0" />
-                        <span className="truncate">Mein Gehalt</span>
-                    </Link>
-                </nav>
-            )}
+            {role === 'employee' && <div className="flex-1" />}
 
             <div className="border-t border-white/10 px-4 py-4 mt-auto">
                 <div className="flex items-center gap-3">
@@ -229,7 +212,16 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
     );
 
-    const mainContent = role === 'employee' ? <EmployeeDashboard /> : children;
+    const mainContent = role === 'employee' ? (
+        <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <Shield className="mx-auto mb-4 h-10 w-10 text-slate-400" />
+            <h2 className="text-lg font-semibold text-slate-900">Mitarbeiterzugriff deaktiviert</h2>
+            <p className="mt-2 text-sm text-slate-500">
+                KlarGehalt ist ein Compliance-Werkzeug für HR, Management und externe Rechtsberater.
+                Interne Gehaltstransparenz und Mitarbeiter-Self-Service sind in diesem Produkt nicht aktiviert.
+            </p>
+        </div>
+    ) : children;
 
     return (
         <div className="min-h-screen bg-slate-50/50">

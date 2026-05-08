@@ -55,11 +55,13 @@ export async function GET(request: NextRequest) {
       const trialEndsAt = new Date(company.trial_ends_at as string);
       const daysLeft = Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-      const { data: adminRoles } = await supabase
-        .from('user_roles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: adminRoles } = await (supabase as any)
+        .from('organization_members')
         .select('user_id')
         .eq('organization_id', company.organization_id)
-        .eq('role', 'admin');
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin']);
 
       if (!adminRoles || adminRoles.length === 0) continue;
 

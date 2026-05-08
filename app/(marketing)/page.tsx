@@ -52,8 +52,8 @@ const features = [
   },
   {
     icon: Users,
-    title: 'Mitarbeiter-Auskunft',
-    desc: 'Self-Service-Portal für Mitarbeiter: Anonymisierte Gruppenstatistiken — kein Einzelgehalt sichtbar. DSGVO-konform nach Art. 15.',
+    title: 'HR-Auskunftsprozess',
+    desc: 'HR dokumentiert Auskünfte und Nachweise zentral. Keine interne Gehaltstransparenz und kein Mitarbeiter-Self-Service.',
     color: '#946df7',
     bg: '#e0d4fd',
   },
@@ -67,7 +67,7 @@ const features = [
   {
     icon: Lock,
     title: 'RBAC auf Datenbankebene',
-    desc: 'Admin, HR-Manager, Mitarbeiter. Zugriffskontrolle via Row Level Security in PostgreSQL — kein Frontend-Gating.',
+    desc: 'Admin, HR-Manager und externe Rechtsberater. Zugriffskontrolle via Row Level Security in PostgreSQL — kein Frontend-Gating.',
     color: '#52e0de',
     bg: '#bdf9f7',
   },

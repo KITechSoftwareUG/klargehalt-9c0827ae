@@ -243,7 +243,7 @@ export default function EuRichtliniePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
                             { req: 'Gehaltsangaben in Stellenanzeigen', solution: 'Gehaltsbänder pro Job-Profil definieren und als Vorlage für Stellenanzeigen exportieren.' },
-                            { req: 'Auskunftsrecht der Mitarbeiter', solution: 'Self-Service Portal mit anonymisierten Gruppenstatistiken. Anfragen werden automatisch protokolliert.' },
+                            { req: 'Auskunftsrecht der Mitarbeiter', solution: 'HR-geführter Auskunftsprozess mit protokollierten Anfragen und Antworten.' },
                             { req: 'Gender-Pay-Gap Berechnung', solution: 'Automatische Median- und Durchschnittsberechnung nach Geschlecht und Job-Profil.' },
                             { req: 'Berichterstattung', solution: 'PDF-Berichte für Behörden und Prüfer auf Knopfdruck generieren.' },
                             { req: 'Gemeinsame Entgeltbewertung', solution: 'Abweichungen ab 5% werden automatisch markiert. Dokumentation der Erklärungsfaktoren.' },

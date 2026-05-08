@@ -18,6 +18,7 @@ ALTER TABLE public.pay_bands ADD COLUMN IF NOT EXISTS organization_id TEXT;
 ALTER TABLE public.pay_group_stats ADD COLUMN IF NOT EXISTS organization_id TEXT;
 ALTER TABLE public.pay_groups ADD COLUMN IF NOT EXISTS organization_id TEXT;
 ALTER TABLE public.salary_simulations ADD COLUMN IF NOT EXISTS organization_id TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS organization_id TEXT;
 
 -- 2. INDEXE FÜR PERFORMANCE (FILTRIERUNG)
 CREATE INDEX IF NOT EXISTS idx_employees_org ON public.employees(organization_id);

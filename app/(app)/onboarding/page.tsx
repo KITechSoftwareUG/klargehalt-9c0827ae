@@ -31,7 +31,7 @@ export default function OnboardingPage() {
     const [industry, setIndustry] = useState('');
     const [companySize, setCompanySize] = useState<CompanySize>('1-50');
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>('professional');
-    const [consultingOption, setConsultingOption] = useState<'self-service' | 'guided'>('self-service');
+    const [consultingOption, setConsultingOption] = useState<'self_setup' | 'guided'>('self_setup');
 
     // Read plan intent cookie set before Logto auth roundtrip
     useEffect(() => {
@@ -273,9 +273,9 @@ export default function OnboardingPage() {
                                 <CardDescription>Beide Optionen sind kostenlos während des Tests</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <RadioGroup value={consultingOption} onValueChange={(v) => setConsultingOption(v as 'self-service' | 'guided')} className="space-y-2">
+                                <RadioGroup value={consultingOption} onValueChange={(v) => setConsultingOption(v as 'self_setup' | 'guided')} className="space-y-2">
                                     <Label htmlFor="opt-self" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
-                                        <RadioGroupItem value="self-service" id="opt-self" />
+                                        <RadioGroupItem value="self_setup" id="opt-self" />
                                         <div>
                                             <div className="font-semibold">Selbst einrichten</div>
                                             <p className="text-sm text-muted-foreground">Guided Checklist im Dashboard — in ca. 20 Minuten startklar</p>

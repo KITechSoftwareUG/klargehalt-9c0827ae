@@ -1,5 +1,5 @@
 -- Create enum for app roles
-CREATE TYPE public.app_role AS ENUM ('admin', 'hr_manager', 'employee');
+CREATE TYPE public.app_role AS ENUM ('admin', 'hr_manager', 'employee', 'lawyer');
 
 -- Create profiles table
 CREATE TABLE public.profiles (

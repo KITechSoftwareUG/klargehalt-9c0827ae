@@ -12,6 +12,8 @@
 
 -- ─── 1. Defense-in-depth immutability for salary_decisions ──────────────────
 
+ALTER TYPE public.audit_entity ADD VALUE IF NOT EXISTS 'salary_decision';
+
 CREATE OR REPLACE FUNCTION public.prevent_salary_decision_update()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -48,22 +50,45 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
+DECLARE
+  _company_id UUID;
 BEGIN
+  SELECT employees.company_id
+  INTO _company_id
+  FROM public.employees
+  WHERE employees.id = NEW.employee_id;
+
   INSERT INTO public.audit_logs (
+    company_id,
     organization_id,
     user_id,
+    user_email,
+    user_role,
     action,
     entity_type,
     entity_id,
+    entity_name,
+    new_values,
+    metadata,
     before_state,
     after_state
   )
   VALUES (
+    _company_id,
     NEW.organization_id,
     NEW.decided_by_user_id,
+    NEW.decided_by_user_id,
+    'decision_maker',
     'create',
-    'salary_decisions',
+    'salary_decision',
     NEW.id,
+    NEW.decision_type,
+    to_jsonb(NEW),
+    jsonb_build_object(
+      'employee_id', NEW.employee_id,
+      'decision_type', NEW.decision_type,
+      'new_salary', NEW.new_salary
+    ),
     NULL,
     to_jsonb(NEW)
   );
