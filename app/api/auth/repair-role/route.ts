@@ -15,12 +15,19 @@ import { getServerAuthContext } from '@/lib/auth/server';
 import { getLogtoConfig } from '@/lib/logto';
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 import { logAuditEntry } from '@/lib/audit-log';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST() {
   const context = await getServerAuthContext();
 
   if (!context.isAuthenticated || !context.user || !context.activeOrganizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit: max 5 repair attempts per user per hour to prevent DB write abuse.
+  const rateLimitKey = `repair-role:${context.user.id}`;
+  if (!(await checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 
   // Verify against Logto directly. The active-org cookie is only a selector and

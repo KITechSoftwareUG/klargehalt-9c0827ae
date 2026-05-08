@@ -24,14 +24,14 @@ export async function checkRateLimit(key: string, limit: number, windowMs: numbe
     });
 
     if (error) {
-      console.error('Rate limit check failed, allowing request:', error.message);
-      return true;
+      console.error('Rate limit check failed, denying request (fail-closed):', error.message);
+      return false;
     }
 
     return data as boolean;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Rate limit check failed, allowing request:', message);
-    return true;
+    console.error('Rate limit check failed, denying request (fail-closed):', message);
+    return false;
   }
 }

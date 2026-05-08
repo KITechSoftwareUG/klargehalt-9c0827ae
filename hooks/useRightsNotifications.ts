@@ -15,7 +15,7 @@ export interface RightsNotification {
 }
 
 export function useRightsNotifications() {
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<RightsNotification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,14 +26,10 @@ export function useRightsNotifications() {
     if (!isLoaded || !user || !orgId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('rights_notifications')
-        .select('*')
-        .eq('organization_id', orgId)
-        .order('notification_year', { ascending: false });
-
-      if (error) throw error;
-      setNotifications((data || []) as RightsNotification[]);
+      const res = await fetch('/api/rights-notifications');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as RightsNotification[];
+      setNotifications(data);
     } catch (error: unknown) {
       const msg =
         error instanceof Error ? error.message : 'Benachrichtigungen konnten nicht geladen werden';
@@ -41,7 +37,7 @@ export function useRightsNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, toast, supabase]);
+  }, [isLoaded, user, orgId, toast]);
 
   const sendNotification = useCallback(
     async (
@@ -50,7 +46,7 @@ export function useRightsNotifications() {
     ): Promise<boolean> => {
       if (!isLoaded || !user || !orgId) return false;
 
-      // Guard: already sent this year
+      // Client-side guard to avoid unnecessary round-trip
       const alreadySent = notifications.some((n) => n.notification_year === currentYear);
       if (alreadySent) {
         toast({
@@ -61,24 +57,21 @@ export function useRightsNotifications() {
       }
 
       try {
-        const notificationText =
-          `Gemäß EU-Richtlinie 2023/970 (Entgelttransparenzrichtlinie) haben Sie das Recht:\n` +
-          `• Informationen über Ihr individuelles Gehaltsniveau zu erhalten\n` +
-          `• Durchschnittliche Gehaltsdaten nach Geschlecht für gleichwertige Tätigkeiten anzufordern\n` +
-          `• Den Gender Pay Gap in Ihrer Entgeltkategorie zu erfahren\n\n` +
-          `Um Ihr Auskunftsrecht auszuüben, wenden Sie sich an die HR-Abteilung oder nutzen Sie das Mitarbeiterportal.`;
-
-        const { error } = await supabase.from('rights_notifications').insert({
-          organization_id: orgId,
-          notification_year: currentYear,
-          sent_at: new Date().toISOString(),
-          sent_by: user.id,
-          recipient_count: recipientCount,
-          delivery_method: method,
-          notification_text: notificationText,
+        const res = await fetch('/api/rights-notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipientCount, deliveryMethod: method }),
         });
 
-        if (error) throw error;
+        if (res.status === 409) {
+          toast({ title: 'Bereits gesendet', description: `Bereits gesendet für ${currentYear}` });
+          return false;
+        }
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          throw new Error(body.error ?? 'Benachrichtigung konnte nicht gesendet werden');
+        }
 
         toast({
           title: 'Benachrichtigung gesendet',
@@ -95,7 +88,7 @@ export function useRightsNotifications() {
         return false;
       }
     },
-    [isLoaded, user, orgId, notifications, currentYear, toast, fetchNotifications, supabase]
+    [isLoaded, user, orgId, notifications, currentYear, toast, fetchNotifications]
   );
 
   useEffect(() => {
