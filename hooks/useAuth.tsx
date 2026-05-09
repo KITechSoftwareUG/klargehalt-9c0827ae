@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     authState.organizations.find(({ id }) => id === authState.activeOrganizationId) ?? null;
 
   const supabase = useMemo<SupabaseClient>(() => {
-    if (!authState.isAuthenticated || !activeOrganization?.id) {
+    if (!authState.isAuthenticated) {
       return createClient() as unknown as SupabaseClient;
     }
 

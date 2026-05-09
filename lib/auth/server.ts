@@ -68,6 +68,50 @@ export const getActiveOrganizationIdFromCookies = async () => {
   return cookieStore.get(ACTIVE_ORG_COOKIE)?.value ?? null;
 };
 
+const getLocalE2EAuthContext = async () => {
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.KLARGEHALT_E2E_AUTH !== '1'
+  ) {
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('kg_e2e_user')?.value;
+  const email = cookieStore.get('kg_e2e_email')?.value ?? 'hr.e2e@klargehalt.local';
+  const activeOrganizationId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
+
+  if (!userId || !activeOrganizationId) {
+    return null;
+  }
+
+  const user: AppAuthUser = {
+    id: userId,
+    email,
+    firstName: 'E2E',
+    fullName: 'E2E HR Lead',
+    imageUrl: null,
+    primaryEmailAddress: { emailAddress: email },
+    emailAddresses: [{ emailAddress: email }],
+  };
+
+  const organization = { id: activeOrganizationId, name: null };
+
+  return {
+    isAuthenticated: true as const,
+    claims: {
+      sub: userId,
+      email,
+      organizations: [activeOrganizationId],
+    },
+    userInfo: undefined,
+    user,
+    organizations: [organization],
+    activeOrganizationId,
+    activeOrganization: organization,
+  };
+};
+
 const UNAUTHENTICATED_CONTEXT = {
   isAuthenticated: false as const,
   claims: undefined,
@@ -79,6 +123,11 @@ const UNAUTHENTICATED_CONTEXT = {
 };
 
 export const getServerAuthContext = async () => {
+  const localE2EContext = await getLocalE2EAuthContext();
+  if (localE2EContext) {
+    return localE2EContext;
+  }
+
   let context: Awaited<ReturnType<typeof getLogtoContext>>;
 
   try {

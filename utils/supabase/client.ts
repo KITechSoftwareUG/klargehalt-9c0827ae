@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { createClient as createSupabaseBrowserClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -18,7 +19,7 @@ export const createSupabaseClient = (getToken: () => Promise<string | null>) => 
         throw new Error("Supabase environment variables are not defined");
     }
 
-    return createBrowserClient(supabaseUrl, supabaseKey, {
+    return createSupabaseBrowserClient(supabaseUrl, supabaseKey, {
         global: {
             fetch: async (input: RequestInfo | URL, init: RequestInit = {}) => {
                 // Fetch a fresh Logto org token at request time — never stale

@@ -72,7 +72,7 @@ export function WelcomeModal(): JSX.Element | null {
               </div>
             ))}
             <p className="text-xs text-slate-500 pt-1">
-              Danach steht Ihre erste Compliance-Analyse bereit — in ca. 20 Minuten.
+              Danach steht Ihre erste Compliance-Analyse bereit — in unter 10 Minuten.
             </p>
           </div>
 

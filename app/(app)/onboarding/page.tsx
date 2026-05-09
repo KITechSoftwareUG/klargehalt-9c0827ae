@@ -16,7 +16,7 @@ import { PLANS, TRIAL_DURATION_DAYS, TRIAL_TIER, type SubscriptionTier } from '@
 
 type OnboardingStep = 1 | 2 | 3;
 type UserRole = 'admin' | 'hr_manager';
-type CompanySize = '1-50' | '51-250' | '251-1000';
+type CompanySize = '1-50' | '51-250' | '251+';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -240,7 +240,7 @@ export default function OnboardingPage() {
                                         {[
                                             { value: '1-50', label: '1–50', desc: 'Basis-Plan empfohlen' },
                                             { value: '51-250', label: '51–250', desc: 'Professional-Plan empfohlen' },
-                                            { value: '251-1000', label: '251+', desc: 'Enterprise — Kontakt aufnehmen' },
+                                            { value: '251+', label: '251+', desc: 'Enterprise — Kontakt aufnehmen' },
                                         ].map((opt) => (
                                             <Label key={opt.value} htmlFor={`size-${opt.value}`} className="flex items-center gap-3 border rounded-lg p-3 cursor-pointer hover:bg-secondary transition-colors">
                                                 <RadioGroupItem value={opt.value} id={`size-${opt.value}`} />
@@ -278,7 +278,7 @@ export default function OnboardingPage() {
                                         <RadioGroupItem value="self_setup" id="opt-self" />
                                         <div>
                                             <div className="font-semibold">Selbst einrichten</div>
-                                            <p className="text-sm text-muted-foreground">Guided Checklist im Dashboard — in ca. 20 Minuten startklar</p>
+                                            <p className="text-sm text-muted-foreground">Guided Checklist im Dashboard — in unter 10 Minuten startklar</p>
                                         </div>
                                     </Label>
                                     <Label htmlFor="opt-guided" className="flex items-center gap-3 border rounded-lg p-4 cursor-pointer hover:bg-secondary transition-colors">
@@ -322,7 +322,7 @@ export default function OnboardingPage() {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-lg">Enterprise</span>
-                                                {companySize === '251-1000' && (
+                                                {companySize === '251+' && (
                                                     <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">Empfohlen</span>
                                                 )}
                                             </div>

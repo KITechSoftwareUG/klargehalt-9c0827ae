@@ -23,7 +23,9 @@ export async function GET() {
   // Check MFA enrollment via Logto Management API (not via claims —
   // Logto does not include 'amr' in the ID token).
   // Only queried when authenticated; false otherwise.
-  const mfaEnabled = context.isAuthenticated && context.user
+  const mfaEnabled = process.env.NODE_ENV !== 'production' && process.env.KLARGEHALT_E2E_AUTH === '1'
+    ? false
+    : context.isAuthenticated && context.user
     ? await hasUserMfaEnrolled(context.user.id)
     : false;
 

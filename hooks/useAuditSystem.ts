@@ -10,10 +10,17 @@ export interface AuditLog {
   action: string;
   entity_type: string;
   entity_id: string | null;
+  entity_name?: string | null;
+  old_values?: unknown;
+  new_values?: unknown;
+  metadata?: unknown;
   before_state: unknown;
   after_state: unknown;
   ip_address: string | null;
   created_at: string;
+  sequence_number?: number | null;
+  previous_hash?: string | null;
+  record_hash?: string | null;
 }
 
 export interface AuditStatistics {
@@ -31,6 +38,7 @@ export interface AuditExport {
   data: {
     exported_at: string;
     record_count: number;
+    hash_chain_valid: boolean | null;
     records: AuditLog[];
   };
 }
@@ -126,12 +134,16 @@ export function useAuditSystem() {
       if (error) throw error;
 
       const records = (data || []) as AuditLog[];
+      const { data: chainValid, error: chainError } = await supabase.rpc('verify_audit_chain', {
+        _org_id: orgId,
+      });
       const result: AuditExport = {
         export_id: crypto.randomUUID(),
         record_count: records.length,
         data: {
           exported_at: new Date().toISOString(),
           record_count: records.length,
+          hash_chain_valid: chainError ? null : (chainValid as boolean),
           records,
         },
       };
@@ -161,15 +173,44 @@ export function useAuditSystem() {
       if (records.length === 0) {
         content = 'Keine Daten';
       } else {
-        const headers = ['Zeitstempel', 'Benutzer-ID', 'Aktion', 'Entitätstyp', 'Entitäts-ID'];
+        const headers = [
+          'Zeitstempel',
+          'Sequenz',
+          'Benutzer-ID',
+          'Aktion',
+          'Entitätstyp',
+          'Entitäts-ID',
+          'Entitätsname',
+          'Vorher',
+          'Nachher',
+          'Metadaten',
+          'Vorheriger Hash',
+          'Datensatz-Hash',
+        ];
         const rows = records.map(r => [
           r.created_at,
+          r.sequence_number ?? '',
           r.user_id,
           r.action,
           r.entity_type,
           r.entity_id || '',
+          r.entity_name || '',
+          JSON.stringify(r.before_state ?? r.old_values ?? ''),
+          JSON.stringify(r.after_state ?? r.new_values ?? ''),
+          JSON.stringify(r.metadata ?? {}),
+          r.previous_hash || '',
+          r.record_hash || '',
         ]);
-        content = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+        const escapeCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+        content = [
+          [`Export-ID: ${exportData.export_id}`],
+          [`Exportiert am: ${exportData.data.exported_at}`],
+          [`Anzahl Eintraege: ${exportData.data.record_count}`],
+          [`Hash-Kette gueltig: ${exportData.data.hash_chain_valid === null ? 'nicht geprueft' : exportData.data.hash_chain_valid ? 'ja' : 'nein'}`],
+          [],
+          headers,
+          ...rows,
+        ].map(r => r.map(escapeCell).join(';')).join('\n');
       }
       mimeType = 'text/csv';
       extension = 'csv';

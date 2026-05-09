@@ -44,7 +44,7 @@ function computeScore(obligations: ComplianceObligation[]): number {
 // ---- types for raw Supabase rows --------------------------------------------
 
 interface CompanyRow {
-  employee_size_band: '1-50' | '51-250' | '251+' | null;
+  employee_size_band: '1-50' | '51-250' | '251+' | '251-1000' | null;
   reporting_frequency: 'annual' | 'triennial' | null;
 }
 
@@ -263,7 +263,7 @@ async function fetchComplianceData(
 
   const sizeBand = company?.employee_size_band ?? null;
   let art9Deadline: string | null = null;
-  if (sizeBand === '251+') {
+  if (sizeBand === '251+' || sizeBand === '251-1000') {
     art9Deadline = '2027-06-01';
   } else if (sizeBand === '51-250') {
     art9Deadline = '2031-06-01';

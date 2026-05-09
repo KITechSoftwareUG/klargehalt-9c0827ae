@@ -23,7 +23,7 @@ interface OnboardingCompletePayload {
   fullName: string;
   companyName: string;
   industry?: string;
-  companySize: '1-50' | '51-250' | '251-1000';
+  companySize: '1-50' | '51-250' | '251+';
   selectedPlan: SubscriptionTier;
   selfReportedRole: 'admin' | 'hr_manager';
   consultingOption: 'self_setup' | 'guided';
