@@ -164,9 +164,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             organization_id: activeOrganization?.id || null,
           };
 
+          // INSERT only — never upsert, to avoid overwriting the full_name stored
+          // during onboarding with the empty string from the Logto profile.
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
-            .upsert(newProfile, { onConflict: 'user_id' })
+            .insert(newProfile)
             .select()
             .single();
 
