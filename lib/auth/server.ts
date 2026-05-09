@@ -148,12 +148,20 @@ export const getServerAuthContext = async () => {
   const jwtOrganizations = getOrganizationsFromClaims(context.claims);
   const activeOrganizationId = await getActiveOrganizationIdFromCookies();
 
+  // JWT lag: Logto only updates the organizations claim on next login. After
+  // onboarding the JWT is still empty, but the kg_active_org cookie is the
+  // source of truth. Append the cookie org so the client resolves
+  // activeOrganization correctly without forcing a re-login.
+  const organizations =
+    activeOrganizationId && !jwtOrganizations.some((o) => o.id === activeOrganizationId)
+      ? [...jwtOrganizations, { id: activeOrganizationId, name: null as null }]
+      : jwtOrganizations;
+
   return {
     ...context,
     user,
-    organizations: jwtOrganizations,
+    organizations,
     activeOrganizationId,
-    activeOrganization:
-      jwtOrganizations.find(({ id }) => id === activeOrganizationId) ?? null,
+    activeOrganization: organizations.find(({ id }) => id === activeOrganizationId) ?? null,
   };
 };
