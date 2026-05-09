@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { signOut } from '@logto/next/server-actions';
+import { NextResponse } from 'next/server';
 import { getLogtoConfig, ACTIVE_ORG_COOKIE } from '@/lib/logto';
 
 export async function GET() {
@@ -15,5 +16,18 @@ export async function GET() {
   cookieStore.delete(ACTIVE_ORG_COOKIE);
 
   const config = getLogtoConfig();
-  await signOut(config, config.baseUrl);
+
+  try {
+    await signOut(config, config.baseUrl);
+  } catch (error) {
+    // Re-throw NEXT_REDIRECT — Next.js catches this internally and sends the 307 response.
+    if (typeof (error as Record<string, unknown>)?.digest === 'string') {
+      throw error;
+    }
+    // Logto session was already invalid or signOut failed (e.g. broken refresh token).
+    // Clear the Logto session cookie manually and redirect to sign-in as fallback.
+    console.error('[sign-out] Logto signOut failed, forcing redirect:', error instanceof Error ? error.message : error);
+    cookieStore.delete(`logto:${config.appId}`);
+    return NextResponse.redirect(new URL('/sign-in', config.baseUrl));
+  }
 }

@@ -68,6 +68,50 @@ export const getActiveOrganizationIdFromCookies = async () => {
   return cookieStore.get(ACTIVE_ORG_COOKIE)?.value ?? null;
 };
 
+const getLocalE2EAuthContext = async () => {
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.KLARGEHALT_E2E_AUTH !== '1'
+  ) {
+    return null;
+  }
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('kg_e2e_user')?.value;
+  const email = cookieStore.get('kg_e2e_email')?.value ?? 'hr.e2e@klargehalt.local';
+  const activeOrganizationId = cookieStore.get(ACTIVE_ORG_COOKIE)?.value;
+
+  if (!userId || !activeOrganizationId) {
+    return null;
+  }
+
+  const user: AppAuthUser = {
+    id: userId,
+    email,
+    firstName: 'E2E',
+    fullName: 'E2E HR Lead',
+    imageUrl: null,
+    primaryEmailAddress: { emailAddress: email },
+    emailAddresses: [{ emailAddress: email }],
+  };
+
+  const organization = { id: activeOrganizationId, name: null };
+
+  return {
+    isAuthenticated: true as const,
+    claims: {
+      sub: userId,
+      email,
+      organizations: [activeOrganizationId],
+    },
+    userInfo: undefined,
+    user,
+    organizations: [organization],
+    activeOrganizationId,
+    activeOrganization: organization,
+  };
+};
+
 const UNAUTHENTICATED_CONTEXT = {
   isAuthenticated: false as const,
   claims: undefined,
@@ -79,6 +123,11 @@ const UNAUTHENTICATED_CONTEXT = {
 };
 
 export const getServerAuthContext = async () => {
+  const localE2EContext = await getLocalE2EAuthContext();
+  if (localE2EContext) {
+    return localE2EContext;
+  }
+
   let context: Awaited<ReturnType<typeof getLogtoContext>>;
 
   try {
@@ -99,12 +148,20 @@ export const getServerAuthContext = async () => {
   const jwtOrganizations = getOrganizationsFromClaims(context.claims);
   const activeOrganizationId = await getActiveOrganizationIdFromCookies();
 
+  // JWT lag: Logto only updates the organizations claim on next login. After
+  // onboarding the JWT is still empty, but the kg_active_org cookie is the
+  // source of truth. Append the cookie org so the client resolves
+  // activeOrganization correctly without forcing a re-login.
+  const organizations =
+    activeOrganizationId && !jwtOrganizations.some((o) => o.id === activeOrganizationId)
+      ? [...jwtOrganizations, { id: activeOrganizationId, name: null as null }]
+      : jwtOrganizations;
+
   return {
     ...context,
     user,
-    organizations: jwtOrganizations,
+    organizations,
     activeOrganizationId,
-    activeOrganization:
-      jwtOrganizations.find(({ id }) => id === activeOrganizationId) ?? null,
+    activeOrganization: organizations.find(({ id }) => id === activeOrganizationId) ?? null,
   };
 };

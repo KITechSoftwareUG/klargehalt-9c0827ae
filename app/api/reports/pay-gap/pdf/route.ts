@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveTier, hasFeature, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 import puppeteer from 'puppeteer';
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   const orgId = context.activeOrganizationId;
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // Only admins and HR managers can generate pay gap reports
   const { data: userRole } = await supabase

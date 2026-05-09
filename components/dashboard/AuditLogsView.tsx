@@ -84,6 +84,8 @@ const entityLabels: Record<string, string> = {
   user: 'Benutzer',
   company: 'Firma',
   report: 'Bericht',
+  salary_decision: 'Gehaltsentscheidung',
+  lawyer_review: 'Anwaltsprüfung',
   department: 'Abteilung',
   job_level: 'Karrierestufe',
 };

@@ -201,7 +201,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         </div>
                     </div>
                     <button
-                        onClick={async () => { await signOut(); router.push('/'); }}
+                        onClick={() => void signOut()}
                         className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors shrink-0"
                         title="Abmelden"
                     >

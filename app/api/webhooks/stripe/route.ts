@@ -137,35 +137,59 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
         const customerId = subscription.customer as string;
-        const priceId = subscription.items.data[0]?.price?.id;
+        const item = subscription.items.data[0];
+        const priceId = item?.price?.id;
         const tier = priceId ? mapPriceToTier(priceId) : 'basis';
         const status = subscription.status === 'active' ? 'active'
           : subscription.status === 'past_due' ? 'past_due'
           : subscription.status === 'trialing' ? 'trialing'
+          : subscription.status === 'canceled' ? 'canceled'
           : 'incomplete';
 
-        const periodEnd = subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString()
+        const rawPeriodEnd = item?.current_period_end ?? null;
+        const periodEnd = rawPeriodEnd
+          ? new Date(rawPeriodEnd * 1000).toISOString()
           : null;
 
-        // Build the update query. When periodEnd is non-null, guard against
-        // out-of-order events by only applying the update when the stored
-        // period end is null or earlier than the incoming event's period end.
-        // When periodEnd is null (e.g. immediate cancellation), apply unconditionally.
-        let updateQuery = supabase
-          .from('companies')
-          .update({
-            subscription_tier: tier,
-            subscription_status: status,
-            current_period_end: periodEnd,
-          })
-          .eq('stripe_customer_id', customerId);
+        const updatePayload = {
+          subscription_tier: tier,
+          subscription_status: status,
+          current_period_end: periodEnd,
+        };
 
-        if (periodEnd !== null) {
-          updateQuery = updateQuery.or(`current_period_end.is.null,current_period_end.lte.${periodEnd}`);
+        let updated2: Array<{ id: string }> | null = null;
+        let err2: unknown = null;
+
+        if (periodEnd === null) {
+          const result = await supabase
+            .from('companies')
+            .update(updatePayload)
+            .eq('stripe_customer_id', customerId)
+            .select('id');
+          updated2 = result.data;
+          err2 = result.error;
+        } else {
+          const nullResult = await supabase
+            .from('companies')
+            .update(updatePayload)
+            .eq('stripe_customer_id', customerId)
+            .is('current_period_end', null)
+            .select('id');
+          if (nullResult.error) {
+            err2 = nullResult.error;
+          } else if (nullResult.data && nullResult.data.length > 0) {
+            updated2 = nullResult.data;
+          } else {
+            const lteResult = await supabase
+              .from('companies')
+              .update(updatePayload)
+              .eq('stripe_customer_id', customerId)
+              .lte('current_period_end', periodEnd)
+              .select('id');
+            updated2 = lteResult.data;
+            err2 = lteResult.error;
+          }
         }
-
-        const { data: updated2, error: err2 } = await updateQuery.select('id');
 
         if (err2) throw err2;
         if (!updated2 || updated2.length === 0) {

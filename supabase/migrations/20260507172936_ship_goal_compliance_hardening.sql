@@ -13,6 +13,7 @@
 -- ─── 1. Defense-in-depth immutability for salary_decisions ──────────────────
 
 ALTER TYPE public.audit_entity ADD VALUE IF NOT EXISTS 'salary_decision';
+ALTER TYPE public.audit_entity ADD VALUE IF NOT EXISTS 'lawyer_review';
 
 CREATE OR REPLACE FUNCTION public.prevent_salary_decision_update()
 RETURNS TRIGGER
