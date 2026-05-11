@@ -69,7 +69,7 @@ export default function ContactForm() {
                                         <Phone className="w-5 h-5 text-[var(--ep-purple-dark)]" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-[#071423]">+49 (0) 30 847 291 03</p>
+                                        <p className="text-sm font-medium text-[#071423]">+49 (0) 511 89738590</p>
                                         <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">Mo-Fr, 9:00-17:00 Uhr</p>
                                     </div>
                                 </div>
@@ -78,7 +78,7 @@ export default function ContactForm() {
                                         <MapPin className="w-5 h-5 text-[var(--ep-yellow-dark)]" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-[#071423]">Berlin, Deutschland</p>
+                                        <p className="text-sm font-medium text-[#071423]">Hannover, Deutschland</p>
                                         <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">KITech Software UG</p>
                                     </div>
                                 </div>

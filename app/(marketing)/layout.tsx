@@ -100,7 +100,7 @@ export default function MarketingLayout({
                             description: SITE_DESCRIPTION,
                             address: {
                                 '@type': 'PostalAddress',
-                                addressLocality: 'Berlin',
+                                addressLocality: 'Hannover',
                                 addressCountry: 'DE',
                             },
                             sameAs: [],

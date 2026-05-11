@@ -57,7 +57,7 @@ export default function BookConsultingPage() {
         {
             value: 'in-person' as ConsultationType,
             label: 'Vor Ort',
-            description: 'Persönliches Treffen in Berlin',
+            description: 'Persönliches Treffen in Hannover',
             icon: MapPin,
             duration: '90 Minuten',
         },
