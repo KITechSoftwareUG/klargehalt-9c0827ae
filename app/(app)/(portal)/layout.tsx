@@ -10,6 +10,7 @@ import {
     Shield, Users, Settings, LogOut, CreditCard,
     Building2, Scale,
     Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
+    Sparkles, Handshake, Bot, Lock,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
@@ -28,9 +29,11 @@ type AppView =
     | 'abrechnung'
     | 'einstellungen'
     | 'audit'
-    | 'compliance-workflow';
+    | 'compliance-workflow'
+    | 'ki-agenten';
 
 const ROLE_LABELS: Record<string, { label: string; dotColor: string }> = {
+    owner:      { label: 'Administrator', dotColor: 'bg-emerald-400' },
     admin:      { label: 'Administrator', dotColor: 'bg-emerald-400' },
     hr_manager: { label: 'HR-Manager',    dotColor: 'bg-amber-400'   },
     employee:   { label: 'Mitarbeiter',   dotColor: 'bg-blue-400'    },
@@ -49,30 +52,39 @@ const VIEW_TO_PATH: Record<AppView, string> = {
     einstellungen:         '/einstellungen',
     audit:                 '/audit',
     'compliance-workflow': '/compliance-workflow',
+    'ki-agenten':          '/ki-agenten',
 };
 
 type NavItem = {
     label: string;
     icon: React.ElementType;
-    view: AppView;
+    view?: AppView;
     group: string;
     adminOnly?: boolean;
+    disabled?: boolean;
+    badge?: string;
+    trialLocked?: boolean;
 };
 
 const MAIN_NAV: NavItem[] = [
-    // Schritt 1: System befüllen
-    { label: 'Abteilungen',    icon: Building,       view: 'abteilungen',    group: 'System aufbauen' },
-    { label: 'Karrierestufen', icon: Layers,          view: 'karrierestufen', group: 'System aufbauen' },
-    { label: 'Job-Profile',    icon: Building2,       view: 'jobprofile',     group: 'System aufbauen' },
-    { label: 'Gehaltsbänder',  icon: Scale,           view: 'gehaltsbaender', group: 'System aufbauen' },
-    { label: 'Mitarbeiter',    icon: Users,           view: 'mitarbeiter',    group: 'System aufbauen' },
+    // Unternehmensstruktur
+    { label: 'Abteilungen',    icon: Building,   view: 'abteilungen',    group: 'Unternehmensstruktur' },
+    { label: 'Karrierestufen', icon: Layers,     view: 'karrierestufen', group: 'Unternehmensstruktur' },
+    { label: 'Job-Profile',    icon: Building2,  view: 'jobprofile',     group: 'Unternehmensstruktur' },
+    { label: 'Gehaltsbänder',  icon: Scale,      view: 'gehaltsbaender', group: 'Unternehmensstruktur' },
+    { label: 'Mitarbeiter',    icon: Users,      view: 'mitarbeiter',    group: 'Unternehmensstruktur' },
     // Compliance-Kern
-    { label: 'Dashboard',           icon: ShieldCheck, view: 'dashboard',            group: 'Compliance' },
-    { label: 'Compliance-Prüfungen', icon: FileCheck,  view: 'compliance-workflow',  group: 'Compliance' },
-    // Admin
-    { label: 'Abrechnung',     icon: CreditCard,      view: 'abrechnung',     group: 'Admin', adminOnly: true },
-    { label: 'Einstellungen',  icon: Settings,        view: 'einstellungen',  group: 'Admin', adminOnly: true },
-    { label: 'Audit-Log',      icon: Shield,          view: 'audit',          group: 'Admin', adminOnly: true },
+    { label: 'Dashboard',              icon: ShieldCheck, view: 'dashboard',           group: 'Compliance' },
+    { label: 'Compliance-Prüfungen',   icon: FileCheck,   view: 'compliance-workflow', group: 'Compliance' },
+    // Premium & Services
+    { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true },
+    { label: 'Abrechnung & Plan',      icon: CreditCard,  view: 'abrechnung',          group: 'Premium & Services', adminOnly: true },
+    { label: 'Partnerschaften',         icon: Handshake,   disabled: true, badge: 'Bald verfügbar', group: 'Premium & Services', adminOnly: true },
+    // KI-Agenten
+    { label: 'KI-Agenten',  icon: Bot, view: 'ki-agenten', group: 'KI-Agenten', adminOnly: false, trialLocked: true },
+    // Konto
+    { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: true },
+    { label: 'Audit-Log',      icon: Shield,   view: 'audit',         group: 'Konto', adminOnly: true },
 ];
 
 const LAWYER_NAV: NavItem[] = [
@@ -93,8 +105,8 @@ function getActiveView(pathname: string): AppView {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, role, profile, loading, isLoaded, orgId, signOut } = useAuth();
-    const { isExpired } = useSubscription();
+    const { user, role, selfReportedRole, profile, loading, isLoaded, orgId, signOut } = useAuth();
+    const { isExpired, isTrialing } = useSubscription();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     useEffect(() => {
@@ -111,13 +123,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         );
     }
 
-    const roleBadge = ROLE_LABELS[role || 'employee'];
+    const displayRoleKey = selfReportedRole ?? (role === 'owner' ? 'admin' : role);
+    const roleBadge = ROLE_LABELS[displayRoleKey || 'employee'];
     const activeView = getActiveView(pathname);
 
+    const isAdmin = role === 'admin' || role === 'owner';
     const navItems =
         role === 'lawyer'
             ? LAWYER_NAV
-            : MAIN_NAV.filter(item => !(item.adminOnly && role !== 'admin'));
+            : MAIN_NAV.filter(item => !(item.adminOnly && !isAdmin));
 
     const navGroups = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
         const g = item.group;
@@ -137,30 +151,78 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
             {role !== 'employee' && (
                 <nav className="flex-1 px-4 py-4 space-y-5 overflow-y-auto">
-                    {Object.entries(navGroups).map(([groupName, items]) => (
-                        <div key={groupName}>
-                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                {groupName}
-                            </p>
-                            <div className="space-y-0.5">
-                                {items.map(item => (
-                                    <Link
-                                        key={item.view}
-                                        href={VIEW_TO_PATH[item.view]}
-                                        onClick={() => setMobileNavOpen(false)}
-                                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                                            activeView === item.view
-                                                ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                        }`}
-                                    >
-                                        <item.icon className="h-4 w-4 shrink-0" />
-                                        <span className="truncate">{item.label}</span>
-                                    </Link>
-                                ))}
+                    {Object.entries(navGroups).map(([groupName, items]) => {
+                        const isPremium = groupName === 'Premium & Services';
+                        const isAI = groupName === 'KI-Agenten';
+                        return (
+                            <div key={groupName}>
+                                <p className={`px-4 text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5 ${
+                                    isPremium ? 'text-amber-400/80' : isAI ? 'text-purple-400/80' : 'text-slate-500'
+                                }`}>
+                                    {isPremium && <Sparkles className="h-3 w-3" />}
+                                    {isAI && <Bot className="h-3 w-3" />}
+                                    {groupName}
+                                </p>
+                                <div className="space-y-0.5">
+                                    {items.map(item => {
+                                        const isLockedByTrial = item.trialLocked && isTrialing;
+
+                                        if (item.disabled) {
+                                            return (
+                                                <div
+                                                    key={item.label}
+                                                    className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium opacity-40 cursor-not-allowed text-slate-400"
+                                                >
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    <span className="truncate flex-1">{item.label}</span>
+                                                    {item.badge && (
+                                                        <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        if (isLockedByTrial) {
+                                            return (
+                                                <Link
+                                                    key={item.label}
+                                                    href={item.view ? VIEW_TO_PATH[item.view] : '#'}
+                                                    onClick={() => setMobileNavOpen(false)}
+                                                    className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-purple-300/50 hover:bg-purple-400/5 hover:text-purple-200/60 transition-all duration-200"
+                                                >
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    <span className="truncate flex-1">{item.label}</span>
+                                                    <Lock className="h-3 w-3 shrink-0 text-purple-400/60" />
+                                                </Link>
+                                            );
+                                        }
+
+                                        return (
+                                            <Link
+                                                key={item.label}
+                                                href={item.view ? VIEW_TO_PATH[item.view] : '#'}
+                                                onClick={() => setMobileNavOpen(false)}
+                                                className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                                                    item.view && activeView === item.view
+                                                        ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                                        : isPremium
+                                                            ? 'text-amber-300/70 hover:bg-amber-400/10 hover:text-amber-200'
+                                                            : isAI
+                                                                ? 'text-purple-300/70 hover:bg-purple-400/10 hover:text-purple-200'
+                                                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                            >
+                                                <item.icon className="h-4 w-4 shrink-0" />
+                                                <span className="truncate">{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </nav>
             )}
 
