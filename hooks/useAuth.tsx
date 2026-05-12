@@ -42,6 +42,7 @@ interface AuthContextType {
   isSignedIn: boolean;
   profile: Profile | null;
   role: AppRole | null;
+  selfReportedRole: string | null;
   organization: Organization | null;
   organizations: Organization[];
   orgId: string | null;
@@ -86,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [selfReportedRole, setSelfReportedRole] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -208,6 +210,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setRole(null);
         }
+        const { data: onboardingData } = await supabase
+          .from('onboarding_data')
+          .select('self_reported_role')
+          .eq('user_id', authState.user.id)
+          .maybeSingle();
+        setSelfReportedRole((onboardingData as { self_reported_role: string } | null)?.self_reported_role ?? null);
       } catch (error) {
         console.error('Error fetching global auth data:', error);
       } finally {
@@ -243,6 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isSignedIn: authState.isAuthenticated,
         profile,
         role,
+        selfReportedRole,
         organization: activeOrganization,
         organizations: authState.organizations,
         orgId: activeOrganization?.id || null,
