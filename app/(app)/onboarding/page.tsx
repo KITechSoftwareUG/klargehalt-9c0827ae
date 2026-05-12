@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles, Loader2 } from 'lucide-react';
+import { Users, Building2, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { PLANS, TRIAL_DURATION_DAYS, TRIAL_TIER, type SubscriptionTier } from '@/lib/subscription';
@@ -88,7 +88,7 @@ export default function OnboardingPage() {
         );
     }
 
-    const handleComplete = async () => {
+    const handleComplete = async (directCheckout = false) => {
         if (!user) return;
 
         setLoading(true);
@@ -126,6 +126,24 @@ export default function OnboardingPage() {
             // Refresh the client-side auth state so useAuth picks up the new org
             await setActiveOrganization(data.organization.id);
             await refreshAuth();
+
+            if (directCheckout && selectedPlan !== 'enterprise') {
+                toast({
+                    title: 'Konto eingerichtet!',
+                    description: 'Sie werden zur Zahlung weitergeleitet...',
+                });
+                const checkoutRes = await fetch('/api/stripe/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tier: selectedPlan, interval: 'monthly' }),
+                });
+                const checkoutData = await checkoutRes.json();
+                if (!checkoutRes.ok) {
+                    throw new Error(checkoutData.error || 'Checkout konnte nicht gestartet werden.');
+                }
+                window.location.href = checkoutData.url;
+                return;
+            }
 
             toast({
                 title: 'Willkommen bei KlarGehalt!',
@@ -366,11 +384,22 @@ export default function OnboardingPage() {
                             Weiter
                             <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
-                    ) : (
-                        <Button onClick={handleComplete} disabled={loading}>
-                            {loading ? 'Wird eingerichtet...' : selectedPlan === 'enterprise' ? 'Kontakt aufnehmen' : `Kostenlos starten`}
+                    ) : selectedPlan === 'enterprise' ? (
+                        <Button onClick={() => handleComplete(false)} disabled={loading}>
+                            {loading ? 'Wird eingerichtet...' : 'Kontakt aufnehmen'}
                             {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                         </Button>
+                    ) : (
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => handleComplete(true)} disabled={loading}>
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                                Direkt kaufen
+                            </Button>
+                            <Button onClick={() => handleComplete(false)} disabled={loading}>
+                                {loading ? 'Wird eingerichtet...' : 'Kostenlos starten'}
+                                {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
+                            </Button>
+                        </div>
                     )}
                 </div>
             </div>
