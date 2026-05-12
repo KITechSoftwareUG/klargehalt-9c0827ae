@@ -211,6 +211,112 @@ function generateTempPassword(): string {
   return Array.from(bytes).map(b => chars[b % chars.length]).join('');
 }
 
+export type InviteMemberRole = 'admin' | 'hr_manager';
+
+/**
+ * Invite a team member (admin or hr_manager) to an organization.
+ * Differs from inviteEmployeeToOrg: no employees row link, configurable role,
+ * caller is responsible for writing the organization_members row after this returns.
+ *
+ * Returns the Logto user id, a temp password (only for new users), and whether the
+ * user already existed in Logto. Idempotent: re-inviting an existing user is safe.
+ */
+export const inviteMemberToOrg = async (params: {
+  email: string;
+  role: InviteMemberRole;
+  orgId: string;
+}): Promise<{ logtoUserId: string; tempPassword: string | null; alreadyExists: boolean }> => {
+  let logtoUserId: string | null = null;
+  let alreadyExists = false;
+
+  try {
+    const existing = await callManagementApi<LogtoUserResponse[]>(
+      `/api/users?search=${encodeURIComponent(params.email)}&searchFields=primaryEmail&limit=1`
+    );
+    if (existing && existing.length > 0 && existing[0].primaryEmail === params.email) {
+      logtoUserId = existing[0].id;
+      alreadyExists = true;
+    }
+  } catch {
+    // ignore — fall through to user creation
+  }
+
+  if (!logtoUserId) {
+    const newUser = await callManagementApi<LogtoUserResponse>('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        primaryEmail: params.email,
+        name: params.email.split('@')[0],
+        username:
+          params.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_') +
+          '_' +
+          Array.from(crypto.getRandomValues(new Uint8Array(3)))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join(''),
+      }),
+    });
+    logtoUserId = newUser.id;
+  }
+
+  // Add user to org (idempotent — Logto returns 422 if already member, swallow)
+  try {
+    await callManagementApi<null>(`/api/organizations/${params.orgId}/users`, {
+      method: 'POST',
+      body: JSON.stringify({ userIds: [logtoUserId] }),
+    });
+  } catch {
+    // already a member is fine
+  }
+
+  // Assign matching Logto org role so the JWT carries the correct claim on next login
+  try {
+    const roles = await callManagementApi<Array<{ id: string; name: string }>>(
+      `/api/organizations/${params.orgId}/roles`
+    );
+    const targetRole = roles?.find((r) => r.name === params.role);
+    if (targetRole) {
+      await callManagementApi<null>(
+        `/api/organizations/${params.orgId}/users/${logtoUserId}/roles`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ organizationRoleIds: [targetRole.id] }),
+        }
+      );
+    }
+  } catch {
+    // Non-fatal — Supabase RLS uses organization_members, not Logto org role
+  }
+
+  let tempPassword: string | null = null;
+  if (!alreadyExists) {
+    tempPassword = generateTempPassword();
+    await callManagementApi<null>(`/api/users/${logtoUserId}/password`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password: tempPassword }),
+    });
+  }
+
+  return { logtoUserId, tempPassword, alreadyExists };
+};
+
+/**
+ * Remove a user from a Logto organization. Idempotent — silently succeeds if the
+ * user isn't a member. Does NOT delete the Logto user account itself.
+ */
+export const removeMemberFromOrg = async (params: {
+  userId: string;
+  orgId: string;
+}): Promise<void> => {
+  try {
+    await callManagementApi<null>(
+      `/api/organizations/${params.orgId}/users/${params.userId}`,
+      { method: 'DELETE' }
+    );
+  } catch {
+    // already removed — fine
+  }
+};
+
 export const createOrganizationWithMembership = async (params: {
   name: string;
   userId: string;

@@ -7,6 +7,7 @@ import { CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PLANS } from '@/lib/subscription';
+import TeamMembersSection from './TeamMembersSection';
 
 export default function BillingView() {
     const sub = useSubscription();
@@ -116,6 +117,9 @@ export default function BillingView() {
                     ) : null}
                 </div>
             </div>
+
+            {/* Team Members — invite admins / hr_managers, plan-based seat limits */}
+            <TeamMembersSection />
 
             {/* Upgrade Options with billing interval toggle */}
             {sub.tier !== 'enterprise' && (
