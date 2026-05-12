@@ -11,7 +11,7 @@ const trustStats = [
   { value: '14 Tage', label: 'kostenlose Testphase' },
   { value: 'DSGVO', label: 'konform, Hosting Frankfurt' },
   { value: '< 1 Tag', label: 'Einrichtungszeit' },
-  { value: 'June 7', label: 'EU-Frist 2026' },
+  { value: '7. Juni', label: 'EU-Frist 2026' },
 ];
 
 const problemItems = [

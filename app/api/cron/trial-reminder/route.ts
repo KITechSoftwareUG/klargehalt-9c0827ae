@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendTrialEndingEmail } from '@/lib/email';
+import { sendTrialEndingEmail, sendMidTrialEmail } from '@/lib/email';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -23,9 +23,10 @@ export async function GET(request: NextRequest) {
   const supabase = supabaseAdmin();
 
   // Query companies expiring in the 3-day window (2.5–3.5 days) and 1-day window (0.5–1.5 days)
-  const windows = [
-    { min: 2.5, max: 3.5 },
-    { min: 0.5, max: 1.5 },
+  const windows: Array<{ min: number; max: number; type: 'mid_trial' | 'ending' }> = [
+    { min: 8.5, max: 9.5, type: 'mid_trial' },
+    { min: 2.5, max: 3.5, type: 'ending' },
+    { min: 0.5, max: 1.5, type: 'ending' },
   ];
 
   let totalSent = 0;
@@ -76,7 +77,11 @@ export async function GET(request: NextRequest) {
       for (const profile of adminProfiles) {
         if (!profile.email) continue;
         try {
-          await sendTrialEndingEmail(profile.email, profile.full_name as string, daysLeft, company.name as string);
+          if (window.type === 'mid_trial') {
+            await sendMidTrialEmail(profile.email, profile.full_name as string, company.name as string);
+          } else {
+            await sendTrialEndingEmail(profile.email, profile.full_name as string, daysLeft, company.name as string);
+          }
           totalSent++;
         } catch (emailError) {
           console.error(`Cron trial-reminder: Failed to send to ${profile.email}`, emailError);

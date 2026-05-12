@@ -22,7 +22,29 @@ Target: German/EU companies (100–500 employees) proving fair salaries. Buyer: 
 
 ---
 
-## Build Status (2026-05-04)
+## MVP-Szenario (Stand 2026-05-12)
+
+**Ein-Satz-MVP:** _Eine HR-Leiterin loggt sich ein, legt ihre Compliance-Daten an, sieht Pay-Gaps, dokumentiert Gehaltsentscheidungen — und kann nach Plan-Limit weitere Team-Mitglieder einladen._
+
+**Happy Path (Single-User-Standard):**
+1. HR-Leiterin signt sich auf `klargehalt.de/preise` → Stripe Checkout (oder 14-Tage-Trial) → Sign-up
+2. Onboarding: wählt "Ich bin HR-Manager" + Firmendaten + Plan → wird **automatisch `owner`** ihrer Organisation
+3. Sie legt allein an: Departments → Job-Profile → Job-Levels → Pay-Bands → Mitarbeiter
+4. Sie sieht Gaps in `/dashboard/pay-equity-hr` und PayGapReport
+5. Sie dokumentiert Salary-Decisions (Hire/Raise/Promotion) in EmployeesView
+6. Bei Bedarf: lädt weitere Team-Mitglieder ein (admin / hr_manager) im **Billing-Bereich**, gemäß Plan-Limits
+
+**Erste Person = Owner.** Die im Onboarding selbst-gewählte Rolle (`selfReportedRole`) ist nur Analytics. Der erste User einer Organisation bekommt immer `role: 'owner'` in `organization_members`. Das ist der Inhaber des Tenant. Bei Einladungen wählt der Owner explizit die Rolle.
+
+**Was im MVP NICHT enthalten ist (post-MVP):**
+- `auditor`-Rolle (Enterprise, später)
+- Lawyer-Cleanup-Job für abgelaufene Reviewer
+- `user_roles`-Tabelle endgültig droppen (Code liest schon aus `organization_members`)
+- Employee-Self-Service-Logins (Mitarbeiter sehen eigenen Lohn) — Records bleiben datenseitig
+
+---
+
+## Build Status (2026-05-12)
 
 **Done:** Job Profiles, Pay Bands, Job Levels, Departments, Pay Gap Report, HR Pay Equity, Audit Logs, Lawyer Dashboard/Reviews/Badge, Joint Assessment, Compliance Score, RBAC, Stripe Billing, Super-Admin Panel, salary decision documentation.
 
@@ -116,14 +138,16 @@ Client context: `useAuth()` from `hooks/useAuth.tsx`
 
 ## RBAC
 
-Roles in `user_roles` table:
+**Authoritative Tabelle:** `organization_members` (Migration `20260509020000`). Die alte `user_roles`-Tabelle existiert noch für Rückwärtskompatibilität, wird aber im post-MVP gedroppt. Alle neuen Reads gehen gegen `organization_members`.
 
-| Role | Access |
-|---|---|
-| `admin` | Full company data |
-| `hr_manager` | Employees, pay bands, analytics |
-| `employee` | Own salary only (`/dashboard/my-salary`) |
-| `lawyer` | Read salary decisions/bands/reports for one org; write `lawyer_reviews`; time-limited |
+| Role | Access | Created via |
+|---|---|---|
+| `owner` | Volles Zugriff + nicht entfernbar (Tenant-Inhaber) | Auto beim Onboarding (erste Person) |
+| `admin` | Volles Zugriff (Billing, Audit, Settings, alle Daten) | Invite durch owner/admin |
+| `hr_manager` | Mitarbeiter, Pay-Bands, Job-Profile, Reports — KEIN Billing/Audit/Settings | Invite durch owner/admin |
+| `employee` | Datensatz-Träger ohne Portal-Zugang (Sidebar leer) — eigener Lohn read-only via RLS | Manuell durch HR (`employees.user_id` optional) |
+| `lawyer` | Read salary_decisions/bands/reports; write `lawyer_reviews`; time-limited (default 90d) | Service-role only |
+| `auditor` | Reserviert für Enterprise — noch nicht in UI | post-MVP |
 
 Super-admin: hardcoded Logto user ID check in `/api/admin/users` + `/dashboard/admin` (not a DB role).
 
@@ -133,6 +157,43 @@ const canEdit = useRoleAccess('admin', 'hr_manager')
 ```
 
 Real enforcement is always Supabase RLS — frontend gating is UX only.
+
+**Helpers (RLS-side):**
+- `public.org_id()` — extracts org from JWT `aud` claim
+- `public.is_org_admin()` — `owner` OR `admin`, status active, not expired
+- `public.is_hr_or_admin()` — `owner`, `admin` OR `hr_manager`, status active, not expired
+- `public.is_org_member()` — any active member with valid access window
+
+---
+
+## Team Members (Invite-Flow)
+
+**Plan-Limits** (Tabelle `plans`):
+
+| Plan | max_admin_seats | max_hr_seats | max_employee_records |
+|---|---|---|---|
+| `basis` | 1 | 1 | 50 |
+| `professional` | 5 | unlimited (-1) | 250 |
+| `enterprise` | unlimited | unlimited | unlimited |
+
+`owner`-Sitz zählt mit zu `max_admin_seats`. Trigger `check_org_member_seat_limit()` enforced auf DB-Ebene mit `pg_advisory_xact_lock`.
+
+**Invite-Flow (Team-Mitglieder, NICHT employee-Records):**
+1. Owner/Admin öffnet `/dashboard/billing` → Sektion "Team-Mitglieder"
+2. Klickt "Einladen" → Email + Rolle (admin / hr_manager) eingeben
+3. `POST /api/members/invite` → `inviteMemberToOrg()` in `lib/logto-management.ts`:
+   - Findet oder erstellt Logto-User mit Email
+   - Fügt zu Logto-Org hinzu
+   - Schreibt `organization_members` Row (status=`active`, gewählte Rolle)
+   - Trigger prüft Seat-Limit, blockiert mit Upgrade-Hinweis bei Überschreitung
+4. Eingeladener User loggt sich mit Email + temp Passwort ein, ändert Passwort
+
+**Member-Management:**
+- `GET /api/members` — Liste aller aktiven Members + Seat-Usage
+- `PATCH /api/members/[id]` — Rolle ändern (admin ↔ hr_manager). `owner` kann nicht degradiert werden.
+- `DELETE /api/members/[id]` — Member entfernen (status=`removed`). `owner` kann nicht entfernt werden.
+
+**Employee-Invites** (separate Flow): `POST /api/employees/invite` mit `employeeId` — gibt einem bestehenden `employees`-Record einen Logto-Login mit `employee`-Rolle. Nicht Teil des MVP-Team-Flows.
 
 ---
 
@@ -187,6 +248,10 @@ Helpers: `hasFeature()`, `getEffectiveTier()`, `getTrialDaysRemaining()` in `lib
 | `/api/lawyer/request` | POST | Request Anwaltsprüfung |
 | `/api/lawyer/review` | POST | Submit lawyer verdict |
 | `/api/cron/trial-reminder` | GET | Trial expiry emails (auth: `x-cron-secret`) |
+| `/api/members` | GET | List active org members + seat usage |
+| `/api/members/invite` | POST | Invite admin/hr_manager via email (seat-limited) |
+| `/api/members/[id]` | PATCH/DELETE | Change role / remove member (owner protected) |
+| `/api/employees/invite` | POST | Give existing employee record a Logto login |
 
 ---
 
@@ -197,8 +262,11 @@ All tenant tables: `organization_id TEXT NOT NULL`. Migrations: `supabase/migrat
 | Table | Purpose |
 |---|---|
 | `companies` | Tenant info + `subscription_tier/status/trial_ends_at/stripe_customer_id` |
-| `user_roles` | RBAC per user per org |
-| `employees` | Employee records + salary |
+| `organization_members` | **RBAC source of truth** — user_id × org_id × role × status × access_expires_at |
+| `plans` | Reference data — seat limits per tier (basis/professional/enterprise) |
+| `subscription_changes` | Append-only audit log of subscription lifecycle (Stripe webhook) |
+| `user_roles` | _Legacy_ — still populated for backward compat, will be dropped post-MVP |
+| `employees` | Employee records + salary (HR data, login optional via `user_id`) |
 | `salary_decisions` | **Append-only decision trail — the compliance core** |
 | `job_profiles` / `pay_bands` / `job_levels` / `departments` | Compensation structure |
 | `audit_logs` | Immutable audit trail |
@@ -245,21 +313,80 @@ NEXT_PUBLIC_ROOT_DOMAIN  NEXT_PUBLIC_APP_URL
 
 ---
 
+## Mail-Infrastruktur & DNS
+
+**Architektur:** Zwei parallele Mail-Systeme auf einer Domain.
+
+| System | Zweck | Sending domain |
+|---|---|---|
+| Microsoft 365 | Business-Kommunikation (Outlook, Teams) | `klargehalt.de` via M365 SMTP |
+| Resend | Transactional / System-Mails | `klargehalt.de` via Resend API |
+
+**DNS-Status (Cloudflare, Stand 2026-05-11):**
+
+| Record | Wert | Status |
+|---|---|---|
+| MX `@` | `klargehalt-de.mail.protection.outlook.com` (Prio 0) | ✅ |
+| CNAME `autodiscover` | `autodiscover.outlook.com` | ✅ |
+| CNAME `selector1._domainkey` | `selector1-klargehalt-de._domainkey.kitechsoftwareug.p-v1.dkim.mail.microsoft` | ✅ |
+| CNAME `selector2._domainkey` | `selector2-klargehalt-de._domainkey.kitechsoftwareug.p-v1.dkim.mail.microsoft` | ✅ |
+| TXT `@` SPF | `v=spf1 include:spf.protection.outlook.com include:spf.resend.com ~all` | ✅ |
+| TXT `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:aalkh@klargehalt.de` | ✅ |
+| TXT `resend._domainkey` | Resend DKIM Public Key | ✅ |
+| TXT `@` | `MS=ms45156943` (M365-Verifizierung) | ✅ |
+
+**VPS-Subdomains (unberührt):**
+
+| Record | Wert |
+|---|---|
+| A `klargehalt.de` | 85.215.219.202 (Proxied via Cloudflare) |
+| CNAME `app` | klargehalt.de → VPS |
+| CNAME `auth` | klargehalt.de → VPS |
+| A `coolify` | 85.215.219.202 (DNS only) |
+
+**Wichtig:** DKIM in M365 Defender muss nach DNS-Propagation aktiviert werden:
+`Microsoft Defender → E-Mail & Zusammenarbeit → DKIM → klargehalt.de → Aktivieren`
+
+---
+
 ## Team Emails
+
+**Microsoft 365 Postfächer (alle Aliases → `aalkh@klargehalt.de`):**
 
 | Address | Owner | Purpose |
 |---|---|---|
-| `aalkh@klargehalt.de` | Ayham Alkhalil | Personal / internal |
-| `info@klargehalt.de` | Shared inbox | Primary contact (aliases: `datenschutz@`, `support@`, `sales@`, `billing@`) |
-| `lbatt@klargehalt.de` | Leon Battel | Personal / internal (alias: `leon.battel@klargehalt.de`) |
+| `aalkh@klargehalt.de` | Ayham Alkhalil | Personal / intern — primäres M365-Konto |
+| `lbatt@klargehalt.de` | Leon Battel | Personal / intern (Alias: `leon.battel@klargehalt.de`) |
+
+**Aliases auf `aalkh@klargehalt.de` (alle in Microsoft 365):**
+
+| Alias | Verwendung (Landingpage / Code) |
+|---|---|
+| `info@klargehalt.de` | Impressum, allgemeiner Kontakt, Marketing-Kontaktformular |
+| `kontakt@klargehalt.de` | Alternative Kontaktadresse (DE-Publikum) |
+| `support@klargehalt.de` | Support-Kommunikation, Kundenservice |
+| `sales@klargehalt.de` | Sales-Anfragen, Lawyer-CTA, Enterprise-Anfragen |
+| `billing@klargehalt.de` | Billing-Bestätigungen, Zahlungsfehler |
+| `datenschutz@klargehalt.de` | Datenschutz-/DSGVO-Seiten, Privacy-Kontakt |
+| `legal@klargehalt.de` | Rechtliche Anfragen |
+| `security@klargehalt.de` | Security-Disclosures |
 
 **Email routing in code (`lib/email.ts`):**
-- Transactional (welcome, trial) → `noreply@klargehalt.de`
+- Transactional (welcome, trial) → `noreply@klargehalt.de` *(Resend — nicht M365)*
 - Support comms → `support@klargehalt.de`
 - Billing confirmations & payment failures → `billing@klargehalt.de`
 - Privacy/DSGVO pages → `datenschutz@klargehalt.de`
 - Marketing contact form + Impressum → `info@klargehalt.de`
 - Sales inquiries (lawyer CTA, enterprise) → `sales@klargehalt.de`
+- Legal matters → `legal@klargehalt.de`
+- Security disclosures → `security@klargehalt.de`
+
+**Landingpage-Zuordnung:**
+- Impressum → `info@klargehalt.de`
+- Datenschutzerklärung → `datenschutz@klargehalt.de`
+- Kontaktformular → `kontakt@klargehalt.de` oder `info@klargehalt.de`
+- Pricing CTA / Sales → `sales@klargehalt.de`
+- Support-Link → `support@klargehalt.de`
 
 ---
 

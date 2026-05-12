@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { usePayGapStatistics, DepartmentStatistic, GenderPayGap } from '@/hooks/usePayGapStatistics';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useSubscription } from '@/hooks/useSubscription';
 import { LawyerReviewBadge } from '@/components/dashboard/LawyerReviewBadge';
+import { UpgradeNudge } from '@/components/UpgradeNudge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 
@@ -35,6 +37,9 @@ export function PayGapReportView() {
   const [deptStats, setDeptStats] = useState<DepartmentStatistic[]>([]);
   const [gapData, setGapData] = useState<GenderPayGap[]>([]);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const { isTrialing } = useSubscription();
+  const [showNudge, setShowNudge] = useState(false);
+  const nudgeShown = useRef(false);
 
   const canViewReport = hasPermission('reports.view') || hasPermission('audit.view');
 
@@ -43,6 +48,13 @@ export function PayGapReportView() {
       loadData();
     }
   }, [canViewReport]);
+
+  useEffect(() => {
+    if (isTrialing && gapData.length > 0 && !nudgeShown.current) {
+      nudgeShown.current = true;
+      setShowNudge(true);
+    }
+  }, [isTrialing, gapData.length]);
 
   const handlePdfExport = async () => {
     setPdfLoading(true);
@@ -129,6 +141,12 @@ export function PayGapReportView() {
 
   return (
     <div className="space-y-6">
+      {showNudge && (
+        <UpgradeNudge
+          message="Sie haben Ihren Gender Pay Gap analysiert — sichern Sie die Compliance dauerhaft mit einem Professional-Plan."
+          onDismiss={() => setShowNudge(false)}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

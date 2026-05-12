@@ -33,12 +33,24 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<void> 
         <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
           <h2 style="color: #071423; margin-top: 0;">Willkommen ${displayName}!</h2>
           <p style="color: #475569; line-height: 1.6;">
-            Ihr Konto ist aktiviert. Sie können jetzt mit KlarGehalt Ihre EU-Entgelttransparenz umsetzen —
-            Gehaltsstrukturen dokumentieren, Gender Pay Gap analysieren und Berichte erstellen.
+            Ihr Konto ist aktiviert. Sie starten mit einem <strong>14-tägigen Professional-Test</strong> —
+            alle Features freigeschaltet, keine Kreditkarte nötig.
           </p>
-          <p style="color: #475569; line-height: 1.6;">
-            Sie starten mit einem <strong>14-tägigen Professional-Test</strong> — alle Features freigeschaltet, keine Kreditkarte nötig.
-          </p>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0 0 12px; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Empfehlung für diese Woche</p>
+            <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
+              <span style="color: #2563eb; font-weight: 700; min-width: 20px;">1.</span>
+              <span style="color: #334155; line-height: 1.5;">Mitarbeiter anlegen und Gehälter erfassen</span>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
+              <span style="color: #2563eb; font-weight: 700; min-width: 20px;">2.</span>
+              <span style="color: #334155; line-height: 1.5;">Pay-Gap-Report generieren und erste Lücken erkennen</span>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="color: #2563eb; font-weight: 700; min-width: 20px;">3.</span>
+              <span style="color: #334155; line-height: 1.5;">Erste Gehaltsentscheidung dokumentieren — das ist der Compliance-Kern</span>
+            </div>
+          </div>
           <a href="https://app.klargehalt.de/dashboard"
              style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
                     border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
@@ -89,6 +101,62 @@ export async function sendTrialEndingEmail(
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
           <p style="color: #94a3b8; font-size: 13px; margin: 0;">
             Fragen zu den Tarifen?
+            <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendMidTrialEmail(
+  to: string,
+  name: string,
+  companyName: string
+): Promise<void> {
+  const displayName = name || 'dort';
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to,
+    subject: `${companyName} — wie läuft Ihre Testphase?`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #071423; margin-top: 0;">Sie sind auf dem richtigen Weg</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, Ihre Testphase für <strong>${companyName}</strong> läuft seit 5 Tagen.
+          </p>
+          <p style="color: #475569; line-height: 1.6;">
+            Unternehmen, die KlarGehalt für die EU-Entgelttransparenzrichtlinie nutzen, profitieren vor allem von
+            drei Dingen: einem lückenlosen Gehaltsentscheidungsprotokoll, dem automatischen Gender Pay Gap Report
+            und dem anwaltlich geprüften Compliance-Nachweis.
+          </p>
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0 0 12px; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Noch nicht ausprobiert?</p>
+            <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
+              <span style="color: #2563eb; min-width: 16px;">→</span>
+              <span style="color: #334155; line-height: 1.5; font-size: 14px;">Pay-Gap-Report: Erkennen Sie Lücken bevor es ein Mitarbeiter tut</span>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
+              <span style="color: #2563eb; min-width: 16px;">→</span>
+              <span style="color: #334155; line-height: 1.5; font-size: 14px;">Gehaltsentscheidung dokumentieren: Jede Gehaltsänderung rechtssicher begründen</span>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="color: #2563eb; min-width: 16px;">→</span>
+              <span style="color: #334155; line-height: 1.5; font-size: 14px;">Anwaltsprüfung anfragen: Externes Gutachten als Nachweis</span>
+            </div>
+          </div>
+          <a href="https://app.klargehalt.de/dashboard"
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Weiter einrichten
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen? Wir helfen gerne.
             <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
           </p>
         </div>
