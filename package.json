@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "demo:seed": "node --env-file=.env.demo scripts/seed-demo.mjs",
+    "demo:reset": "node --env-file=.env.demo scripts/seed-demo.mjs --reset",
+    "demo:teardown": "node --env-file=.env.demo scripts/seed-demo.mjs --teardown"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

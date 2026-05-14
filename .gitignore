@@ -68,3 +68,4 @@ CLAUDE.local.md
 .projects/vault
 .env
 .env.local
+.env.demo
