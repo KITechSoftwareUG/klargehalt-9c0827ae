@@ -42,5 +42,6 @@ Detailliertere Themen sind in `.claude/docs/` ausgelagert und werden über @-Imp
 - **RBAC, Team-Invites & Subscription** → @.claude/docs/rbac-team.md
 - **Routes, API, Datenbank & Hooks** → @.claude/docs/routes-data.md
 - **Environment, Mail & DNS** → @.claude/docs/infra.md
+- **🔑 Access & Deployments** (Coolify-Projekte, App-UUIDs, Supabase-Link, Logto/Sentry/Stripe-Konsolen, Deploy-Commands) → @.claude/docs/access.md
 - **Failure Modes & MCP Tools** → @.claude/docs/operations.md
 - **Behavioral Guidelines** → @.claude/docs/behavior.md
