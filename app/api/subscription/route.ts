@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('companies')
       .select(
-        'subscription_tier, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id'
+        'subscription_tier, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, cancel_at_period_end, cancel_at, canceled_at, payment_issue'
       )
       .eq('organization_id', orgId)
       .maybeSingle();

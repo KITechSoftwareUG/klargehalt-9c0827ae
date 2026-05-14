@@ -184,13 +184,36 @@ export async function POST(request: NextRequest) {
         const rawPeriodEnd = item?.current_period_end ?? null;
         const periodEnd = rawPeriodEnd ? new Date(rawPeriodEnd * 1000).toISOString() : null;
 
+        const cancelAt = subscription.cancel_at
+          ? new Date(subscription.cancel_at * 1000).toISOString()
+          : null;
+        const canceledAt = subscription.canceled_at
+          ? new Date(subscription.canceled_at * 1000).toISOString()
+          : null;
+        const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
+
+        // Trial reset: clear trial_ends_at once Stripe transitions out of `trialing`.
+        // Setting null means UI no longer shows the trial banner after upgrade or trial end.
+        const trialEndsAt =
+          status === 'trialing' && subscription.trial_end
+            ? new Date(subscription.trial_end * 1000).toISOString()
+            : status === 'trialing'
+              ? undefined // keep existing
+              : null;
+
         const previous = await fetchCompanyByCustomer(supabase, customerId);
 
-        const updatePayload = {
+        const updatePayload: Record<string, unknown> = {
           subscription_tier: tier,
           subscription_status: status,
           current_period_end: periodEnd,
+          cancel_at_period_end: cancelAtPeriodEnd,
+          cancel_at: cancelAt,
+          canceled_at: canceledAt,
         };
+        if (trialEndsAt !== undefined) {
+          updatePayload.trial_ends_at = trialEndsAt;
+        }
 
         // Stale-write protection: if periodEnd is set, only overwrite when the
         // existing value is null or older than the incoming one.
@@ -263,6 +286,11 @@ export async function POST(request: NextRequest) {
             subscription_status: 'canceled',
             stripe_subscription_id: null,
             current_period_end: null,
+            cancel_at_period_end: false,
+            cancel_at: null,
+            canceled_at: subscription.canceled_at
+              ? new Date(subscription.canceled_at * 1000).toISOString()
+              : new Date().toISOString(),
           })
           .eq('stripe_customer_id', customerId)
           .select('id');
@@ -326,6 +354,117 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`Stripe webhook: invoice.payment_failed for ${customerId}`);
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        // Recovery signal: when a previously past_due subscription gets paid,
+        // Stripe sometimes only emits this event before the next subscription.updated
+        // tick. Flip past_due → active here so the lockout banner clears immediately.
+        const invoice = event.data.object;
+        const customerId = invoice.customer as string;
+
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
+        if (!previous) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+          break;
+        }
+
+        if (previous.subscription_status === 'past_due') {
+          const { error: errUpdate } = await supabase
+            .from('companies')
+            .update({ subscription_status: 'active', payment_issue: null })
+            .eq('stripe_customer_id', customerId);
+
+          if (errUpdate) throw errUpdate;
+
+          if (previous.organization_id) {
+            await logSubscriptionChange(supabase, {
+              organizationId: previous.organization_id,
+              oldTier: previous.subscription_tier,
+              newTier: previous.subscription_tier,
+              oldStatus: previous.subscription_status,
+              newStatus: 'active',
+              stripeEventId: event.id,
+              stripeInvoiceId: invoice.id ?? null,
+            }, 'reactivated');
+          }
+
+          console.log(`Stripe webhook: invoice.payment_succeeded recovered past_due for ${customerId}`);
+        } else {
+          console.log(`Stripe webhook: invoice.payment_succeeded (no-op, status=${previous.subscription_status}) for ${customerId}`);
+        }
+        break;
+      }
+
+      case 'charge.refunded': {
+        // Refund — flag the company for ops review but don't auto-cancel the sub.
+        // Stripe also fires invoice.payment_failed if the refund triggers a balance issue.
+        const charge = event.data.object;
+        const customerId = charge.customer as string | null;
+        if (!customerId) {
+          console.warn(`Stripe webhook: charge.refunded without customer (event ${event.id})`);
+          break;
+        }
+
+        const { error: errUpdate } = await supabase
+          .from('companies')
+          .update({ payment_issue: 'refunded' })
+          .eq('stripe_customer_id', customerId);
+
+        if (errUpdate) throw errUpdate;
+
+        Sentry.captureMessage('Stripe charge refunded — manual review required', {
+          level: 'warning',
+          tags: { route: 'webhook_stripe', event: 'charge.refunded' },
+          extra: {
+            customer_id: customerId,
+            charge_id: charge.id,
+            amount_refunded: charge.amount_refunded,
+            event_id: event.id,
+          },
+        });
+
+        console.log(`Stripe webhook: charge.refunded for ${customerId}, amount=${charge.amount_refunded}`);
+        break;
+      }
+
+      case 'charge.dispute.created': {
+        // Chargeback — high-severity. Mark and alert; Stripe-side dunning still runs.
+        const dispute = event.data.object;
+        const chargeId = dispute.charge as string;
+
+        // Look up customer via the charge object
+        let customerId: string | null = null;
+        try {
+          const charge = await stripe.charges.retrieve(chargeId);
+          customerId = (charge.customer as string | null) ?? null;
+        } catch (lookupErr) {
+          console.error(`Stripe webhook: dispute charge lookup failed for ${chargeId}`, lookupErr);
+        }
+
+        if (customerId) {
+          const { error: errUpdate } = await supabase
+            .from('companies')
+            .update({ payment_issue: 'disputed' })
+            .eq('stripe_customer_id', customerId);
+          if (errUpdate) throw errUpdate;
+        }
+
+        Sentry.captureMessage('Stripe chargeback / dispute created — immediate review required', {
+          level: 'error',
+          tags: { route: 'webhook_stripe', event: 'charge.dispute.created' },
+          extra: {
+            customer_id: customerId,
+            charge_id: chargeId,
+            dispute_id: dispute.id,
+            reason: dispute.reason,
+            amount: dispute.amount,
+            event_id: event.id,
+          },
+        });
+
+        console.log(`Stripe webhook: charge.dispute.created for ${customerId}, reason=${dispute.reason}`);
         break;
       }
 

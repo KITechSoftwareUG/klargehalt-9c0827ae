@@ -15,6 +15,8 @@ import {
   PLANS,
 } from '@/lib/subscription';
 
+type PaymentIssue = 'refunded' | 'disputed' | null;
+
 interface SubscriptionState {
   tier: SubscriptionTier;
   rawTier: SubscriptionTier;
@@ -27,6 +29,11 @@ interface SubscriptionState {
   gracePeriodDaysRemaining: number | null;
   currentPeriodEnd: Date | null;
   stripeCustomerId: string | null;
+  // Cancellation lifecycle — populated by Stripe webhook on cancel_at_period_end.
+  cancelAtPeriodEnd: boolean;
+  cancelAt: Date | null;
+  canceledAt: Date | null;
+  paymentIssue: PaymentIssue;
   limits: PlanLimits;
   plan: typeof PLANS[SubscriptionTier];
   loading: boolean;
@@ -48,6 +55,10 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<Date | null>(null);
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
+  const [cancelAt, setCancelAt] = useState<Date | null>(null);
+  const [canceledAt, setCanceledAt] = useState<Date | null>(null);
+  const [paymentIssue, setPaymentIssue] = useState<PaymentIssue>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = useCallback(async () => {
@@ -70,6 +81,10 @@ export const useSubscription = (): UseSubscriptionReturn => {
         trial_ends_at: string | null
         current_period_end: string | null
         stripe_customer_id: string | null
+        cancel_at_period_end: boolean | null
+        cancel_at: string | null
+        canceled_at: string | null
+        payment_issue: string | null
       } | null }
 
       if (data) {
@@ -78,6 +93,14 @@ export const useSubscription = (): UseSubscriptionReturn => {
         setTrialEndsAt(data.trial_ends_at ? new Date(data.trial_ends_at) : null);
         setCurrentPeriodEnd(data.current_period_end ? new Date(data.current_period_end) : null);
         setStripeCustomerId(data.stripe_customer_id || null);
+        setCancelAtPeriodEnd(Boolean(data.cancel_at_period_end));
+        setCancelAt(data.cancel_at ? new Date(data.cancel_at) : null);
+        setCanceledAt(data.canceled_at ? new Date(data.canceled_at) : null);
+        setPaymentIssue(
+          data.payment_issue === 'refunded' || data.payment_issue === 'disputed'
+            ? data.payment_issue
+            : null
+        );
       }
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
@@ -146,6 +169,10 @@ export const useSubscription = (): UseSubscriptionReturn => {
     gracePeriodDaysRemaining,
     currentPeriodEnd,
     stripeCustomerId,
+    cancelAtPeriodEnd,
+    cancelAt,
+    canceledAt,
+    paymentIssue,
     limits,
     plan,
     loading,

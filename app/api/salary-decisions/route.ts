@@ -3,7 +3,6 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole } from '@/lib/auth/api-guard';
-import { getEffectiveTier, hasFeature, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 
 const justificationFactorSchema = z.object({
   type: z.enum(['experience', 'education', 'performance', 'market_rate', 'seniority', 'other']),
@@ -37,21 +36,6 @@ export async function POST(request: NextRequest) {
   if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
-
-  const { data: company } = await supabase
-    .from('companies')
-    .select('subscription_tier, subscription_status, trial_ends_at')
-    .eq('organization_id', guard.orgId)
-    .maybeSingle();
-
-  const effectiveTier = getEffectiveTier(
-    (company?.subscription_tier as SubscriptionTier | null) ?? 'basis',
-    (company?.subscription_status as SubscriptionStatus | null) ?? 'canceled',
-    company?.trial_ends_at ?? null,
-  );
-  if (!hasFeature(effectiveTier, 'decision_documentation')) {
-    return NextResponse.json({ error: 'Professional plan required for decision documentation' }, { status: 402 });
-  }
 
   let body: unknown;
   try {

@@ -1,5 +1,23 @@
 # Product: MVP, Build Status
 
+## Tier-Strategie (Stand 2026-05-14)
+
+Das Pricing folgt der EU-Richtlinie 2023/970 (siehe `@.claude/docs/law.md` §3):
+
+| Tier | MA-Range | Pflicht nach EU-Richtlinie | Pitch |
+|---|---|---|---|
+| **Basis** (€149/mo) | 1–50 MA (technisch 52 mit Puffer) | Keine Berichtspflicht — nur Auskunftsanspruch + Recruiting-Transparenz | "Wenn jemand fragt oder klagt, hast du Antworten." Monitoring + Decision-Doc, kein Berichts-Export. |
+| **Professional** (€299/mo) | 51–249 MA | Berichtspflicht greift (ab 2027 / 2031) | "Bericht auf Knopfdruck + Joint Assessment vorbereitet." |
+| **Enterprise** (custom) | 250+ MA | Jährlicher Bericht ab Juni 2027 | "Audit-Defense, SSO, Multi-Entity." |
+
+**Basis-Tier umfasst:** Job-Profile, Pay-Bands, Departments, Job-Levels, Employees (bis 50 + 2 Puffer), **Decision Documentation** (`salary_decisions`), **interne Pay-Gap-Analyse**, info_requests, job_postings, audit_logs, 1 Admin + 1 HR.
+
+**Basis-Tier umfasst NICHT:** PDF-Berichte, Trend-Analyse, Joint Pay Assessment, Lawyer Reviews (one-time Add-on €799 separat verfügbar), SSO, Auditor-Zugang.
+
+**Lawyer-Add-on:** One-time €799 / €399 Renewal — kaufbar in jedem Tier (auch Basis). Stripe-Flow noch nicht gebaut → Roadmap.
+
+---
+
 ## MVP-Szenario (Stand 2026-05-12)
 
 **Ein-Satz-MVP:** _Eine HR-Leiterin loggt sich ein, legt ihre Compliance-Daten an, sieht Pay-Gaps, dokumentiert Gehaltsentscheidungen — und kann nach Plan-Limit weitere Team-Mitglieder einladen._

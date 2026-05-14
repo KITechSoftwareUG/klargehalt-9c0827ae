@@ -4,6 +4,8 @@ import { useJobProfiles } from '@/hooks/useJobProfiles';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useJobLevels } from '@/hooks/useJobLevels';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
+import { getMarketingUrl } from '@/utils/url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -110,6 +112,21 @@ const EmployeesView = () => {
   const { departments } = useDepartments();
   const { jobLevels } = useJobLevels();
   const { user, supabase, orgId } = useAuth();
+  const subscription = useSubscription();
+
+  // Basis tier: marketing promises "Bis 50 Mitarbeiter" but the technical cap
+  // sits at 52 to absorb brief hiring transitions (incoming starts before
+  // outgoing deactivated). The banner uses the published 50 as the user-facing
+  // limit; canAddEmployee() blocks at the technical 52.
+  const isBasis = subscription.tier === 'basis';
+  const publishedEmployeeLimit = isBasis ? 50 : subscription.limits.maxEmployees;
+  const employeeCount = employees.length;
+  const showWarningBanner =
+    !subscription.loading &&
+    publishedEmployeeLimit !== -1 &&
+    employeeCount >= publishedEmployeeLimit - 5;
+  const inGraceBuffer = isBasis && employeeCount >= 50 && employeeCount < 52;
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
 
   // Resolve created_by user IDs to display names
   const [creatorMap, setCreatorMap] = useState<Record<string, string>>({});
@@ -198,6 +215,14 @@ const EmployeesView = () => {
         return;
       }
 
+      const rowsToImport = lines.length - 1;
+      const cap = subscription.limits.maxEmployees;
+      if (cap !== -1 && employeeCount + rowsToImport > cap) {
+        setCsvImporting(false);
+        setLimitModalOpen(true);
+        return;
+      }
+
       const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
       const rows = lines.slice(1);
 
@@ -262,6 +287,11 @@ const EmployeesView = () => {
   };
 
   const handleCreate = async () => {
+    if (!subscription.canAddEmployee(employeeCount)) {
+      setIsCreateOpen(false);
+      setLimitModalOpen(true);
+      return;
+    }
     const submitData = { ...formData };
     if (!submitData.job_profile_id) delete submitData.job_profile_id;
     if (!submitData.job_level_id) delete submitData.job_level_id;
@@ -717,6 +747,43 @@ const EmployeesView = () => {
 
   return (
     <div className="space-y-6">
+      {showWarningBanner && (
+        <Alert
+          className={
+            inGraceBuffer
+              ? 'border-orange-300 bg-orange-50 text-orange-900'
+              : 'border-amber-300 bg-amber-50 text-amber-900'
+          }
+        >
+          <AlertCircle className={inGraceBuffer ? 'h-4 w-4 text-orange-600' : 'h-4 w-4 text-amber-600'} />
+          <AlertDescription>
+            {inGraceBuffer ? (
+              <span>
+                <strong>Übergangs-Puffer aktiv:</strong> Sie haben das Basis-Limit von 50 Mitarbeitern erreicht
+                ({employeeCount}/50). Sie können noch {52 - employeeCount} weitere für Personalwechsel anlegen,
+                danach ist Schluss.{' '}
+                <a
+                  href={getMarketingUrl('/preise')}
+                  className="font-semibold underline hover:text-orange-700"
+                >
+                  Jetzt zu Professional upgraden
+                </a>
+              </span>
+            ) : (
+              <span>
+                Sie nutzen <strong>{employeeCount} von {publishedEmployeeLimit}</strong> Mitarbeiter-Plätzen
+                Ihres Basis-Tarifs.{' '}
+                <a
+                  href={getMarketingUrl('/preise')}
+                  className="font-semibold underline hover:text-amber-700"
+                >
+                  Upgrade ansehen
+                </a>
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Mitarbeiter</h2>
@@ -897,6 +964,41 @@ const EmployeesView = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Employee Limit Reached */}
+      <AlertDialog open={limitModalOpen} onOpenChange={setLimitModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mitarbeiter-Limit Ihres Tarifs erreicht</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isBasis ? (
+                <>
+                  Im <strong>Basis-Tarif</strong> können Sie bis zu 50 Mitarbeitende anlegen
+                  (technisch bis 52 für kurze Personalwechsel-Übergänge). Sie haben diese
+                  Grenze jetzt erreicht.
+                  <br /><br />
+                  Mit <strong>Professional</strong> verwalten Sie bis zu 250 Mitarbeitende
+                  und erhalten PDF-Berichte, Trend-Analyse und Joint Pay Assessment für die
+                  EU-Berichtspflicht.
+                </>
+              ) : (
+                <>
+                  Sie haben das Mitarbeiter-Limit Ihres aktuellen Tarifs erreicht. Für mehr
+                  Mitarbeitende kontaktieren Sie uns für ein Enterprise-Angebot.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Später</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <a href={getMarketingUrl('/preise')}>
+                Tarife ansehen
+              </a>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
