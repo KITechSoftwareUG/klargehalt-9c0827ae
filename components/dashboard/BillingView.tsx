@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PLANS } from '@/lib/subscription';
@@ -59,12 +59,60 @@ export default function BillingView() {
     const proYearly = PLANS.professional.priceYearly!;
     const maxYearlyDiscount = Math.round((1 - proYearly / (proMonthly * 12)) * 100);
 
+    const cancelDateStr = sub.cancelAt
+        ? sub.cancelAt.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+        : null;
+
     return (
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-bold text-slate-900">Abrechnung & Plan</h2>
                 <p className="text-sm text-slate-500">Verwalten Sie Ihren Plan und Ihre Zahlungsinformationen.</p>
             </div>
+
+            {/* Cancellation pending — customer cancelled but still has access until period end */}
+            {sub.cancelAtPeriodEnd && cancelDateStr && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                        <p className="font-semibold text-amber-900 text-sm">Ihr Abonnement endet am {cancelDateStr}</p>
+                        <p className="text-sm text-amber-800 mt-1">
+                            Sie haben bis dahin vollen Zugriff. Möchten Sie weiter dabei bleiben? Sie können die Kündigung über das
+                            Kundenportal jederzeit zurücknehmen.
+                        </p>
+                        {sub.stripeCustomerId && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-3 border-amber-300 hover:bg-amber-100"
+                                onClick={openPortal}
+                                disabled={portalLoading}
+                            >
+                                Kündigung zurücknehmen
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Payment issue — refund or dispute */}
+            {sub.paymentIssue && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                        <p className="font-semibold text-red-900 text-sm">
+                            {sub.paymentIssue === 'disputed'
+                                ? 'Zahlungsstreit eingeleitet'
+                                : 'Rückerstattung registriert'}
+                        </p>
+                        <p className="text-sm text-red-800 mt-1">
+                            {sub.paymentIssue === 'disputed'
+                                ? 'Für eine Zahlung wurde eine Reklamation bei Ihrer Bank eingereicht. Bitte kontaktieren Sie uns unter billing@klargehalt.de, damit wir das gemeinsam klären können.'
+                                : 'Eine Zahlung wurde teilweise oder vollständig erstattet. Bei Fragen erreichen Sie uns unter billing@klargehalt.de.'}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Current Plan */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
