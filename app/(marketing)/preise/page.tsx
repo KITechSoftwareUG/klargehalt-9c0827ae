@@ -19,7 +19,7 @@ const plans = [
         cta: 'Kostenlos testen',
         href: getAppUrl('/sign-up?plan=basis'),
         featured: false,
-        highlights: ['Gender-Pay-Gap-Analyse', '1 Admin + 1 HR-Manager', 'Bis 50 Mitarbeiter'],
+        highlights: ['Gender-Pay-Gap-Analyse', 'Entscheidungs-Dokumentation', 'Bis 50 Mitarbeiter'],
     },
     {
         name: 'Professional',
@@ -58,6 +58,7 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
             { name: 'CSV/Excel-Import', basis: true, professional: true, enterprise: true },
             { name: 'Abteilungen & Karrierestufen', basis: true, professional: true, enterprise: true },
             { name: 'Gender-Pay-Gap Analyse', basis: true, professional: true, enterprise: true },
+            { name: 'Entscheidungs-Dokumentation (Beweislast-Trail)', basis: true, professional: true, enterprise: true },
             { name: 'Pay-Gap Berichte (PDF)', basis: false, professional: true, enterprise: true },
             { name: 'Trendanalyse über Zeiträume', basis: false, professional: true, enterprise: true },
             { name: 'KI-gestützte Handlungsempfehlungen', basis: false, professional: true, enterprise: true },

@@ -36,7 +36,7 @@ Real enforcement is always Supabase RLS — frontend gating is UX only.
 
 | Plan | max_admin_seats | max_hr_seats | max_employee_records |
 |---|---|---|---|
-| `basis` | 1 | 1 | 50 |
+| `basis` | 1 | 1 | **52** (Marketing-Zusage: "bis 50" — +2 Puffer für Personalwechsel-Übergänge, danach Block + Upgrade-Modal) |
 | `professional` | 5 | unlimited (-1) | 250 |
 | `enterprise` | unlimited | unlimited | unlimited |
 
@@ -66,11 +66,20 @@ Real enforcement is always Supabase RLS — frontend gating is UX only.
 Tiers: `basis` (€149/mo, €1490/yr) | `professional` (€299/mo, €2690/yr) | `enterprise` (on request).
 14-day trial at `professional`. `getEffectiveTier()`: `active`/`trialing` → full | `past_due`/`canceled` → `basis`.
 
-| Feature flag | Tier |
+| Feature flag | Verfügbar in |
 |---|---|
-| `pay_gap_analysis`, `pdf_reports`, `trend_analysis`, `decision_documentation`, `lawyer_review`, `priority_support`, `advanced_audit` | professional |
-| `sso`, `custom_integrations` | enterprise |
+| `pay_gap_analysis` | **alle Tiers** (auch Basis — internes Monitoring) |
+| `decision_documentation` | **alle Tiers** (auch Basis — das Produkt-Herzstück, Beweislast-Trail nach EU-Richtlinie) |
+| `pdf_reports`, `trend_analysis`, `lawyer_review`, `priority_support`, `advanced_audit` | professional, enterprise (Berichtspflicht-Features) |
+| `sso`, `custom_integrations`, `auditor_access` | enterprise |
 
 Helpers: `hasFeature()`, `getEffectiveTier()`, `getTrialDaysRemaining()` in `lib/subscription.ts` (server: `lib/subscription-server.ts`).
 
-**Anwaltsprüfung add-on:** €799 one-time / €399 renewal. Professional+ only. Independent lawyer, not KlarGehalt employee.
+**Anwaltsprüfung add-on:** €799 one-time / €399 renewal. **One-time-Add-on, auch für Basis-User kaufbar** (separater Stripe-Flow, noch nicht gebaut — siehe Roadmap). Independent lawyer, not KlarGehalt employee.
+
+**Basis-Tier-Logik (Stand 2026-05-14):**
+- Marketing-Promise: "Bis 50 Mitarbeiter" (hardcoded auf `/preise`).
+- Technischer Cap: 52 (`plans.max_employee_records` + `PLANS.basis.limits.maxEmployees` in `lib/subscription.ts`). Die +2 sind Übergangs-Puffer für Personalwechsel.
+- Warning-Banner in EmployeesView ab 45 MA (gelb), ab 50 MA (orange, "Übergangs-Puffer aktiv").
+- Hard-Block bei #53 (POST `/api/employees` → 402 + Modal → `/preise`).
+- **Berichtsfeatures (PDF, Trend, Joint Assessment) sind bewusst NICHT in Basis** — kleine Unternehmen (< 100 MA) haben keine Berichtspflicht nach EU-Richtlinie 2023/970 (siehe `@.claude/docs/law.md` §3).

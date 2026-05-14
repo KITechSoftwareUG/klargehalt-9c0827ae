@@ -35,6 +35,7 @@ klargehalt verarbeitet Gehälter, Geschlechts-Daten (DSGVO Art. 9) und Complianc
 Detailliertere Themen sind in `.claude/docs/` ausgelagert und werden über @-Imports automatisch beim Start geladen:
 
 - **🔒 Security** (Threat-Model, RLS, DSGVO, Pre-Commit-Checkliste) → @.claude/docs/security.md
+- **⚖️ Law** (EU-Entgelttransparenzrichtlinie 2023/970 — Pflichten, Fristen, Wording-Regeln) → @.claude/docs/law.md
 - **Product, MVP, Build Status** → @.claude/docs/product.md
 - **Stack & Commands** (inkl. Chrome-Testing-Regel) → @.claude/docs/stack.md
 - **Architecture & Auth Patterns** → @.claude/docs/architecture.md
