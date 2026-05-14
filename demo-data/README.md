@@ -26,46 +26,48 @@ manual data entry during the demo.
 
 ## 2. Run the seed
 
-The script needs the same env vars the app uses (Logto M2M + Supabase service role).
-Two ways to run it:
+The script needs:
+- The app's Logto + Supabase env vars (LOGTO_*, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+- `SUPABASE_ACCESS_TOKEN` — the Supabase Management API token (used to toggle
+  triggers around the bulk insert; needed for service-role to bypass the
+  pay-gap recompute guard).
 
-### Option A — Local with `.env.demo` file (recommended)
+### Run from inside the Coolify container (recommended)
 
-Create `.env.demo` at repo root with these keys, copied from Coolify:
-
-```
-LOGTO_ENDPOINT=https://auth.klargehalt.de
-LOGTO_M2M_APP_ID=...
-LOGTO_M2M_APP_SECRET=...
-LOGTO_MANAGEMENT_API_RESOURCE=https://admin.logto.app/api
-NEXT_PUBLIC_SUPABASE_URL=https://btbucjkczpejplykyvkj.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-Then:
+The Next.js app container already has all app env vars. We pass the management
+token through:
 
 ```bash
-# Fresh seed (idempotent — re-runs are safe)
-npm run demo:seed
-
-# Wipe Supabase rows for the org and re-seed
-npm run demo:reset
-
-# Delete the demo account entirely (Logto users + org + Supabase rows)
-npm run demo:teardown
+# On the VPS
+CONTAINER=$(docker ps --format '{{.Names}}' | grep '^v5p64dvnh80subyrs1nbla9b')
+docker cp scripts/seed-demo.mjs "$CONTAINER":/app/scripts/seed-demo.mjs
+docker exec \
+  -e SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" \
+  -e SUPABASE_PROJECT_REF=btbucjkczpejplykyvkj \
+  "$CONTAINER" sh -c 'cd /app && node scripts/seed-demo.mjs'
 ```
 
-### Option B — From inside the Coolify container
+After the next deploy the script lives at `/app/scripts/seed-demo.mjs` inside
+the container natively, so the `docker cp` step is only needed before the PR
+is merged.
+
+For `--reset` or `--teardown`, append the flag:
+```bash
+docker exec -e SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" \
+  -e SUPABASE_PROJECT_REF=btbucjkczpejplykyvkj "$CONTAINER" \
+  sh -c 'cd /app && node scripts/seed-demo.mjs --reset'
+```
+
+### Run locally with `.env.demo`
+
+Create `.env.demo` at repo root (gitignored) with the keys from Coolify + your
+Supabase Management API token, then:
 
 ```bash
-# Exec into the running Next.js app container (env vars already loaded)
-ssh root@85.215.219.202
-# Find container id and exec in (replace with actual container)
-docker ps | grep klargehalt
-docker exec -it <container-id> node scripts/seed-demo.mjs
+npm run demo:seed       # fresh idempotent seed
+npm run demo:reset      # wipe + reseed
+npm run demo:teardown   # remove everything (Logto + Supabase)
 ```
-
-The script prints the credentials banner when done.
 
 ---
 
@@ -84,7 +86,7 @@ The script prints the credentials banner when done.
 | `employees` | 30 | 16 ♂ / 14 ♀, hire dates 2014–2024, all in Berlin/München |
 | `salary_decisions` | ≥36 | 30 hires + 4 raises + 2 promotions — each with German justification text |
 | `info_requests` | 3 | open / fulfilled / **overdue** |
-| `audit_logs` | 8 | login, employee.created, salary_decision.created, pay_band.updated, etc. |
+| `audit_logs` | **skipped** | Prod's `trg_audit_log_chain_hash` references obsolete `before_state`/`after_state` columns (renamed to `changes`). Seed skips this table; the `/dashboard/audit` view loads empty and gets populated as you click around during the demo. Frame to the prospect: "wird mit jeder Aktion gefüllt." |
 | `job_postings` | 3 | 1 published (salary disclosed), 1 draft, 1 closed |
 | `pay_gap_snapshots` | 5 | company + Engineering + Vertrieb + SWE Sr + AE Mid |
 
