@@ -4,13 +4,19 @@ import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionTier } from '@/lib/subscription';
 import { sendPaymentFailedEmail, sendSubscriptionConfirmedEmail } from '@/lib/email';
+import { logSubscriptionChange } from '@/lib/subscription-audit';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-function mapPriceToTier(priceId: string): SubscriptionTier {
-  const mapping: Record<string, SubscriptionTier> = {};
+class UnmappedPriceError extends Error {
+  constructor(public priceId: string) {
+    super(`Unmapped Stripe price ID: ${priceId}. Configure the matching STRIPE_PRICE_* env var.`);
+    this.name = 'UnmappedPriceError';
+  }
+}
 
+function mapPriceToTier(priceId: string): SubscriptionTier {
   const envPairs: [string, SubscriptionTier][] = [
     ['STRIPE_PRICE_BASIS_MONTHLY', 'basis'],
     ['STRIPE_PRICE_BASIS_YEARLY', 'basis'],
@@ -21,16 +27,57 @@ function mapPriceToTier(priceId: string): SubscriptionTier {
   ];
 
   for (const [envKey, tier] of envPairs) {
-    const val = process.env[envKey];
-    if (val) mapping[val] = tier;
+    if (process.env[envKey] === priceId) return tier;
   }
 
-  const tier = mapping[priceId];
-  if (!tier) {
-    console.error(`Stripe webhook: UNMAPPED price ID "${priceId}" — defaulting to 'basis'. Check STRIPE_PRICE_* env vars.`);
-    return 'basis';
+  throw new UnmappedPriceError(priceId);
+}
+
+type CompanyState = {
+  id: string;
+  name: string | null;
+  organization_id: string | null;
+  subscription_tier: SubscriptionTier;
+  subscription_status: string;
+};
+
+async function fetchCompanyByCustomer(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  customerId: string,
+): Promise<CompanyState | null> {
+  const { data } = await supabase
+    .from('companies')
+    .select('id, name, organization_id, subscription_tier, subscription_status')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle();
+  return (data as CompanyState | null) ?? null;
+}
+
+async function notifyAdmins(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  organizationId: string,
+  send: (email: string, fullName: string) => Promise<void>,
+): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: admins } = await (supabase as any)
+    .from('organization_members')
+    .select('user_id, profiles!inner(email, full_name)')
+    .eq('organization_id', organizationId)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin']);
+
+  for (const admin of admins ?? []) {
+    const profileRaw = admin.profiles as unknown;
+    const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as
+      | { email: string; full_name: string }
+      | null;
+    if (!profile?.email) continue;
+    try {
+      await send(profile.email, profile.full_name);
+    } catch (emailError) {
+      console.error('Stripe webhook: admin notification failed', emailError);
+    }
   }
-  return tier;
 }
 
 export async function POST(request: NextRequest) {
@@ -80,7 +127,9 @@ export async function POST(request: NextRequest) {
         const subscriptionId = session.subscription as string;
         const tier = (session.metadata?.tier as SubscriptionTier) ?? 'basis';
 
-        const { data: updated1, error: err1 } = await supabase
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
+
+        const { data: updated, error: errUpdate } = await supabase
           .from('companies')
           .update({
             stripe_subscription_id: subscriptionId,
@@ -89,45 +138,30 @@ export async function POST(request: NextRequest) {
             trial_ends_at: null,
           })
           .eq('stripe_customer_id', customerId)
-          .select('id');
+          .select('id, name, organization_id');
 
-        if (err1) throw err1;
-        if (!updated1 || updated1.length === 0) {
+        if (errUpdate) throw errUpdate;
+        if (!updated || updated.length === 0) {
           console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+          break;
         }
 
-        // Send subscription confirmed email to all admins
-        if (updated1 && updated1.length > 0) {
-          const companyId = updated1[0].id as string;
-          const { data: company } = await supabase
-            .from('companies')
-            .select('name, organization_id')
-            .eq('id', companyId)
-            .single();
-          const companyName = (company?.name as string) || 'Ihr Unternehmen';
-          const organizationId = company?.organization_id as string | undefined;
+        const orgId = (updated[0].organization_id as string | null) ?? previous?.organization_id ?? null;
+        const companyName = (updated[0].name as string) || 'Ihr Unternehmen';
 
-          if (organizationId) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: admins } = await (supabase as any)
-              .from('organization_members')
-              .select('user_id, profiles!inner(email, full_name)')
-              .eq('organization_id', organizationId)
-              .eq('status', 'active')
-              .in('role', ['owner', 'admin']);
+        if (orgId) {
+          await logSubscriptionChange(supabase, {
+            organizationId: orgId,
+            oldTier: previous?.subscription_tier ?? null,
+            newTier: tier,
+            oldStatus: previous?.subscription_status ?? null,
+            newStatus: 'active',
+            stripeEventId: event.id,
+          });
 
-            for (const admin of admins ?? []) {
-              const profileRaw = admin.profiles as unknown;
-              const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
-              if (profile?.email) {
-                try {
-                  await sendSubscriptionConfirmedEmail(profile.email, profile.full_name, companyName, tier);
-                } catch (emailError) {
-                  console.error('Stripe webhook: Failed to send confirmation email', emailError);
-                }
-              }
-            }
-          }
+          await notifyAdmins(supabase, orgId, (email, fullName) =>
+            sendSubscriptionConfirmedEmail(email, fullName, companyName, tier),
+          );
         }
 
         console.log(`Stripe webhook: checkout.session.completed for ${customerId}, tier=${tier}`);
@@ -139,7 +173,8 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string;
         const item = subscription.items.data[0];
         const priceId = item?.price?.id;
-        const tier = priceId ? mapPriceToTier(priceId) : 'basis';
+        if (!priceId) throw new Error('subscription.updated event missing price ID');
+        const tier = mapPriceToTier(priceId);
         const status = subscription.status === 'active' ? 'active'
           : subscription.status === 'past_due' ? 'past_due'
           : subscription.status === 'trialing' ? 'trialing'
@@ -147,9 +182,9 @@ export async function POST(request: NextRequest) {
           : 'incomplete';
 
         const rawPeriodEnd = item?.current_period_end ?? null;
-        const periodEnd = rawPeriodEnd
-          ? new Date(rawPeriodEnd * 1000).toISOString()
-          : null;
+        const periodEnd = rawPeriodEnd ? new Date(rawPeriodEnd * 1000).toISOString() : null;
+
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
 
         const updatePayload = {
           subscription_tier: tier,
@@ -157,43 +192,58 @@ export async function POST(request: NextRequest) {
           current_period_end: periodEnd,
         };
 
-        let updated2: Array<{ id: string }> | null = null;
-        let err2: unknown = null;
+        // Stale-write protection: if periodEnd is set, only overwrite when the
+        // existing value is null or older than the incoming one.
+        let updated: Array<{ id: string }> | null = null;
+        let errUpdate: unknown = null;
 
         if (periodEnd === null) {
-          const result = await supabase
+          const r = await supabase
             .from('companies')
             .update(updatePayload)
             .eq('stripe_customer_id', customerId)
             .select('id');
-          updated2 = result.data;
-          err2 = result.error;
+          updated = r.data;
+          errUpdate = r.error;
         } else {
-          const nullResult = await supabase
+          const nullR = await supabase
             .from('companies')
             .update(updatePayload)
             .eq('stripe_customer_id', customerId)
             .is('current_period_end', null)
             .select('id');
-          if (nullResult.error) {
-            err2 = nullResult.error;
-          } else if (nullResult.data && nullResult.data.length > 0) {
-            updated2 = nullResult.data;
+          if (nullR.error) {
+            errUpdate = nullR.error;
+          } else if (nullR.data && nullR.data.length > 0) {
+            updated = nullR.data;
           } else {
-            const lteResult = await supabase
+            const lteR = await supabase
               .from('companies')
               .update(updatePayload)
               .eq('stripe_customer_id', customerId)
               .lte('current_period_end', periodEnd)
               .select('id');
-            updated2 = lteResult.data;
-            err2 = lteResult.error;
+            updated = lteR.data;
+            errUpdate = lteR.error;
           }
         }
 
-        if (err2) throw err2;
-        if (!updated2 || updated2.length === 0) {
-          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+        if (errUpdate) throw errUpdate;
+        if (!updated || updated.length === 0) {
+          console.warn(`Stripe webhook: stale or missing row for ${customerId} on ${event.type}`);
+          break;
+        }
+
+        const orgId = previous?.organization_id ?? null;
+        if (orgId) {
+          await logSubscriptionChange(supabase, {
+            organizationId: orgId,
+            oldTier: previous?.subscription_tier ?? null,
+            newTier: tier,
+            oldStatus: previous?.subscription_status ?? null,
+            newStatus: status,
+            stripeEventId: event.id,
+          });
         }
 
         console.log(`Stripe webhook: subscription.updated for ${customerId}, tier=${tier}, status=${status}`);
@@ -204,7 +254,9 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object;
         const customerId = subscription.customer as string;
 
-        const { data: updated3, error: err3 } = await supabase
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
+
+        const { data: updated, error: errUpdate } = await supabase
           .from('companies')
           .update({
             subscription_tier: 'basis',
@@ -215,9 +267,21 @@ export async function POST(request: NextRequest) {
           .eq('stripe_customer_id', customerId)
           .select('id');
 
-        if (err3) throw err3;
-        if (!updated3 || updated3.length === 0) {
+        if (errUpdate) throw errUpdate;
+        if (!updated || updated.length === 0) {
           console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+          break;
+        }
+
+        if (previous?.organization_id) {
+          await logSubscriptionChange(supabase, {
+            organizationId: previous.organization_id,
+            oldTier: previous.subscription_tier,
+            newTier: 'basis',
+            oldStatus: previous.subscription_status,
+            newStatus: 'canceled',
+            stripeEventId: event.id,
+          }, 'canceled');
         }
 
         console.log(`Stripe webhook: subscription.deleted for ${customerId}`);
@@ -228,42 +292,37 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object;
         const customerId = invoice.customer as string;
 
-        const { data: updated4, error: err4 } = await supabase
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
+
+        const { data: updated, error: errUpdate } = await supabase
           .from('companies')
           .update({ subscription_status: 'past_due' })
           .eq('stripe_customer_id', customerId)
           .select('id, name, organization_id');
 
-        if (err4) throw err4;
-        if (!updated4 || updated4.length === 0) {
+        if (errUpdate) throw errUpdate;
+        if (!updated || updated.length === 0) {
           console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+          break;
         }
 
-        // Send payment failed email to all admins of the company
-        if (updated4 && updated4.length > 0) {
-          const organizationId = updated4[0].organization_id as string | undefined;
-          const companyName = (updated4[0].name as string) || 'Ihr Unternehmen';
-          if (organizationId) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: admins } = await (supabase as any)
-              .from('organization_members')
-              .select('user_id, profiles!inner(email, full_name)')
-              .eq('organization_id', organizationId)
-              .eq('status', 'active')
-              .in('role', ['owner', 'admin']);
+        const orgId = (updated[0].organization_id as string | null) ?? null;
+        const companyName = (updated[0].name as string) || 'Ihr Unternehmen';
 
-            for (const admin of admins ?? []) {
-              const profileRaw = admin.profiles as unknown;
-              const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as { email: string; full_name: string } | null;
-              if (profile?.email) {
-                try {
-                  await sendPaymentFailedEmail(profile.email, profile.full_name, companyName);
-                } catch (emailError) {
-                  console.error('Stripe webhook: Failed to send payment failed email', emailError);
-                }
-              }
-            }
-          }
+        if (orgId) {
+          await logSubscriptionChange(supabase, {
+            organizationId: orgId,
+            oldTier: previous?.subscription_tier ?? null,
+            newTier: previous?.subscription_tier ?? null,
+            oldStatus: previous?.subscription_status ?? null,
+            newStatus: 'past_due',
+            stripeEventId: event.id,
+            stripeInvoiceId: invoice.id ?? null,
+          }, 'payment_failed');
+
+          await notifyAdmins(supabase, orgId, (email, fullName) =>
+            sendPaymentFailedEmail(email, fullName, companyName),
+          );
         }
 
         console.log(`Stripe webhook: invoice.payment_failed for ${customerId}`);
@@ -273,15 +332,26 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`Stripe webhook: unhandled event ${event.type}`);
     }
-    // Mark as processed after successful execution (if processing fails, Stripe will retry)
+
+    // Mark as processed after successful execution. If processing failed
+    // (threw above), Stripe will retry — and we want it to.
     await supabase
       .from('processed_stripe_events')
       .insert({ event_id: event.id });
   } catch (error) {
+    const isUnmappedPrice = error instanceof UnmappedPriceError;
     console.error(`Stripe webhook: error processing ${event.type}`, error);
     Sentry.captureException(error, {
-      tags: { route: 'webhook_stripe' },
-      extra: { event_type: event.type, event_id: event.id },
+      level: isUnmappedPrice ? 'error' : 'error',
+      tags: {
+        route: 'webhook_stripe',
+        event_type: event.type,
+        ...(isUnmappedPrice ? { failure: 'unmapped_price' } : {}),
+      },
+      extra: {
+        event_id: event.id,
+        ...(isUnmappedPrice ? { price_id: (error as UnmappedPriceError).priceId } : {}),
+      },
     });
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
   }
