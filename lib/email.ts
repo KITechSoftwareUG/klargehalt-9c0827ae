@@ -248,6 +248,48 @@ export async function sendPaymentFailedEmail(
   });
 }
 
+export async function sendPaymentActionRequiredEmail(
+  to: string,
+  name: string,
+  companyName: string,
+  hostedInvoiceUrl: string
+): Promise<void> {
+  const displayName = name || 'dort';
+  await getResend().emails.send({
+    from: FROM_SUPPORT,
+    to,
+    subject: 'Zahlung bestätigen — 3D-Secure-Authentifizierung erforderlich',
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #d97706; margin-top: 0;">Zahlung bestätigen erforderlich</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Hallo ${displayName}, Ihre Bank verlangt eine zusätzliche Bestätigung
+            (3D Secure) für die letzte Zahlung von <strong>${companyName}</strong>.
+          </p>
+          <p style="color: #475569; line-height: 1.6;">
+            Ohne Bestätigung wird die Zahlung in den nächsten Tagen fehlschlagen
+            und Ihr Zugang eingeschränkt.
+          </p>
+          <a href="${hostedInvoiceUrl}"
+             style="display: inline-block; background: #d97706; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Zahlung jetzt bestätigen
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen zur Abrechnung?
+            <a href="mailto:billing@klargehalt.de" style="color: #2563eb;">billing@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Compliance Workflow Notifications
 // ---------------------------------------------------------------------------

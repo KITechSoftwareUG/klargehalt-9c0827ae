@@ -15,7 +15,7 @@ import {
   PLANS,
 } from '@/lib/subscription';
 
-type PaymentIssue = 'refunded' | 'disputed' | null;
+type PaymentIssue = 'refunded' | 'disputed' | 'action_required' | null;
 
 interface SubscriptionState {
   tier: SubscriptionTier;
@@ -97,7 +97,9 @@ export const useSubscription = (): UseSubscriptionReturn => {
         setCancelAt(data.cancel_at ? new Date(data.cancel_at) : null);
         setCanceledAt(data.canceled_at ? new Date(data.canceled_at) : null);
         setPaymentIssue(
-          data.payment_issue === 'refunded' || data.payment_issue === 'disputed'
+          data.payment_issue === 'refunded' ||
+            data.payment_issue === 'disputed' ||
+            data.payment_issue === 'action_required'
             ? data.payment_issue
             : null
         );

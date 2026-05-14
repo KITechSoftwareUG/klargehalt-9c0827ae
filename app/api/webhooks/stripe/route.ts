@@ -3,7 +3,11 @@ import * as Sentry from '@sentry/nextjs';
 import { getStripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { SubscriptionTier } from '@/lib/subscription';
-import { sendPaymentFailedEmail, sendSubscriptionConfirmedEmail } from '@/lib/email';
+import {
+  sendPaymentActionRequiredEmail,
+  sendPaymentFailedEmail,
+  sendSubscriptionConfirmedEmail,
+} from '@/lib/email';
 import { logSubscriptionChange } from '@/lib/subscription-audit';
 
 const supabaseAdmin = () =>
@@ -397,6 +401,36 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'invoice.payment_action_required': {
+        // SCA / 3D Secure challenge — customer must authenticate before the
+        // payment can complete. Notify admins so they can act before Stripe
+        // gives up retrying and the subscription lands in past_due.
+        const invoice = event.data.object;
+        const customerId = invoice.customer as string;
+        const hostedUrl = (invoice.hosted_invoice_url as string | null) ?? null;
+
+        const previous = await fetchCompanyByCustomer(supabase, customerId);
+        if (!previous) {
+          console.warn(`Stripe webhook: no company found for customer ${customerId} on event ${event.type}`);
+          break;
+        }
+
+        const { error: errUpdate } = await supabase
+          .from('companies')
+          .update({ payment_issue: 'action_required' })
+          .eq('stripe_customer_id', customerId);
+        if (errUpdate) throw errUpdate;
+
+        if (previous.organization_id && hostedUrl) {
+          await notifyAdmins(supabase, previous.organization_id, (email, fullName) =>
+            sendPaymentActionRequiredEmail(email, fullName, previous.name ?? 'Ihr Unternehmen', hostedUrl),
+          );
+        }
+
+        console.log(`Stripe webhook: invoice.payment_action_required for ${customerId}`);
+        break;
+      }
+
       case 'charge.refunded': {
         // Refund — flag the company for ops review but don't auto-cancel the sub.
         // Stripe also fires invoice.payment_failed if the refund triggers a balance issue.
@@ -465,6 +499,87 @@ export async function POST(request: NextRequest) {
         });
 
         console.log(`Stripe webhook: charge.dispute.created for ${customerId}, reason=${dispute.reason}`);
+        break;
+      }
+
+      case 'charge.dispute.closed': {
+        // Dispute resolution. If we won (or it was a warning that closed),
+        // clear the disputed flag so the customer's payment_issue state
+        // doesn't stay stuck forever. If we lost, keep the flag and alert.
+        const dispute = event.data.object;
+        const chargeId = dispute.charge as string;
+        const status = dispute.status as string;
+
+        let customerId: string | null = null;
+        try {
+          const charge = await stripe.charges.retrieve(chargeId);
+          customerId = (charge.customer as string | null) ?? null;
+        } catch (lookupErr) {
+          console.error(`Stripe webhook: dispute charge lookup failed for ${chargeId}`, lookupErr);
+        }
+
+        if (!customerId) break;
+
+        const won = status === 'won' || status === 'warning_closed';
+        if (won) {
+          const { data: previous } = await supabase
+            .from('companies')
+            .select('payment_issue')
+            .eq('stripe_customer_id', customerId)
+            .maybeSingle();
+          if ((previous as { payment_issue: string | null } | null)?.payment_issue === 'disputed') {
+            const { error: errUpdate } = await supabase
+              .from('companies')
+              .update({ payment_issue: null })
+              .eq('stripe_customer_id', customerId);
+            if (errUpdate) throw errUpdate;
+          }
+        }
+
+        Sentry.captureMessage(`Stripe dispute closed (status=${status})`, {
+          level: won ? 'info' : 'error',
+          tags: { route: 'webhook_stripe', event: 'charge.dispute.closed', outcome: status },
+          extra: {
+            customer_id: customerId,
+            charge_id: chargeId,
+            dispute_id: dispute.id,
+            event_id: event.id,
+          },
+        });
+
+        console.log(`Stripe webhook: charge.dispute.closed for ${customerId}, status=${status}`);
+        break;
+      }
+
+      case 'customer.updated': {
+        // Sync minimal customer-level fields. We don't trust Stripe for our
+        // tenant identity (Logto owns email + auth), so only mirror display
+        // name when the company row exists. Tax-ID and address remain in
+        // Stripe's domain — they appear on invoices Stripe issues directly.
+        const customer = event.data.object;
+        const customerId = customer.id;
+        const stripeName = (customer.name as string | null) ?? null;
+        if (!stripeName) {
+          console.log(`Stripe webhook: customer.updated (no name change) for ${customerId}`);
+          break;
+        }
+
+        const { data: previous } = await supabase
+          .from('companies')
+          .select('name')
+          .eq('stripe_customer_id', customerId)
+          .maybeSingle();
+
+        if (previous && (previous as { name: string | null }).name !== stripeName) {
+          const { error: errUpdate } = await supabase
+            .from('companies')
+            .update({ name: stripeName })
+            .eq('stripe_customer_id', customerId);
+          if (errUpdate) throw errUpdate;
+          console.log(`Stripe webhook: customer.updated synced name for ${customerId}`);
+        } else {
+          console.log(`Stripe webhook: customer.updated (no-op) for ${customerId}`);
+        }
         break;
       }
 
