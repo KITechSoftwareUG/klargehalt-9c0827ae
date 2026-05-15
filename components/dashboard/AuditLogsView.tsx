@@ -101,10 +101,14 @@ const actionColors: Record<string, string> = {
   request_info: 'bg-primary/10 text-primary',
 };
 
+// Radix Select forbids empty-string item values, so 'all' is the sentinel for
+// "no filter" — translated back to an absent key before being passed to the hook.
+const ALL = 'all';
+
 const AuditLogsView = () => {
   const [filters, setFilters] = useState({
-    action: '',
-    entity_type: '',
+    action: ALL,
+    entity_type: ALL,
     user_id: '',
     dateFrom: '',
     dateTo: '',
@@ -117,7 +121,9 @@ const AuditLogsView = () => {
   const [chainStatus, setChainStatus] = useState<'idle' | 'checking' | 'pass' | 'fail'>('idle');
 
   const { auditLogs, loading, totalCount, verifyChain } = useAuditLogs(
-    Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== ''))
+    Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v !== '' && v !== ALL)
+    )
   );
 
   const {
@@ -252,7 +258,7 @@ const AuditLogsView = () => {
                       <SelectValue placeholder="Alle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle</SelectItem>
+                      <SelectItem value={ALL}>Alle</SelectItem>
                       <SelectItem value="create">Erstellt</SelectItem>
                       <SelectItem value="update">Aktualisiert</SelectItem>
                       <SelectItem value="delete">Gelöscht</SelectItem>
@@ -271,7 +277,7 @@ const AuditLogsView = () => {
                       <SelectValue placeholder="Alle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle</SelectItem>
+                      <SelectItem value={ALL}>Alle</SelectItem>
                       <SelectItem value="job_profile">Job-Profil</SelectItem>
                       <SelectItem value="pay_band">Gehaltsband</SelectItem>
                       <SelectItem value="employee">Mitarbeiter</SelectItem>
@@ -308,7 +314,7 @@ const AuditLogsView = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setFilters({ action: '', entity_type: '', user_id: '', dateFrom: '', dateTo: '' })}
+                  onClick={() => setFilters({ action: ALL, entity_type: ALL, user_id: '', dateFrom: '', dateTo: '' })}
                 >
                   Filter zurücksetzen
                 </Button>
