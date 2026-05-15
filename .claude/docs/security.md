@@ -100,7 +100,7 @@ Vor jedem Query / Mutation:
 |---|---|
 | Art. 5 — Datenminimierung | Nur Felder erheben, die für Compliance nötig sind. Geburtsdatum nur wenn für Pay-Gap nötig. |
 | Art. 9 — besondere Kategorien (Geschlecht) | Strict RLS, keine Übertragung an Sentry/Logs, kein Export ohne expliziten User-Consent |
-| Art. 15 — Auskunftsrecht | `/dashboard/my-salary` zeigt Mitarbeitenden eigene Daten (Read-Only via `employees.user_id` Match) |
+| Art. 15 — Auskunftsrecht | `/mein-gehalt` zeigt Mitarbeitenden eigene Daten (Read-Only via `employees.user_id` Match) |
 | Art. 17 — Recht auf Löschung | **Konflikt mit Audit-Trail:** salary_decisions bleiben (Compliance), aber `employees.name/email/external_id` werden pseudonymisiert. Implementierung: `POST /api/employees/[id]/anonymize` (post-MVP) |
 | Art. 25 — Privacy by Design | Default-deny RLS, keine PII in URLs, keine PII in Error-Messages |
 | Art. 28 — AVV / DPA | Mit Supabase, Logto, Resend, Stripe, Coolify, Sentry, Cloudflare abgeschlossen. Bei neuem Subprozessor: DPA prüfen + Datenschutzerklärung updaten |

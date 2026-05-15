@@ -13,7 +13,7 @@
 | `lawyer` | Read salary_decisions/bands/reports; write `lawyer_reviews`; time-limited (default 90d) | Service-role only |
 | `auditor` | Reserviert für Enterprise — noch nicht in UI | post-MVP |
 
-Super-admin: hardcoded Logto user ID check in `/api/admin/users` + `/dashboard/admin` (not a DB role).
+Super-admin: hardcoded Logto user ID check in `/api/admin/users` + `/admin` (not a DB role).
 
 ```tsx
 <RoleGuard roles={['admin', 'hr_manager']}><Component /></RoleGuard>
@@ -43,7 +43,7 @@ Real enforcement is always Supabase RLS — frontend gating is UX only.
 `owner`-Sitz zählt mit zu `max_admin_seats`. Trigger `check_org_member_seat_limit()` enforced auf DB-Ebene mit `pg_advisory_xact_lock`.
 
 **Invite-Flow (Team-Mitglieder, NICHT employee-Records):**
-1. Owner/Admin öffnet `/dashboard/billing` → Sektion "Team-Mitglieder"
+1. Owner/Admin öffnet `/abrechnung` → Sektion "Team-Mitglieder"
 2. Klickt "Einladen" → Email + Rolle (admin / hr_manager) eingeben
 3. `POST /api/members/invite` → `inviteMemberToOrg()` in `lib/logto-management.ts`:
    - Findet oder erstellt Logto-User mit Email
