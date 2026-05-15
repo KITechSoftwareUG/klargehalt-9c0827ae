@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useJobProfiles, JobProfile, JobProfileFormData, EvaluationMethod } from '@/hooks/useJobProfiles';
 import { useAuth } from '@/hooks/useAuth';
 import { useDepartments } from '@/hooks/useDepartments';
+import { useRoleAccess } from '@/components/RoleGuard';
+import { InlineCreateDepartmentSelect } from '@/components/ui/InlineCreateDepartmentSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -86,6 +88,7 @@ const JobProfilesView = () => {
   const { jobProfiles, loading, createJobProfile, updateJobProfile, deleteJobProfile } = useJobProfiles();
   const { user } = useAuth();
   const { departments } = useDepartments();
+  const canCreateEntities = useRoleAccess('owner', 'admin', 'hr_manager');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -189,20 +192,11 @@ const JobProfilesView = () => {
       </div>
       <div className="grid gap-2">
         <Label>Abteilung</Label>
-        <Select
-          value={formData.department_id || 'none'}
-          onValueChange={(value) => setFormData({ ...formData, department_id: value === 'none' ? null : value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Auswählen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— Keine —</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <InlineCreateDepartmentSelect
+          value={formData.department_id}
+          onChange={(id) => setFormData({ ...formData, department_id: id })}
+          canCreate={canCreateEntities}
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="description">Beschreibung</Label>

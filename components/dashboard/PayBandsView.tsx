@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useJobProfiles, usePayBands, PayBand, PayBandFormData } from '@/hooks/useJobProfiles';
 import { useJobLevels } from '@/hooks/useJobLevels';
+import { useRoleAccess } from '@/components/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { InlineCreateJobProfileSelect } from '@/components/ui/InlineCreateJobProfileSelect';
+import { InlineCreateJobLevelSelect } from '@/components/ui/InlineCreateJobLevelSelect';
 import {
   Dialog,
   DialogContent,
@@ -14,13 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -55,6 +51,7 @@ const PayBandsView = () => {
   const { jobProfiles, loading: profilesLoading } = useJobProfiles();
   const { jobLevels, loading: levelsLoading } = useJobLevels();
   const { payBands, loading: bandsLoading, createPayBand, updatePayBand, deletePayBand } = usePayBands();
+  const canCreateEntities = useRoleAccess('owner', 'admin', 'hr_manager');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -133,45 +130,22 @@ const PayBandsView = () => {
     <div className="grid gap-4 py-4">
       <div className="grid gap-2">
         <Label>Job-Profil *</Label>
-        <Select
-          value={formData.job_profile_id}
-          onValueChange={(value) => setFormData({ ...formData, job_profile_id: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Wählen Sie ein Job-Profil" />
-          </SelectTrigger>
-          <SelectContent>
-            {jobProfiles.map((profile) => (
-              <SelectItem key={profile.id} value={profile.id}>
-                {profile.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <InlineCreateJobProfileSelect
+          value={formData.job_profile_id || null}
+          onChange={(id) => setFormData({ ...formData, job_profile_id: id || '' })}
+          canCreate={canCreateEntities}
+          placeholder="Wählen Sie ein Job-Profil"
+        />
       </div>
 
       <div className="grid gap-2">
         <Label>Karrierestufe *</Label>
-        <Select
-          value={formData.job_level_id}
-          onValueChange={(value) => setFormData({ ...formData, job_level_id: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Wählen Sie eine Stufe" />
-          </SelectTrigger>
-          <SelectContent>
-            {jobLevels.map((level) => (
-              <SelectItem key={level.id} value={level.id}>
-                {level.name} (Rang {level.rank})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {jobLevels.length === 0 && (
-          <p className="text-xs text-amber-600">
-            Erstellen Sie zuerst Karrierestufen unter &quot;Karrierestufen&quot;.
-          </p>
-        )}
+        <InlineCreateJobLevelSelect
+          value={formData.job_level_id || null}
+          onChange={(id) => setFormData({ ...formData, job_level_id: id || '' })}
+          canCreate={canCreateEntities}
+          placeholder="Wählen Sie eine Stufe"
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
