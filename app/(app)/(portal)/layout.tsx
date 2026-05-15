@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSetupReadiness } from '@/hooks/useSetupReadiness';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
     Shield, Users, Settings, LogOut, CreditCard,
     Building2, Scale,
     Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
-    Sparkles, Handshake, Bot, Lock,
+    Sparkles, Handshake, Bot, Lock, Rocket,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
@@ -20,6 +21,7 @@ import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay';
 
 type AppView =
     | 'dashboard'
+    | 'einrichtung'
     | 'mitarbeiter'
     | 'gehaltsbaender'
     | 'jobprofile'
@@ -42,6 +44,7 @@ const ROLE_LABELS: Record<string, { label: string; dotColor: string }> = {
 
 const VIEW_TO_PATH: Record<AppView, string> = {
     dashboard:             '/dashboard',
+    einrichtung:           '/einrichtung',
     mitarbeiter:           '/mitarbeiter',
     gehaltsbaender:        '/gehaltsbaender',
     jobprofile:            '/jobprofile',
@@ -67,6 +70,8 @@ type NavItem = {
 };
 
 const MAIN_NAV: NavItem[] = [
+    // Einrichtung (geführter Setup-Hub — erste Anlaufstelle)
+    { label: 'Einrichtung',    icon: Rocket,     view: 'einrichtung',    group: 'Einrichtung' },
     // Unternehmensstruktur
     { label: 'Abteilungen',    icon: Building,   view: 'abteilungen',    group: 'Unternehmensstruktur' },
     { label: 'Karrierestufen', icon: Layers,     view: 'karrierestufen', group: 'Unternehmensstruktur' },
@@ -105,6 +110,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const pathname = usePathname();
     const { user, role, selfReportedRole, profile, loading, isLoaded, orgId, signOut, isSuperAdmin } = useAuth();
     const { isExpired, isTrialing } = useSubscription();
+    const setupReadiness = useSetupReadiness();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     useEffect(() => {
@@ -197,13 +203,23 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                             );
                                         }
 
+                                        const setupBadge =
+                                            item.view === 'einrichtung' && !setupReadiness.isLoading
+                                                ? setupReadiness.isAnalysisReady
+                                                    ? { text: '✓', tone: 'emerald' as const }
+                                                    : setupReadiness.overallPercentage > 0
+                                                        ? { text: `${setupReadiness.overallPercentage}%`, tone: 'amber' as const }
+                                                        : { text: 'Start', tone: 'amber' as const }
+                                                : null;
+                                        const isActive = item.view && activeView === item.view;
+
                                         return (
                                             <Link
                                                 key={item.label}
                                                 href={item.view ? VIEW_TO_PATH[item.view] : '#'}
                                                 onClick={() => setMobileNavOpen(false)}
                                                 className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                                                    item.view && activeView === item.view
+                                                    isActive
                                                         ? 'bg-primary text-white shadow-lg shadow-primary/25'
                                                         : isPremium
                                                             ? 'text-amber-300/70 hover:bg-amber-400/10 hover:text-amber-200'
@@ -213,7 +229,20 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                                 }`}
                                             >
                                                 <item.icon className="h-4 w-4 shrink-0" />
-                                                <span className="truncate">{item.label}</span>
+                                                <span className="truncate flex-1">{item.label}</span>
+                                                {setupBadge && (
+                                                    <span
+                                                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums ${
+                                                            isActive
+                                                                ? 'bg-white/20 text-white'
+                                                                : setupBadge.tone === 'emerald'
+                                                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                                                    : 'bg-amber-500/20 text-amber-300'
+                                                        }`}
+                                                    >
+                                                        {setupBadge.text}
+                                                    </span>
+                                                )}
                                             </Link>
                                         );
                                     })}
