@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, AlertCircle, Scale, X, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, AlertCircle, Scale, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SalaryFactor, SalaryFactorType, SalaryJustification } from '@/lib/types/salary-justification';
 import { SalaryDecisionDialog } from '@/components/dashboard/SalaryDecisionDialog';
@@ -172,9 +172,6 @@ const EmployeesView = () => {
   const [decisionEmployee, setDecisionEmployee] = useState<Employee | null>(null);
 
 
-  // CSV import state
-  const [csvImporting, setCsvImporting] = useState(false);
-
   const resetForm = () => {
     setFormData({ ...defaultFormData });
     setJustificationFactors([]);
@@ -186,87 +183,6 @@ const EmployeesView = () => {
     // sichtbar, signalisiert aber explizit "coming soon" statt den nicht-finalen
     // Flow auszulösen.
     toast.info('Mitarbeiter-Portal-Einladung ist demnächst verfügbar.');
-  };
-
-  const handleCsvImport = async (file: File) => {
-    setCsvImporting(true);
-    try {
-      const text = await file.text();
-      const lines = text.split('\n').filter((l) => l.trim());
-      if (lines.length < 2) {
-        toast.error('CSV-Datei enthält keine Daten.');
-        return;
-      }
-
-      const rowsToImport = lines.length - 1;
-      const cap = subscription.limits.maxEmployees;
-      if (cap !== -1 && employeeCount + rowsToImport > cap) {
-        setCsvImporting(false);
-        setLimitModalOpen(true);
-        return;
-      }
-
-      const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
-      const rows = lines.slice(1);
-
-      const genderMap: Record<string, Employee['gender']> = {
-        male: 'male', männlich: 'male', m: 'male',
-        female: 'female', weiblich: 'female', w: 'female', f: 'female',
-        diverse: 'diverse', divers: 'diverse', d: 'diverse',
-      };
-
-      const employmentMap: Record<string, Employee['employment_type']> = {
-        full_time: 'full_time', vollzeit: 'full_time', fulltime: 'full_time',
-        part_time: 'part_time', teilzeit: 'part_time', parttime: 'part_time',
-        contract: 'contract', vertrag: 'contract',
-      };
-
-      let imported = 0;
-      let failed = 0;
-
-      for (const row of rows) {
-        const cols = row.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
-        const get = (name: string) => cols[headers.indexOf(name)] ?? '';
-
-        const firstName = get('first_name') || get('vorname');
-        const lastName = get('last_name') || get('nachname');
-        const salary = parseFloat(get('base_salary') || get('grundgehalt') || get('salary') || '0');
-
-        if (!firstName || !lastName || salary <= 0) { failed++; continue; }
-
-        const genderRaw = (get('gender') || get('geschlecht') || 'not_specified').toLowerCase();
-        const employmentRaw = (get('employment_type') || get('beschaeftigungsart') || 'full_time').toLowerCase();
-
-        const employeeData: EmployeeFormData = {
-          first_name: firstName,
-          last_name: lastName,
-          email: get('email') || undefined,
-          employee_number: get('employee_number') || get('personalnummer') || undefined,
-          gender: genderMap[genderRaw] ?? 'not_specified',
-          hire_date: get('hire_date') || get('eintrittsdatum') || new Date().toISOString().split('T')[0],
-          employment_type: employmentMap[employmentRaw] ?? 'full_time',
-          base_salary: salary,
-          variable_pay: parseFloat(get('variable_pay') || get('variable') || '0') || 0,
-          weekly_hours: parseFloat(get('weekly_hours') || get('wochenstunden') || '40') || 40,
-          currency: get('currency') || 'EUR',
-          location: get('location') || get('standort') || undefined,
-          is_active: true,
-        };
-
-        try {
-          await createEmployee(employeeData);
-          imported++;
-        } catch {
-          failed++;
-        }
-      }
-
-      toast.success(`Import abgeschlossen: ${imported} importiert${failed > 0 ? `, ${failed} Fehler` : ''}.`);
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Import fehlgeschlagen');
-    } finally {
-      setCsvImporting(false);
-    }
   };
 
   const handleCreate = async () => {
@@ -753,26 +669,6 @@ const EmployeesView = () => {
           <p className="text-muted-foreground">Verwalten Sie die Mitarbeiterdaten Ihres Unternehmens</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* CSV Import */}
-          <label htmlFor="csv-import" className="cursor-pointer">
-            <div className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors">
-              {csvImporting
-                ? <><span className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" /> Importiere…</>
-                : <><Upload className="w-4 h-4" /> CSV importieren</>
-              }
-            </div>
-            <input
-              id="csv-import"
-              type="file"
-              accept=".csv"
-              className="hidden"
-              disabled={csvImporting}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) { handleCsvImport(file); e.target.value = ''; }
-              }}
-            />
-          </label>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
