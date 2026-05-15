@@ -1288,86 +1288,77 @@ function Step4Execute({
       }
     }
 
-    // Phase 3: create employees
+    // Phase 3: create employees — ONE atomic bulk request (Risk #3 + #4).
+    // Was a per-row POST loop: O(n²) snapshot trigger + non-atomic (a timeout
+    // mid-loop left a silently half-imported compliance dataset). Now the
+    // server inserts the whole batch in a single statement, all-or-nothing.
     setStatusMessage('Mitarbeiter importieren...');
-    const results: RowResult[] = [];
 
-    for (const row of validRows) {
-      const name = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
-      try {
-        const deptId = row.department_name
-          ? (deptMap.get(row.department_name.trim().toLowerCase()) ?? null)
-          : null;
-        const profileId = row.job_profile_title
-          ? (profileMap.get(row.job_profile_title.trim().toLowerCase()) ?? null)
-          : null;
-        const levelId = row.job_level_name
-          ? (levelMap.get(row.job_level_name.trim().toLowerCase()) ?? null)
-          : null;
+    const buildName = (r: ParsedRow) =>
+      `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim();
 
-        const payload: Record<string, unknown> = {
-          first_name: row.first_name,
-          last_name: row.last_name,
-          gender: row.gender,
-          employment_type: row.employment_type,
-          hire_date: row.hire_date,
-          base_salary: row.base_salary,
-          is_active: true,
-        };
-        if (row.email) payload.email = row.email;
-        if (deptId) payload.department_id = deptId;
-        if (profileId) payload.job_profile_id = profileId;
-        if (levelId) payload.job_level_id = levelId;
-        if (row.employee_number) payload.employee_number = row.employee_number;
-        if (row.birth_year !== undefined) payload.birth_year = row.birth_year;
-        if (row.variable_pay !== undefined) payload.variable_pay = row.variable_pay;
-        if (row.weekly_hours !== undefined) payload.weekly_hours = row.weekly_hours;
-        if (row.location) payload.location = row.location;
+    const employeesPayload = validRows.map((row) => {
+      const deptId = row.department_name
+        ? (deptMap.get(row.department_name.trim().toLowerCase()) ?? null)
+        : null;
+      const profileId = row.job_profile_title
+        ? (profileMap.get(row.job_profile_title.trim().toLowerCase()) ?? null)
+        : null;
+      const levelId = row.job_level_name
+        ? (levelMap.get(row.job_level_name.trim().toLowerCase()) ?? null)
+        : null;
 
-        const res = await fetch('/api/employees', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+      const payload: Record<string, unknown> = {
+        first_name: row.first_name,
+        last_name: row.last_name,
+        gender: row.gender,
+        employment_type: row.employment_type,
+        hire_date: row.hire_date,
+        base_salary: row.base_salary,
+        is_active: true,
+      };
+      if (row.email) payload.email = row.email;
+      if (deptId) payload.department_id = deptId;
+      if (profileId) payload.job_profile_id = profileId;
+      if (levelId) payload.job_level_id = levelId;
+      if (row.employee_number) payload.employee_number = row.employee_number;
+      if (row.birth_year !== undefined) payload.birth_year = row.birth_year;
+      if (row.variable_pay !== undefined) payload.variable_pay = row.variable_pay;
+      if (row.weekly_hours !== undefined) payload.weekly_hours = row.weekly_hours;
+      if (row.location) payload.location = row.location;
+      return payload;
+    });
 
-        if (!res.ok) {
-          const status = res.status;
-          if (status === 402) {
-            // Plan limit hit server-side — abort remaining rows
-            results.push({ index: row.index, name, success: false, error: 'Plan-Limit erreicht' });
-            tick();
-            const remaining = validRows.slice(results.length);
-            for (const r of remaining) {
-              results.push({
-                index: r.index,
-                name: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim(),
-                success: false,
-                error: 'Abgebrochen — Plan-Limit',
-              });
-            }
-            setProgress(total);
-            onComplete(results, newDeptCount, newProfileCount);
-            return;
-          }
-          const body = await res.text();
-          let msg = `Fehler ${status}`;
-          try {
-            const parsed = JSON.parse(body) as { error?: string };
-            if (parsed.error) msg = parsed.error;
-          } catch {
-            // ignore
-          }
-          results.push({ index: row.index, name, success: false, error: msg });
-        } else {
-          results.push({ index: row.index, name, success: true });
+    let importError: string | null = null;
+    try {
+      const res = await fetch('/api/employees/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employees: employeesPayload }),
+      });
+      if (!res.ok) {
+        let msg = `Fehler ${res.status}`;
+        try {
+          const parsed = (await res.json()) as { error?: string };
+          if (parsed.error) msg = parsed.error;
+        } catch {
+          // non-JSON body — keep the status fallback
         }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Netzwerkfehler';
-        results.push({ index: row.index, name, success: false, error: msg });
+        importError = msg;
       }
-      tick();
+    } catch (err: unknown) {
+      importError = err instanceof Error ? err.message : 'Netzwerkfehler';
     }
 
+    // Atomic: every valid row was imported, or none was.
+    const results: RowResult[] = validRows.map((row) => ({
+      index: row.index,
+      name: buildName(row),
+      success: importError === null,
+      ...(importError !== null ? { error: importError } : {}),
+    }));
+
+    setProgress(total);
     onComplete(results, newDeptCount, newProfileCount);
   }, [started, validRows, entityAnalysis, autoCreate, existingDepartments, existingProfiles, existingLevels, onComplete, total]);
 
