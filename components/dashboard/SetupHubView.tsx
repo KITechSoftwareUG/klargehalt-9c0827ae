@@ -130,6 +130,21 @@ function PhaseCard({ phase, locked }: { phase: SetupPhase; locked: boolean }) {
           </div>
         )}
 
+        {!isAnalysisPhase && phase.id === 'compensation' && (
+          <div className="bg-white border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              Empfohlen: Job-Profile und Gehaltsbänder gemeinsam in der Vergütungs-Matrix anlegen — zeigt
+              auf einen Blick, wo Lücken in der Gehaltsstruktur sind.
+            </p>
+            <Link href="/einrichtung/verguetung" className="flex-shrink-0">
+              <Button variant="default" size="sm">
+                Matrix öffnen
+                <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {!isAnalysisPhase && phase.steps.length > 0 && (
           <div className={`bg-white ${phase.id === 'structure' ? '' : 'border-t'} border-slate-100`}>
             {phase.steps.map((step) => (

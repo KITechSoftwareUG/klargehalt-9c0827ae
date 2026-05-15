@@ -692,7 +692,7 @@ export default function StrukturWorkshopView() {
             </span>
           )}
         </div>
-        <Link href="/einrichtung">
+        <Link href="/einrichtung/verguetung">
           <Button disabled={!canProceed} variant={canProceed ? 'default' : 'outline'}>
             Weiter zu Phase 2 (Vergütung)
             <ChevronRight className="ml-1.5 h-4 w-4" />
