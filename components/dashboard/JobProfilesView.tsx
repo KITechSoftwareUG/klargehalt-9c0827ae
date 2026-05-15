@@ -68,8 +68,8 @@ const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
     details:
       'Bewertet die Stelle (nicht die Person) anhand von 3 Hauptfaktoren: Know-how (fachliches und Führungswissen), Problem Solving (Komplexität der Aufgabe) und Accountability (Verantwortung) — plus Arbeitsbedingungen. Output: Hay-Points (typ. 100–2500) → Hay-Grade → Pay Band. Verbreitet in DAX-Konzernen und öffentlichen Verwaltungen.',
     link: {
-      url: 'https://www.kornferry.com/capabilities/total-rewards/job-evaluation',
-      label: 'Korn Ferry — Job Evaluation Methodology',
+      url: 'https://en.wikipedia.org/wiki/Hay_Group',
+      label: 'Hay Group / Hay-Methode (Wikipedia)',
     },
   },
   korn_ferry: {
@@ -78,8 +78,8 @@ const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
     details:
       'Basiert auf der Hay-Methode, ist aber stärker mit Korn Ferrys globalen Gehalts-Benchmark-Daten verzahnt. In der Praxis oft synonym zu "Hay" verwendet. Wenn Sie mit Korn Ferry zusammenarbeiten oder deren Pay-Daten lizenziert haben, ist das hier die richtige Wahl.',
     link: {
-      url: 'https://www.kornferry.com/insights/featured-topics/talent-recruitment/job-evaluation',
-      label: 'Korn Ferry — Methodology Overview',
+      url: 'https://en.wikipedia.org/wiki/Korn_Ferry',
+      label: 'Korn Ferry (Wikipedia)',
     },
   },
   mercer: {
@@ -88,8 +88,8 @@ const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
     details:
       'Bewertet die Stelle anhand von 5 Faktoren: Impact, Communication, Innovation, Knowledge und Risk — jeweils mit mehreren Sub-Faktoren. Output: IPE-Position-Class (typ. 40–90). Beliebt im Mittelstand und bei internationalen Firmen, oft kombiniert mit Mercers Gehalts-Benchmark (Mercer Total Remuneration Survey).',
     link: {
-      url: 'https://www.mercer.com/our-thinking/career/job-evaluation.html',
-      label: 'Mercer — Job Evaluation',
+      url: 'https://en.wikipedia.org/wiki/Mercer_(consulting_firm)',
+      label: 'Mercer (Wikipedia)',
     },
   },
   willis_towers_watson: {
@@ -98,8 +98,8 @@ const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
     details:
       'Bewertet die Stelle anhand von 7 Faktoren: Functional Knowledge, Business Expertise, Leadership, Problem Solving, Nature of Impact, Area of Impact und Interpersonal Skills. Output: Global Grade 1–25. Häufig in globalen Konzernen mit Matrix-Strukturen und bei Tech-Unternehmen verwendet.',
     link: {
-      url: 'https://www.wtwco.com/en/solutions/services/job-architecture-and-job-leveling',
-      label: 'WTW — Job Architecture & Job Levelling',
+      url: 'https://de.wikipedia.org/wiki/Willis_Towers_Watson',
+      label: 'Willis Towers Watson (Wikipedia)',
     },
   },
   internal: {
@@ -108,8 +108,8 @@ const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
     details:
       'Erlaubt — solange Ihre Methodik Art. 4(4) der EU-Richtlinie 2023/970 erfüllt: objektiv, geschlechtsneutral und nachvollziehbar. Klassisch wird hier das 4-Faktoren-Modell der EU genutzt (Kompetenzen / Belastung / Verantwortung / Arbeitsbedingungen) — also genau die Felder, die KlarGehalt oben abfragt. Wichtig: Im Streitfall muss Ihr Schema verteidigt werden — eine externe Anwaltsprüfung (KlarGehalt Add-on) stärkt Ihre defensive Position.',
     link: {
-      url: 'https://eur-lex.europa.eu/eli/dir/2023/970/oj',
-      label: 'EU-Richtlinie 2023/970 — Art. 4 (EUR-Lex)',
+      url: 'https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:32023L0970',
+      label: 'EU-Richtlinie 2023/970 (EUR-Lex, deutsche Fassung)',
     },
   },
   other: {
