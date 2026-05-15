@@ -165,10 +165,21 @@ async function addLogtoUserToOrg(orgId, userId) {
   await logtoSilent('POST', `/api/organizations/${orgId}/users`, { userIds: [userId] });
 }
 
+// Cache the system-wide org-role list — Logto org-roles are tenant-global, not per-org.
+// The per-org endpoint `/api/organizations/{id}/roles` does NOT exist in Logto and 404s;
+// the previous version of this helper used it, so no role was ever assigned,
+// getOrganizationToken() refused to mint an org JWT, every client-side Supabase query
+// 401'd, useAuth fell back to /api/auth/repair-role (service role), and once the 5/hour
+// rate-limit burned through the role went null → pill showed "Mitarbeiter" and
+// /einrichtung showed "Kein Zugriff". The fix is to read /api/organization-roles
+// (system-wide) and pass the resulting role IDs to the per-user assignment endpoint.
+let _orgRolesCache = null;
 async function assignLogtoOrgRole(orgId, userId, roleName) {
-  const roles = await logtoSilent('GET', `/api/organizations/${orgId}/roles`);
-  const role = roles?.find(r => r.name === roleName);
-  if (!role) return; // role not defined in Logto org template — non-fatal (RLS uses organization_members)
+  if (!_orgRolesCache) {
+    _orgRolesCache = (await logtoSilent('GET', '/api/organization-roles?page=1&page_size=50')) ?? [];
+  }
+  const role = _orgRolesCache.find((r) => r.name === roleName);
+  if (!role) return; // role not defined in this Logto tenant — non-fatal (best-effort only)
   await logtoSilent('POST', `/api/organizations/${orgId}/users/${userId}/roles`,
     { organizationRoleIds: [role.id] });
 }
