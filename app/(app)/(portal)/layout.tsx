@@ -153,7 +153,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             ? 'Mein Portal'
             : (navItems.find(i => i.view === activeView)?.label ?? 'Dashboard');
 
-    const SidebarNav = () => (
+    // JSX-Element statt während des Renders definierter Komponente:
+    // verhindert Unmount/Remount der Sidebar bei jeder Navigation
+    // (sonst springt die Scroll-Position der Nav zurück nach oben).
+    const sidebarNav = (
         <div className="flex h-full flex-col">
             <div className="flex items-center gap-3 px-6 py-7">
                 <Image src="/brandname.svg" alt="klargehalt" width={120} height={18} className="h-5 w-auto invert" />
@@ -343,12 +346,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     return (
         <div className="min-h-screen bg-slate-50/50">
             <aside className="sidebar-scroll fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto hidden lg:block">
-                <SidebarNav />
+                {sidebarNav}
             </aside>
 
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetContent side="left" className="sidebar-scroll w-72 p-0 bg-[#0F172A] text-white overflow-y-auto border-r-0">
-                    <SidebarNav />
+                    {sidebarNav}
                 </SheetContent>
             </Sheet>
 
