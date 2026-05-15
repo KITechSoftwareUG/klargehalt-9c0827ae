@@ -350,17 +350,24 @@ function renderHtml(p: ReportParams): string {
          nach Geschlecht aufgeschlüsselten Durchschnittsentgelte gemäß Art. 7 Abs. 2 lit. b.</p>`;
 
   const lawyerBlock = p.lawyerReview
-    ? `<div class="badge-ok">
-         Eine externe rechtliche Bewertung liegt vor — geprüft durch
-         <strong>${escapeHtml(p.lawyerReview.reviewed_by_name)}</strong>
-         (${escapeHtml(VERDICT_LABELS[p.lawyerReview.verdict] ?? p.lawyerReview.verdict)},
-         ${escapeHtml(fmtDate(p.lawyerReview.signed_at))}). Die Dokumentation dieser
-         Entgeltentscheidung wurde von einem externen Rechtsberater geprüft.
-       </div>`
-    : `<div class="badge-info">
-         Für diese Entgeltentscheidung liegt aktuell keine externe anwaltliche Prüfung vor.
-         Die Dokumentation kann auf Wunsch durch einen unabhängigen Rechtsberater geprüft werden.
-       </div>`;
+    ? `<p>Die Dokumentation der hier dargestellten Entgeltentscheidung wurde durch einen
+         externen, von diesem Unternehmen unabhängigen Rechtsberater geprüft. Die Prüfung
+         erfolgte durch <strong>${escapeHtml(p.lawyerReview.reviewed_by_name)}</strong> mit
+         dem Ergebnis „${escapeHtml(VERDICT_LABELS[p.lawyerReview.verdict] ?? p.lawyerReview.verdict)}"
+         (Datum der Prüfung: ${escapeHtml(fmtDate(p.lawyerReview.signed_at))}). Die externe
+         Prüfung bezieht sich auf die Nachvollziehbarkeit und Vollständigkeit der
+         Dokumentation; sie stellt keine Gewähr für ein bestimmtes Ergebnis eines etwaigen
+         Rechtsstreits dar.</p>`
+    : `<p>Für die hier dargestellte Entgeltentscheidung liegt zum Zeitpunkt der Erstellung
+         dieses Dokuments keine Prüfung durch einen externen Rechtsberater vor. Die
+         Dokumentation kann auf Wunsch durch einen unabhängigen Rechtsberater geprüft
+         werden. Das Fehlen einer externen Prüfung bedeutet nicht, dass die
+         Entgeltfestsetzung zu beanstanden ist; die zugrunde liegenden Kriterien und der
+         Entscheidungsverlauf sind in den Abschnitten 3 und 4 dargelegt.</p>`;
+
+  const docRef = `EA-${p.generatedAt.getFullYear()}-${String(p.generatedAt.getMonth() + 1).padStart(2, '0')}${String(p.generatedAt.getDate()).padStart(2, '0')}`;
+  const employeeFullName = `${p.employee.first_name} ${p.employee.last_name}`.trim();
+  const genStr = p.generatedAt.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -368,81 +375,127 @@ function renderHtml(p: ReportParams): string {
 <meta charset="utf-8" />
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; font-size: 11px; line-height: 1.55; margin: 0; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  h2 { font-size: 13px; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #2563eb; color: #1e3a8a; }
-  h3 { font-size: 12px; margin: 16px 0 6px; color: #1e40af; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #071423; padding-bottom: 14px; }
-  .brand { font-size: 22px; font-weight: 700; color: #071423; }
-  .sub { color: #475569; font-size: 10px; }
-  table { width: 100%; border-collapse: collapse; margin: 6px 0 4px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
-  th { background: #f1f5f9; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; color: #475569; }
-  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 6px; }
-  .kv div { display: flex; justify-content: space-between; border-bottom: 1px dotted #cbd5e1; padding: 3px 0; }
-  .kv span:first-child { color: #64748b; }
-  .kv span:last-child { font-weight: 600; }
-  .muted { color: #64748b; font-style: italic; }
-  .footnote { color: #64748b; font-size: 9px; margin-top: 4px; }
-  .badge-ok { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px 12px; border-radius: 6px; margin: 8px 0; }
-  .badge-info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 10px 12px; border-radius: 6px; margin: 8px 0; }
-  .legal { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-top: 10px; font-size: 10px; }
-  .legal h3 { margin-top: 12px; }
-  .legal h3:first-child { margin-top: 0; }
-  .disclaimer { margin-top: 22px; padding: 12px 14px; border: 1px dashed #94a3b8; border-radius: 6px; color: #475569; font-size: 9.5px; page-break-inside: avoid; }
+  body {
+    font-family: Georgia, 'Times New Roman', 'Liberation Serif', serif;
+    color: #1a1a1a; font-size: 10.5pt; line-height: 1.6; margin: 0;
+    -webkit-print-color-adjust: exact;
+  }
+  p { margin: 0 0 9px; text-align: justify; }
+  h1 { font-size: 15pt; font-weight: 700; margin: 0 0 2px; letter-spacing: .01em; }
+  h2 {
+    font-size: 11.5pt; font-weight: 700; margin: 22px 0 7px;
+    padding-bottom: 3px; border-bottom: 1px solid #999;
+  }
+  h3 { font-size: 10.5pt; font-weight: 700; margin: 14px 0 5px; }
+  .letterhead {
+    border-bottom: 1.5px solid #1a1a1a; padding-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .org { font-size: 12pt; font-weight: 700; }
+  .org-sub { font-size: 9pt; color: #555; margin-top: 2px; }
+  .meta { font-size: 8.5pt; color: #555; text-align: right; line-height: 1.5; }
+  .doctitle { margin: 24px 0 4px; }
+  .subject { font-weight: 700; margin: 14px 0 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 6px; font-size: 9.5pt; }
+  th, td { text-align: left; padding: 5px 8px; border: 1px solid #bbb; vertical-align: top; }
+  th { background: #ededed; font-weight: 700; }
+  .data-table td:first-child { width: 38%; color: #444; }
+  .muted { color: #555; font-style: italic; }
+  .footnote { color: #555; font-size: 8.5pt; margin-top: 4px; }
+  .legal p { margin-bottom: 8px; }
+  .legal-ref { font-variant: small-caps; font-weight: 700; }
+  .signature { margin-top: 34px; }
+  .sig-line { margin-top: 40px; border-top: 1px solid #1a1a1a; width: 58%; padding-top: 4px; font-size: 9pt; color: #444; }
   .page-break { page-break-before: always; }
-  .footer { margin-top: 26px; border-top: 1px solid #e2e8f0; padding-top: 8px; color: #94a3b8; font-size: 9px; display: flex; justify-content: space-between; }
+  .closing-note {
+    margin-top: 24px; padding-top: 10px; border-top: 1px solid #999;
+    font-size: 8.5pt; color: #555;
+  }
+  .gen-note { margin-top: 18px; font-size: 8pt; color: #888; text-align: center; }
 </style>
 </head>
 <body>
-  <div class="header">
+
+  <div class="letterhead">
     <div>
-      <div class="brand">KlarGehalt</div>
-      <div class="sub">Auskunftsbericht gemäß EU-Entgelttransparenzrichtlinie (EU) 2023/970</div>
+      <div class="org">${escapeHtml(p.companyName)}</div>
+      <div class="org-sub">Personalwesen / Entgeltverwaltung</div>
     </div>
-    <div class="sub" style="text-align:right;">
-      ${escapeHtml(p.companyName)}<br/>
-      Erstellt am ${escapeHtml(gen)}
+    <div class="meta">
+      Dokument-Nr.: ${escapeHtml(docRef)}<br/>
+      Ausstellungsdatum: ${escapeHtml(genStr)}<br/>
+      Vertraulich — persönlich
     </div>
   </div>
 
-  <h1>Auskunftsbericht zur Entgeltgestaltung</h1>
-  <p class="sub">
-    Dieses Dokument fasst die für diese Person erfassten Entgeltdaten, die zugrunde
-    liegenden objektiven Kriterien und den dokumentierten Entscheidungsverlauf zusammen.
-    Es dient der Erfüllung des individuellen Auskunftsanspruchs nach Art. 7 der
-    Richtlinie (EU) 2023/970.
-  </p>
+  <h1 class="doctitle">Auskunft über das individuelle Entgelt</h1>
+  <div class="org-sub">gemäß dem Auskunftsanspruch nach Artikel 7 der Richtlinie (EU) 2023/970
+  (Entgelttransparenzrichtlinie)</div>
 
-  <h2>1. Person</h2>
-  <div class="kv">
-    <div><span>Name</span><span>${escapeHtml(p.employee.first_name)} ${escapeHtml(p.employee.last_name)}</span></div>
-    <div><span>Personalnummer</span><span>${escapeHtml(p.employee.employee_number || '—')}</span></div>
-    <div><span>Abteilung</span><span>${escapeHtml(p.departmentName || '—')}</span></div>
-    <div><span>Job-Profil</span><span>${escapeHtml(p.jobProfileTitle || '—')}</span></div>
-    <div><span>Karrierestufe</span><span>${escapeHtml(p.jobLevelName || '—')}</span></div>
-    <div><span>Beschäftigungsart</span><span>${escapeHtml(EMPLOYMENT_LABELS[p.employee.employment_type] ?? p.employee.employment_type)}</span></div>
-    <div><span>Eintrittsdatum</span><span>${escapeHtml(fmtDate(p.employee.hire_date))}</span></div>
-    <div><span>Standort</span><span>${escapeHtml(p.employee.location || '—')}</span></div>
-  </div>
-  <p class="footnote">
-    Hinweis: Das Geschlechtsmerkmal (${escapeHtml(GENDER_LABELS[p.employee.gender] ?? p.employee.gender)})
-    wird ausschließlich zur Erfüllung der gesetzlichen Analyse- und Auskunftspflichten
-    verarbeitet (DSGVO Art. 9 Abs. 2 lit. b).
-  </p>
+  <p class="subject">Betreff: Auskunft zur Höhe und zu den Kriterien Ihrer Vergütung
+  — ${escapeHtml(employeeFullName)}</p>
 
-  <h2>2. Aktuelle Vergütung</h2>
-  <div class="kv">
-    <div><span>Grundgehalt (jährlich)</span><span>${escapeHtml(fmtCurrency(p.employee.base_salary, currency))}</span></div>
-    <div><span>Variable Vergütung</span><span>${escapeHtml(fmtCurrency(p.employee.variable_pay ?? 0, currency))}</span></div>
-    <div><span>Wochenstunden</span><span>${escapeHtml(p.employee.weekly_hours ?? '—')}</span></div>
-    <div><span>Währung</span><span>${escapeHtml(currency)}</span></div>
-  </div>
+  <p>Sehr geehrte/r ${escapeHtml(employeeFullName)},</p>
+
+  <p>mit diesem Dokument kommen wir Ihrem gesetzlich verankerten Auskunftsanspruch nach.
+  Nach Artikel 7 der Richtlinie (EU) 2023/970 hat jede beschäftigte Person das Recht, in
+  klarer und verständlicher Form Auskunft zu verlangen über die Höhe des eigenen Entgelts
+  sowie über die durchschnittlichen Entgeltniveaus — aufgeschlüsselt nach Geschlecht — für
+  diejenigen Gruppen von Beschäftigten, die gleiche oder gleichwertige Arbeit verrichten.
+  Ergänzend besteht nach Artikel 16 der Richtlinie ein Anspruch darauf, die objektiven und
+  geschlechtsneutralen Kriterien zu erfahren, nach denen Entgelt und berufliche Entwicklung
+  festgelegt werden.</p>
+
+  <p>Die nachfolgenden Abschnitte stellen die zu Ihrer Person gespeicherten
+  entgeltrelevanten Angaben, die Ihrer Vergütung zugrunde liegenden Kriterien sowie den
+  dokumentierten Verlauf der Sie betreffenden Entgeltentscheidungen dar. Alle Angaben
+  beziehen sich auf den Stand des oben genannten Ausstellungsdatums. Sollten einzelne
+  Angaben aus Ihrer Sicht unrichtig oder unvollständig sein, können Sie deren Berichtigung
+  verlangen; die hierfür zuständige Stelle ist am Ende dieses Dokuments genannt.</p>
+
+  <h2>1. Angaben zu Ihrer Person und Tätigkeit</h2>
+  <p>Die folgenden Stammdaten bilden die Grundlage für die Zuordnung zu einer Tätigkeits-
+  und Vergleichsgruppe. Die Einordnung in Abteilung, Tätigkeitsprofil und Karrierestufe
+  bestimmt, welche Beschäftigten im Sinne der Richtlinie „gleiche oder gleichwertige
+  Arbeit" verrichten und damit als Vergleichsmaßstab herangezogen werden.</p>
+  <table class="data-table">
+    <tbody>
+      <tr><td>Name</td><td>${escapeHtml(employeeFullName)}</td></tr>
+      <tr><td>Personalnummer</td><td>${escapeHtml(p.employee.employee_number || '—')}</td></tr>
+      <tr><td>Abteilung</td><td>${escapeHtml(p.departmentName || '—')}</td></tr>
+      <tr><td>Tätigkeitsprofil</td><td>${escapeHtml(p.jobProfileTitle || '—')}</td></tr>
+      <tr><td>Karrierestufe</td><td>${escapeHtml(p.jobLevelName || '—')}</td></tr>
+      <tr><td>Beschäftigungsart</td><td>${escapeHtml(EMPLOYMENT_LABELS[p.employee.employment_type] ?? p.employee.employment_type)}</td></tr>
+      <tr><td>Eintrittsdatum</td><td>${escapeHtml(fmtDate(p.employee.hire_date))}</td></tr>
+      <tr><td>Standort</td><td>${escapeHtml(p.employee.location || '—')}</td></tr>
+    </tbody>
+  </table>
+  <p class="footnote">Das Geschlechtsmerkmal
+  (${escapeHtml(GENDER_LABELS[p.employee.gender] ?? p.employee.gender)}) wird ausschließlich
+  zur Erfüllung der gesetzlichen Analyse- und Auskunftspflichten verarbeitet und nicht zu
+  anderen Zwecken verwendet (Art. 9 Abs. 2 lit. b DSGVO i. V. m. Art. 7 der Richtlinie
+  (EU) 2023/970).</p>
+
+  <h2>2. Höhe Ihres Entgelts</h2>
+  <p>Nachstehend ist die Höhe Ihres Entgelts zum Ausstellungsdatum aufgeführt. Das
+  Grundentgelt bezeichnet die feste jährliche Vergütung; variable Bestandteile umfassen
+  insbesondere leistungs- oder erfolgsabhängige Zahlungen, soweit solche vereinbart sind.</p>
+  <table class="data-table">
+    <tbody>
+      <tr><td>Grundentgelt (jährlich)</td><td>${escapeHtml(fmtCurrency(p.employee.base_salary, currency))}</td></tr>
+      <tr><td>Variable Bestandteile</td><td>${escapeHtml(fmtCurrency(p.employee.variable_pay ?? 0, currency))}</td></tr>
+      <tr><td>Vereinbarte Wochenarbeitszeit</td><td>${escapeHtml(p.employee.weekly_hours ?? '—')} Stunden</td></tr>
+      <tr><td>Währung</td><td>${escapeHtml(currency)}</td></tr>
+    </tbody>
+  </table>
   ${
     p.payBand
-      ? `<h3>Eingruppierung in das Gehaltsband „${escapeHtml(p.payBand.name)}"</h3>
+      ? `<p>Ihre Tätigkeit ist dem Entgeltband „${escapeHtml(p.payBand.name)}" zugeordnet.
+         Ein Entgeltband legt für vergleichbare Tätigkeiten einen objektiv definierten
+         Rahmen aus Unter-, Mittel- und Obergrenze fest. Die nachstehende Übersicht zeigt
+         diesen Rahmen und Ihre derzeitige Einordnung darin:</p>
          <table>
-           <thead><tr><th>Banduntergrenze</th><th>Bandmitte</th><th>Bandobergrenze</th><th>Aktuelle Position</th></tr></thead>
+           <thead><tr><th>Banduntergrenze</th><th>Bandmitte</th><th>Bandobergrenze</th><th>Ihre derzeitige Einordnung</th></tr></thead>
            <tbody><tr>
              <td>${escapeHtml(fmtCurrency(p.payBand.min, currency))}</td>
              <td>${escapeHtml(fmtCurrency(p.payBand.mid, currency))}</td>
@@ -450,83 +503,110 @@ function renderHtml(p: ReportParams): string {
              <td>${escapeHtml(fmtCurrency(p.employee.base_salary, currency))}</td>
            </tr></tbody>
          </table>`
-      : `<p class="muted">Dieser Position ist derzeit kein Gehaltsband zugeordnet.</p>`
+      : `<p class="muted">Ihrer Tätigkeit ist derzeit kein formal definiertes Entgeltband
+         zugeordnet. Die Vergütung wurde anhand der in Abschnitt 3 dargestellten Kriterien
+         festgelegt.</p>`
   }
 
-  <h2>3. Objektive Kriterien der Entgeltfestsetzung (Art. 16)</h2>
-  <p class="sub">
-    Die Positionierung innerhalb des Gehaltsbands beruht auf den folgenden
-    geschlechtsneutralen, objektiven Faktoren:
-  </p>
+  <h2>3. Objektive Kriterien der Entgeltfestsetzung</h2>
+  <p>Nach Artikel 16 der Richtlinie (EU) 2023/970 müssen die zur Festlegung des Entgelts
+  herangezogenen Kriterien objektiv, geschlechtsneutral und nachvollziehbar sein. Ihre
+  Einordnung innerhalb des Entgeltrahmens beruht auf den nachfolgend aufgeführten Faktoren.
+  Die Spalte „Bewertung" gibt die Ausprägung des jeweiligen Faktors auf einer Skala von 1
+  (gering) bis 5 (herausragend) an; die Spalte „Gewichtung" beschreibt, mit welchem Anteil
+  der jeweilige Faktor in die Gesamtbeurteilung eingeflossen ist.</p>
   <table>
-    <thead><tr><th>Faktor</th><th>Bewertung</th><th>Gewichtung</th><th>Anmerkung</th></tr></thead>
+    <thead><tr><th>Kriterium</th><th>Bewertung</th><th>Gewichtung</th><th>Erläuterung</th></tr></thead>
     <tbody>${factorRows}</tbody>
   </table>
   ${
     justification?.summary
       ? `<h3>Zusammenfassende Begründung</h3><p>${escapeHtml(justification.summary)}</p>`
-      : ''
+      : `<p class="muted">Eine zusammenfassende textliche Begründung wurde bislang nicht
+         hinterlegt. Die maßgeblichen Kriterien ergeben sich aus der vorstehenden Tabelle
+         sowie aus dem in Abschnitt 4 dargestellten Entscheidungsverlauf.</p>`
   }
 
-  <h2>4. Dokumentierter Entscheidungsverlauf</h2>
-  <p class="sub">
-    Append-only Entscheidungsprotokoll. Einmal erfasste Einträge sind unveränderlich
-    und bilden den Nachweis-Trail im Sinne der Beweislastregel des Art. 18.
-  </p>
+  <h2>4. Verlauf der Entgeltentscheidungen</h2>
+  <p>Die nachstehende Aufstellung dokumentiert die Sie betreffenden Entgeltentscheidungen
+  in zeitlicher Reihenfolge. Jeder Eintrag ist unveränderlich erfasst; spätere Korrekturen
+  erfolgen ausschließlich durch einen zusätzlichen, ergänzenden Eintrag und nicht durch
+  Überschreiben. Diese lückenlose Dokumentation dient der Nachvollziehbarkeit der
+  Entgeltgestaltung und bildet zugleich die Grundlage für die in Abschnitt 6 erläuterte
+  gesetzliche Beweislastverteilung.</p>
   <table>
-    <thead><tr><th>Datum</th><th>Art</th><th>Vorher</th><th>Nachher</th><th>Begründung</th></tr></thead>
+    <thead><tr><th>Datum</th><th>Anlass</th><th>Vorher</th><th>Nachher</th><th>Begründung</th></tr></thead>
     <tbody>${decisionRows}</tbody>
   </table>
 
-  <h2>5. Vergleichsgruppen-Kontext (Art. 7 Abs. 2 lit. b)</h2>
-  <p class="sub">
-    Durchschnittliche Entgeltniveaus für Beschäftigte, die gleiche oder gleichwertige
-    Arbeit verrichten, aufgeschlüsselt nach Geschlecht:
-  </p>
+  <h2>5. Vergleichsgruppe — durchschnittliche Entgeltniveaus nach Geschlecht</h2>
+  <p>Nach Artikel 7 Absatz 2 Buchstabe b der Richtlinie (EU) 2023/970 umfasst Ihr
+  Auskunftsanspruch auch die nach Geschlecht aufgeschlüsselten durchschnittlichen
+  Entgeltniveaus derjenigen Beschäftigten, die gleiche oder gleichwertige Arbeit
+  verrichten. Als Vergleichsgruppe wird die Gesamtheit der Beschäftigten mit demselben
+  Tätigkeitsprofil und derselben Karrierestufe herangezogen. Zum Schutz der
+  Persönlichkeitsrechte Dritter werden Durchschnittswerte nicht ausgewiesen, sofern eine
+  Geschlechtergruppe innerhalb der Vergleichsgruppe weniger als fünf Personen umfasst
+  (Grundsatz der Datenminimierung, Art. 5 DSGVO).</p>
   ${cohortBlock}
 
   <h2>6. Externe rechtliche Prüfung</h2>
   ${lawyerBlock}
 
   <div class="page-break"></div>
-  <h2>7. Rechtlicher Rahmen</h2>
+  <h2>7. Rechtlicher Rahmen und Hinweise</h2>
   <div class="legal">
-    <h3>Richtlinie (EU) 2023/970 — Entgelttransparenz</h3>
-    <p><strong>Art. 7 — Auskunftsanspruch:</strong> Jede beschäftigte Person hat das Recht,
-    schriftlich Auskunft über ihr individuelles Entgeltniveau sowie über die nach
-    Geschlecht aufgeschlüsselten durchschnittlichen Entgeltniveaus der Personengruppen
-    zu verlangen, die gleiche oder gleichwertige Arbeit verrichten.</p>
-    <p><strong>Art. 16 — Transparenz der Kriterien:</strong> Die zur Festlegung von Entgelt
-    und beruflicher Entwicklung herangezogenen Kriterien müssen objektiv,
-    geschlechtsneutral und nachvollziehbar sein. Die obenstehende Faktorentabelle
-    dokumentiert diese Kriterien.</p>
-    <p><strong>Art. 18 — Beweislastumkehr:</strong> Macht eine beschäftigte Person eine
-    Entgeltdiskriminierung geltend, obliegt es dem Arbeitgeber nachzuweisen, dass
-    keine Diskriminierung vorlag. Der dokumentierte, unveränderliche Entscheidungs-Trail
-    in Abschnitt 4 dient genau diesem Nachweiszweck.</p>
+    <p>Die folgende Darstellung erläutert die diesem Dokument zugrunde liegenden
+    Rechtsgrundlagen. Sie dient Ihrer Information und ersetzt keine individuelle
+    Rechtsberatung.</p>
 
-    <h3>Datenschutz (DSGVO)</h3>
-    <p><strong>Art. 15 — Auskunftsrecht:</strong> Dieses Dokument umfasst die zu Ihrer Person
-    gespeicherten entgeltrelevanten Daten. <strong>Art. 9:</strong> Geschlechtsbezogene
-    Merkmale werden ausschließlich zur Erfüllung gesetzlicher Analyse- und
-    Auskunftspflichten verarbeitet; Vergleichswerte werden bei Gruppen unter fünf
-    Personen je Geschlecht zum Schutz der Betroffenen nicht ausgewiesen.</p>
+    <h3>Richtlinie (EU) 2023/970 (Entgelttransparenzrichtlinie)</h3>
+    <p><span class="legal-ref">Artikel 7 — Auskunftsanspruch.</span> Jede beschäftigte
+    Person hat das Recht, Auskunft über das eigene Entgeltniveau sowie über die nach
+    Geschlecht aufgeschlüsselten durchschnittlichen Entgeltniveaus der Gruppen zu
+    verlangen, die gleiche oder gleichwertige Arbeit verrichten. Diesem Anspruch wird mit
+    den Abschnitten 2 und 5 dieses Dokuments entsprochen.</p>
+    <p><span class="legal-ref">Artikel 16 — Transparenz der Kriterien.</span> Die zur
+    Festlegung von Entgelt und beruflicher Entwicklung herangezogenen Kriterien müssen
+    objektiv und geschlechtsneutral sein. Abschnitt 3 legt diese Kriterien für Ihren Fall
+    offen.</p>
+    <p><span class="legal-ref">Artikel 18 — Beweislast.</span> Macht eine beschäftigte
+    Person eine Entgeltdiskriminierung geltend, obliegt es grundsätzlich dem Arbeitgeber
+    nachzuweisen, dass keine Diskriminierung vorlag. Der in Abschnitt 4 dokumentierte,
+    unveränderliche Entscheidungsverlauf dient der Erfüllung dieser Nachweisobliegenheit.</p>
+
+    <h3>Datenschutz-Grundverordnung (DSGVO)</h3>
+    <p><span class="legal-ref">Artikel 15 — Auskunftsrecht.</span> Dieses Dokument umfasst
+    die zu Ihrer Person verarbeiteten entgeltrelevanten Daten.
+    <span class="legal-ref">Artikel 9 — besondere Datenkategorien.</span> Das
+    Geschlechtsmerkmal wird ausschließlich zur Erfüllung der gesetzlichen Analyse- und
+    Auskunftspflichten verarbeitet. <span class="legal-ref">Artikel 5 —
+    Datenminimierung.</span> Vergleichswerte werden bei zu kleinen Geschlechtergruppen
+    (weniger als fünf Personen) zum Schutz der betroffenen Personen nicht ausgewiesen.</p>
+
+    <h3>Rechtlicher Charakter dieses Dokuments</h3>
+    <p>Dieses Dokument wurde durch das oben genannte Unternehmen auf Grundlage der intern
+    erfassten Daten erstellt. Es stellt eine strukturierte Auskunft und Dokumentation der
+    Entgeltgestaltung dar und unterstützt bei der Erfüllung der Anforderungen der
+    Richtlinie (EU) 2023/970. Es handelt sich weder um eine Rechtsberatung noch um ein
+    amtliches Dokument einer Behörde oder eines Gerichts. Eine über die strukturierte
+    Dokumentation hinausgehende rechtliche Bewertung erfolgt ausschließlich durch eine
+    Prüfung durch einen externen Rechtsberater${p.lawyerReview ? '; für die hier dargestellte Entscheidung liegt eine solche Prüfung vor (siehe Abschnitt 6)' : ' (siehe Abschnitt 6)'}.</p>
   </div>
 
-  <div class="disclaimer">
-    <strong>Wichtiger Hinweis:</strong> Dieses Dokument wurde automatisiert durch die
-    KlarGehalt-Plattform auf Basis der vom Unternehmen erfassten Daten erstellt. Es
-    stellt eine strukturierte Dokumentation der Entgeltentscheidungen dar und unterstützt
-    Sie bei der Erfüllung der Anforderungen der Richtlinie (EU) 2023/970. Es handelt sich
-    nicht um eine Rechtsberatung und nicht um ein amtliches Dokument. Eine belastbare
-    rechtliche Absicherung entsteht erst durch die Prüfung durch einen externen
-    Rechtsberater${p.lawyerReview ? ' (für diese Entscheidung liegt eine solche Prüfung vor — siehe Abschnitt 6)' : ''}.
+  <div class="signature">
+    <p>Für Rückfragen, zur Geltendmachung einer Berichtigung oder für weitergehende
+    Auskünfte wenden Sie sich bitte an die Personalabteilung des oben genannten
+    Unternehmens.</p>
+    <div class="sig-line">Ort, Datum — Personalabteilung ${escapeHtml(p.companyName)}</div>
   </div>
 
-  <div class="footer">
-    <span>KlarGehalt · Auskunftsbericht · ${escapeHtml(p.companyName)}</span>
-    <span>Erstellt am ${escapeHtml(gen)}</span>
+  <div class="closing-note">
+    Dieses Dokument wurde am ${escapeHtml(gen)} maschinell erzeugt und ist ohne
+    Unterschrift gültig. Maßgeblich ist der zum Ausstellungsdatum gespeicherte Datenstand.
   </div>
+
+  <div class="gen-note">Technische Erstellung über die KlarGehalt-Plattform.</div>
 </body>
 </html>`;
 }
