@@ -153,7 +153,7 @@ export default function OnboardingPage() {
             if (selectedPlan === 'enterprise') {
                 router.push('/book-consulting');
             } else {
-                router.push(consultingOption === 'guided' ? '/book-consulting' : '/dashboard');
+                router.push(consultingOption === 'guided' ? '/book-consulting' : '/einrichtung');
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten.';
