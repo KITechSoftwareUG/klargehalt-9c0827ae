@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole, pickFields, getCompanyId, EMPLOYEE_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
+import { humanizePgError } from '@/lib/pg-error';
 import { getEffectiveTier, getPlanLimits, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 
 export async function GET() {
@@ -78,8 +79,9 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('employees POST error:', error);
-    return NextResponse.json({ error: 'Fehler beim Erstellen' }, { status: 500 });
+    console.error('employees POST error:', { code: error.code, message: error.message, details: error.details });
+    const humanized = humanizePgError(error, 'Mitarbeiter');
+    return NextResponse.json({ error: humanized.message }, { status: humanized.status });
   }
 
   void logAuditEntry(supabase, {
