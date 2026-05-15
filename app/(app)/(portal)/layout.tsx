@@ -67,26 +67,28 @@ type NavItem = {
     disabled?: boolean;
     badge?: string;
     trialLocked?: boolean;
+    proLocked?: boolean;
 };
 
 const MAIN_NAV: NavItem[] = [
     // Einrichtung (geführter Setup-Hub — erste Anlaufstelle)
     { label: 'Einrichtung',    icon: Rocket,     view: 'einrichtung',    group: 'Einrichtung' },
-    // Unternehmensstruktur
-    { label: 'Abteilungen',    icon: Building,   view: 'abteilungen',    group: 'Unternehmensstruktur' },
-    { label: 'Karrierestufen', icon: Layers,     view: 'karrierestufen', group: 'Unternehmensstruktur' },
-    { label: 'Job-Profile',    icon: Building2,  view: 'jobprofile',     group: 'Unternehmensstruktur' },
-    { label: 'Gehaltsbänder',  icon: Scale,      view: 'gehaltsbaender', group: 'Unternehmensstruktur' },
-    { label: 'Mitarbeiter',    icon: Users,      view: 'mitarbeiter',    group: 'Unternehmensstruktur' },
+    // Strukturdaten
+    { label: 'Abteilungen',    icon: Building,   view: 'abteilungen',    group: 'Strukturdaten' },
+    { label: 'Karrierestufen', icon: Layers,     view: 'karrierestufen', group: 'Strukturdaten' },
+    { label: 'Job-Profile',    icon: Building2,  view: 'jobprofile',     group: 'Strukturdaten' },
+    { label: 'Gehaltsbänder',  icon: Scale,      view: 'gehaltsbaender', group: 'Strukturdaten' },
+    // Mitarbeiter
+    { label: 'Mitarbeiter',    icon: Users,      view: 'mitarbeiter',    group: 'Mitarbeiter' },
     // Compliance-Kern
     { label: 'Dashboard',              icon: ShieldCheck, view: 'dashboard',           group: 'Compliance' },
-    { label: 'Compliance-Prüfungen',   icon: FileCheck,   view: 'compliance-workflow', group: 'Compliance' },
+    { label: 'Compliance-Prüfungen',   icon: FileCheck,   view: 'compliance-workflow', group: 'Compliance', proLocked: true },
     // Premium & Services
-    { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true },
+    { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true, proLocked: true },
     { label: 'Abrechnung & Plan',      icon: CreditCard,  view: 'abrechnung',          group: 'Premium & Services', adminOnly: true },
     { label: 'Partnerschaften',         icon: Handshake,   disabled: true, badge: 'Bald verfügbar', group: 'Premium & Services', adminOnly: true },
     // KI-Agenten
-    { label: 'KI-Agenten',  icon: Bot, view: 'ki-agenten', group: 'KI-Agenten', adminOnly: false, trialLocked: true },
+    { label: 'KI-Agenten',  icon: Bot, view: 'ki-agenten', group: 'KI-Agenten', adminOnly: false, trialLocked: true, proLocked: true },
     // Konto
     { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: true },
     { label: 'Audit-Log',      icon: Shield,   view: 'audit',         group: 'Konto', adminOnly: true },
@@ -109,7 +111,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const router = useRouter();
     const pathname = usePathname();
     const { user, role, selfReportedRole, profile, loading, isLoaded, orgId, signOut, isSuperAdmin } = useAuth();
-    const { isExpired, isTrialing } = useSubscription();
+    const { isExpired, isTrialing, tier } = useSubscription();
+    const isBasis = tier === 'basis';
     const setupReadiness = useSetupReadiness();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -170,6 +173,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 <div className="space-y-0.5">
                                     {items.map(item => {
                                         const isLockedByTrial = item.trialLocked && isTrialing;
+                                        const isLockedByTier = item.proLocked && isBasis;
 
                                         if (item.disabled) {
                                             return (
@@ -199,6 +203,22 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                                     <item.icon className="h-4 w-4 shrink-0" />
                                                     <span className="truncate flex-1">{item.label}</span>
                                                     <Lock className="h-3 w-3 shrink-0 text-purple-400/60" />
+                                                </Link>
+                                            );
+                                        }
+
+                                        if (isLockedByTier) {
+                                            return (
+                                                <Link
+                                                    key={item.label}
+                                                    href="/abrechnung"
+                                                    onClick={() => setMobileNavOpen(false)}
+                                                    title="Im Professional-Plan enthalten"
+                                                    className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-amber-300/50 hover:bg-amber-400/5 hover:text-amber-200/60 transition-all duration-200"
+                                                >
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    <span className="truncate flex-1">{item.label}</span>
+                                                    <Lock className="h-3 w-3 shrink-0 text-amber-400/60" />
                                                 </Link>
                                             );
                                         }

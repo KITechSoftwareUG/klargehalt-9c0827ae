@@ -5,6 +5,7 @@ import { useDepartments } from '@/hooks/useDepartments';
 import { useJobLevels } from '@/hooks/useJobLevels';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useRoleAccess } from '@/components/RoleGuard';
 import { getMarketingUrl } from '@/utils/url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InlineCreateDepartmentSelect } from '@/components/ui/InlineCreateDepartmentSelect';
+import { InlineCreateJobProfileSelect } from '@/components/ui/InlineCreateJobProfileSelect';
+import { InlineCreateJobLevelSelect } from '@/components/ui/InlineCreateJobLevelSelect';
 import {
   Dialog,
   DialogContent,
@@ -113,6 +117,7 @@ const EmployeesView = () => {
   const { jobLevels } = useJobLevels();
   const { user, supabase, orgId } = useAuth();
   const subscription = useSubscription();
+  const canCreateEntities = useRoleAccess('owner', 'admin', 'hr_manager');
 
   // Basis tier: marketing promises "Bis 50 Mitarbeiter" but the technical cap
   // sits at 52 to absorb brief hiring transitions (incoming starts before
@@ -490,33 +495,20 @@ const EmployeesView = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
           <Label>Abteilung</Label>
-          <Select
-            value={formData.department_id || 'none'}
-            onValueChange={(value) => setFormData({ ...formData, department_id: value === 'none' ? '' : value })}
-          >
-            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— Keine —</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <InlineCreateDepartmentSelect
+            value={formData.department_id || null}
+            onChange={(id) => setFormData({ ...formData, department_id: id || '' })}
+            canCreate={canCreateEntities}
+          />
         </div>
         <div className="grid gap-2">
           <Label>Job-Profil</Label>
-          <Select
-            value={formData.job_profile_id || 'none'}
-            onValueChange={(value) => setFormData({ ...formData, job_profile_id: value === 'none' ? '' : value })}
-          >
-            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— Keines —</SelectItem>
-              {jobProfiles.map((profile) => (
-                <SelectItem key={profile.id} value={profile.id}>{profile.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <InlineCreateJobProfileSelect
+            value={formData.job_profile_id || null}
+            onChange={(id) => setFormData({ ...formData, job_profile_id: id || '' })}
+            canCreate={canCreateEntities}
+            preselectedDepartmentId={formData.department_id || null}
+          />
         </div>
       </div>
 
@@ -524,18 +516,11 @@ const EmployeesView = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
           <Label>Karrierestufe</Label>
-          <Select
-            value={formData.job_level_id || 'none'}
-            onValueChange={(value) => setFormData({ ...formData, job_level_id: value === 'none' ? '' : value })}
-          >
-            <SelectTrigger><SelectValue placeholder="Auswählen" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— Keine —</SelectItem>
-              {jobLevels.map((level) => (
-                <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <InlineCreateJobLevelSelect
+            value={formData.job_level_id || null}
+            onChange={(id) => setFormData({ ...formData, job_level_id: id || '' })}
+            canCreate={canCreateEntities}
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="weekly_hours">Wochenstunden</Label>
