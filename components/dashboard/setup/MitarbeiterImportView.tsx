@@ -1332,11 +1332,10 @@ function Step4Execute({
 
         if (!res.ok) {
           const status = res.status;
-          if (status === 402 || status === 422) {
-            // Plan limit hit server-side — abort remaining
+          if (status === 402) {
+            // Plan limit hit server-side — abort remaining rows
             results.push({ index: row.index, name, success: false, error: 'Plan-Limit erreicht' });
             tick();
-            // Mark remaining as aborted
             const remaining = validRows.slice(results.length);
             for (const r of remaining) {
               results.push({
@@ -1478,14 +1477,18 @@ function Step5Result({
               )}
             </button>
             {failedExpanded && (
-              <div className="divide-y divide-red-100 max-h-48 overflow-y-auto">
+              <div className="divide-y divide-red-100 max-h-64 overflow-y-auto">
                 {results
                   .filter((r) => !r.success)
                   .map((r) => (
-                    <div key={r.index} className="px-4 py-2 flex items-center gap-2">
-                      <span className="text-xs text-slate-500 flex-shrink-0">Zeile {r.index}</span>
-                      <span className="text-sm text-slate-800 flex-1 min-w-0 truncate">{r.name}</span>
-                      <span className="text-xs text-red-600 flex-shrink-0">{r.error}</span>
+                    <div key={r.index} className="px-4 py-2.5 flex items-start gap-3">
+                      <span className="text-xs text-slate-500 flex-shrink-0 mt-0.5 tabular-nums">
+                        Zeile {r.index}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-800 truncate">{r.name}</p>
+                        <p className="text-xs text-red-600 mt-0.5">{r.error}</p>
+                      </div>
                     </div>
                   ))}
               </div>

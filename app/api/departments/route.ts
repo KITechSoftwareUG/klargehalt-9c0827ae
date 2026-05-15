@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardOrgMember, guardRole, pickFields, DEPARTMENT_WRITE_FIELDS } from '@/lib/auth/api-guard';
+import { humanizePgError } from '@/lib/pg-error';
 
 export async function GET() {
   const context = await getServerAuthContext();
@@ -42,8 +43,9 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('departments POST error:', error);
-    return NextResponse.json({ error: 'Fehler beim Erstellen' }, { status: 500 });
+    console.error('departments POST error:', { code: error.code, message: error.message, details: error.details });
+    const humanized = humanizePgError(error, 'Abteilung');
+    return NextResponse.json({ error: humanized.message }, { status: humanized.status });
   }
 
   return NextResponse.json(data, { status: 201 });

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardOrgMember, guardRole, pickFields, getCompanyId, JOB_PROFILE_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
+import { humanizePgError } from '@/lib/pg-error';
 
 export async function GET() {
   const context = await getServerAuthContext();
@@ -48,8 +49,9 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error('job-profiles POST error:', error);
-    return NextResponse.json({ error: 'Fehler beim Erstellen' }, { status: 500 });
+    console.error('job-profiles POST error:', { code: error.code, message: error.message, details: error.details });
+    const humanized = humanizePgError(error, 'Job-Profil');
+    return NextResponse.json({ error: humanized.message }, { status: humanized.status });
   }
 
   void logAuditEntry(supabase, {
