@@ -160,7 +160,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </div>
 
             {role !== 'employee' && (
-                <nav className="flex-1 px-4 py-4 space-y-5 overflow-y-auto">
+                <nav className="sidebar-scroll flex-1 px-4 py-4 space-y-5 overflow-y-auto">
                     {Object.entries(navGroups).map(([groupName, items]) => {
                         const isPremium = groupName === 'Premium & Services';
                         const isAI = groupName === 'KI-Agenten';
@@ -229,10 +229,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                         const setupBadge =
                                             item.view === 'einrichtung' && !setupReadiness.isLoading
                                                 ? setupReadiness.isAnalysisReady
-                                                    ? { text: '✓', tone: 'emerald' as const }
+                                                    ? { kind: 'dot' as const }
                                                     : setupReadiness.overallPercentage > 0
-                                                        ? { text: `${setupReadiness.overallPercentage}%`, tone: 'amber' as const }
-                                                        : { text: 'Start', tone: 'amber' as const }
+                                                        ? { kind: 'pill' as const, text: `${setupReadiness.overallPercentage}%` }
+                                                        : { kind: 'pill' as const, text: 'Start' }
                                                 : null;
                                         const isActive = item.view && activeView === item.view;
 
@@ -253,14 +253,19 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                             >
                                                 <item.icon className="h-4 w-4 shrink-0" />
                                                 <span className="truncate flex-1">{item.label}</span>
-                                                {setupBadge && (
+                                                {setupBadge?.kind === 'dot' && (
+                                                    <span
+                                                        title="Einrichtung abgeschlossen"
+                                                        aria-label="Einrichtung abgeschlossen"
+                                                        className="h-2 w-2 rounded-full bg-emerald-400 shrink-0 ring-4 ring-emerald-400/15"
+                                                    />
+                                                )}
+                                                {setupBadge?.kind === 'pill' && (
                                                     <span
                                                         className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 tabular-nums ${
                                                             isActive
                                                                 ? 'bg-white/20 text-white'
-                                                                : setupBadge.tone === 'emerald'
-                                                                    ? 'bg-emerald-500/20 text-emerald-300'
-                                                                    : 'bg-amber-500/20 text-amber-300'
+                                                                : 'bg-amber-500/20 text-amber-300'
                                                         }`}
                                                     >
                                                         {setupBadge.text}
@@ -337,12 +342,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="min-h-screen bg-slate-50/50">
-            <aside className="fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto hidden lg:block">
+            <aside className="sidebar-scroll fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto hidden lg:block">
                 <SidebarNav />
             </aside>
 
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                <SheetContent side="left" className="w-72 p-0 bg-[#0F172A] text-white overflow-y-auto border-r-0">
+                <SheetContent side="left" className="sidebar-scroll w-72 p-0 bg-[#0F172A] text-white overflow-y-auto border-r-0">
                     <SidebarNav />
                 </SheetContent>
             </Sheet>
