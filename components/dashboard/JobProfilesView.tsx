@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Briefcase, Building2, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Briefcase, Building2, CheckCircle, XCircle, Info, ExternalLink } from 'lucide-react';
 import { SetupStepGuide } from '@/components/dashboard/SetupStepGuide';
 
 const EVALUATION_METHOD_LABELS: Record<EvaluationMethod, string> = {
@@ -52,6 +52,72 @@ const EVALUATION_METHOD_LABELS: Record<EvaluationMethod, string> = {
   willis_towers_watson: 'Willis Towers Watson',
   internal: 'Interne Methode',
   other: 'Andere',
+};
+
+type EvaluationMethodInfo = {
+  title: string;
+  summary: string;
+  details: string;
+  link?: { url: string; label: string };
+};
+
+const EVALUATION_METHOD_INFO: Record<EvaluationMethod, EvaluationMethodInfo> = {
+  hay: {
+    title: 'Hay-Methode',
+    summary: 'Punkte-basiertes Bewertungssystem — Industriestandard seit den 1950ern.',
+    details:
+      'Bewertet die Stelle (nicht die Person) anhand von 3 Hauptfaktoren: Know-how (fachliches und Führungswissen), Problem Solving (Komplexität der Aufgabe) und Accountability (Verantwortung) — plus Arbeitsbedingungen. Output: Hay-Points (typ. 100–2500) → Hay-Grade → Pay Band. Verbreitet in DAX-Konzernen und öffentlichen Verwaltungen.',
+    link: {
+      url: 'https://www.kornferry.com/capabilities/total-rewards/job-evaluation',
+      label: 'Korn Ferry — Job Evaluation Methodology',
+    },
+  },
+  korn_ferry: {
+    title: 'Korn Ferry',
+    summary: 'Modernisierte Hay-Methode (Korn Ferry hat die Hay Group 2015 übernommen).',
+    details:
+      'Basiert auf der Hay-Methode, ist aber stärker mit Korn Ferrys globalen Gehalts-Benchmark-Daten verzahnt. In der Praxis oft synonym zu "Hay" verwendet. Wenn Sie mit Korn Ferry zusammenarbeiten oder deren Pay-Daten lizenziert haben, ist das hier die richtige Wahl.',
+    link: {
+      url: 'https://www.kornferry.com/insights/featured-topics/talent-recruitment/job-evaluation',
+      label: 'Korn Ferry — Methodology Overview',
+    },
+  },
+  mercer: {
+    title: 'Mercer IPE (International Position Evaluation)',
+    summary: '5-Faktoren-Modell mit weltweit vergleichbaren Position-Classes.',
+    details:
+      'Bewertet die Stelle anhand von 5 Faktoren: Impact, Communication, Innovation, Knowledge und Risk — jeweils mit mehreren Sub-Faktoren. Output: IPE-Position-Class (typ. 40–90). Beliebt im Mittelstand und bei internationalen Firmen, oft kombiniert mit Mercers Gehalts-Benchmark (Mercer Total Remuneration Survey).',
+    link: {
+      url: 'https://www.mercer.com/our-thinking/career/job-evaluation.html',
+      label: 'Mercer — Job Evaluation',
+    },
+  },
+  willis_towers_watson: {
+    title: 'Willis Towers Watson — Global Grading / Job Levelling',
+    summary: '7-Faktoren-Modell mit 25 globalen Grades — Standard in Tech-Konzernen.',
+    details:
+      'Bewertet die Stelle anhand von 7 Faktoren: Functional Knowledge, Business Expertise, Leadership, Problem Solving, Nature of Impact, Area of Impact und Interpersonal Skills. Output: Global Grade 1–25. Häufig in globalen Konzernen mit Matrix-Strukturen und bei Tech-Unternehmen verwendet.',
+    link: {
+      url: 'https://www.wtwco.com/en/solutions/services/job-architecture-and-job-leveling',
+      label: 'WTW — Job Architecture & Job Levelling',
+    },
+  },
+  internal: {
+    title: 'Interne Methode',
+    summary: 'Eigenes, im Unternehmen entwickeltes Bewertungsschema.',
+    details:
+      'Erlaubt — solange Ihre Methodik Art. 4(4) der EU-Richtlinie 2023/970 erfüllt: objektiv, geschlechtsneutral und nachvollziehbar. Klassisch wird hier das 4-Faktoren-Modell der EU genutzt (Kompetenzen / Belastung / Verantwortung / Arbeitsbedingungen) — also genau die Felder, die KlarGehalt oben abfragt. Wichtig: Im Streitfall muss Ihr Schema verteidigt werden — eine externe Anwaltsprüfung (KlarGehalt Add-on) stärkt Ihre defensive Position.',
+    link: {
+      url: 'https://eur-lex.europa.eu/eli/dir/2023/970/oj',
+      label: 'EU-Richtlinie 2023/970 — Art. 4 (EUR-Lex)',
+    },
+  },
+  other: {
+    title: 'Andere Methode',
+    summary: 'Tarifbasiert oder branchenspezifisches Framework.',
+    details:
+      'Typische Beispiele: ERA (Entgeltrahmenabkommen Metall- und Elektroindustrie), TVöD (öffentlicher Dienst), TV-L oder branchenspezifische Modelle. Bitte beschreiben Sie unten kurz, welches Modell Sie verwenden — das ist Pflicht aus Art. 16 der EU-Richtlinie und macht Ihren Audit-Trail vollständig.',
+  },
 };
 
 const scoreLabels = ['—', '1 - Niedrig', '2', '3 - Mittel', '4', '5 - Hoch'];
@@ -281,6 +347,37 @@ const JobProfilesView = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {formData.evaluation_method && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/20">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div className="space-y-2 text-xs">
+                  <p className="font-semibold text-blue-900 dark:text-blue-100">
+                    {EVALUATION_METHOD_INFO[formData.evaluation_method].title}
+                  </p>
+                  <p className="text-blue-900 dark:text-blue-100">
+                    {EVALUATION_METHOD_INFO[formData.evaluation_method].summary}
+                  </p>
+                  <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                    {EVALUATION_METHOD_INFO[formData.evaluation_method].details}
+                  </p>
+                  {EVALUATION_METHOD_INFO[formData.evaluation_method].link && (
+                    <a
+                      href={EVALUATION_METHOD_INFO[formData.evaluation_method].link!.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline dark:text-blue-300"
+                    >
+                      {EVALUATION_METHOD_INFO[formData.evaluation_method].link!.label}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {formData.evaluation_method === 'other' && (
             <div className="grid gap-1.5">
               <Label className="text-xs">Beschreibung der Methode</Label>
