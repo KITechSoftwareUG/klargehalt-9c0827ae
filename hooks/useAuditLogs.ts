@@ -24,11 +24,16 @@ export interface AuditLogFilters {
   dateTo?: string;
 }
 
+// Audit reads go through the server route (service-role + RBAC) instead of a
+// browser-direct Supabase query: the browser client authenticates with a Logto
+// org token that Supabase has no integration to verify, so direct PostgREST
+// calls are rejected. Every other data hook already uses /api/* for the same
+// reason — this keeps audit consistent with that pattern.
 export function useAuditLogs(filters?: AuditLogFilters) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const { user, orgId, isLoaded, supabase } = useAuth();
+  const { user, orgId, isLoaded } = useAuth();
 
   const fetchAuditLogs = async (page = 0, pageSize = 50) => {
     if (!isLoaded || !user || !orgId) {
@@ -41,33 +46,26 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     setLoading(true);
 
     try {
-      let query = supabase
-        .from('audit_logs')
-        .select('*', { count: 'exact' })
-        .eq('organization_id', orgId)
-        .order('created_at', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      if (filters?.action) params.set('action', filters.action);
+      if (filters?.entity_type) params.set('entity_type', filters.entity_type);
+      if (filters?.user_id) params.set('user_id', filters.user_id);
+      if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters?.dateTo) params.set('dateTo', filters.dateTo);
 
-      if (filters?.action) {
-        query = query.eq('action', filters.action);
-      }
-      if (filters?.entity_type) {
-        query = query.eq('entity_type', filters.entity_type);
-      }
-      if (filters?.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('created_at', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('created_at', filters.dateTo);
-      }
+      const res = await fetch(`/api/audit-logs?${params.toString()}`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-      setAuditLogs((data || []) as AuditLog[]);
+      const { data, count } = (await res.json()) as {
+        data: AuditLog[];
+        count: number;
+      };
+      setAuditLogs(data || []);
       setTotalCount(count || 0);
     } catch (error: unknown) {
       console.error('Error fetching audit logs:', error);
@@ -81,13 +79,9 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     if (!user || !orgId) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .eq('organization_id', orgId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const res = await fetch('/api/audit-logs?full=1', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { data } = (await res.json()) as { data: AuditLog[] };
 
       if (format === 'csv') {
         const headers = ['Datum', 'Benutzer-ID', 'Aktion', 'Entitätstyp', 'Entitäts-ID'];
@@ -115,7 +109,7 @@ export function useAuditLogs(filters?: AuditLogFilters) {
         return csvContent;
       }
       return data;
-    } catch (error: unknown) {
+    } catch {
       toast.error('Fehler beim Exportieren der Audit-Logs');
       return null;
     }
@@ -131,12 +125,12 @@ export function useAuditLogs(filters?: AuditLogFilters) {
     if (!isLoaded || !user || !orgId) return null;
 
     try {
-      const { data, error } = await supabase.rpc('verify_audit_chain', {
-        _org_id: orgId,
+      const res = await fetch('/api/audit-logs/verify-chain', {
+        cache: 'no-store',
       });
-
-      if (error) throw error;
-      return data as boolean;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { valid } = (await res.json()) as { valid: boolean };
+      return valid;
     } catch (error: unknown) {
       console.error('Error verifying audit chain:', error);
       toast.error('Fehler bei der Integritätsprüfung');
