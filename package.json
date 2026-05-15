@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:tenant-guards": "node scripts/check-tenant-guards.mjs",
     "demo:seed": "node --env-file=.env.demo scripts/seed-demo.mjs",
     "demo:reset": "node --env-file=.env.demo scripts/seed-demo.mjs --reset",
     "demo:teardown": "node --env-file=.env.demo scripts/seed-demo.mjs --teardown"

@@ -18,6 +18,7 @@
 
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
 
 type Emp = {
@@ -47,10 +48,11 @@ const round = (n: number, d = 2) => Math.round(n * Math.pow(10, d)) / Math.pow(1
 
 export async function GET() {
   const ctx = await getServerAuthContext();
-  if (!ctx.isAuthenticated || !ctx.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const orgId = ctx.activeOrganizationId;
+  // Tenant-isolation gate (Risk #1): validate org membership before any
+  // service-role read — the kg_active_org cookie is not JWT-verified.
+  const guard = await guardOrgMember(ctx);
+  if (guard instanceof NextResponse) return guard;
+  const orgId = guard.orgId;
   const admin = createServiceClient();
 
   const [
