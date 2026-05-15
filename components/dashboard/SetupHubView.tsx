@@ -115,8 +115,23 @@ function PhaseCard({ phase, locked }: { phase: SetupPhase; locked: boolean }) {
           </div>
         </div>
 
+        {!isAnalysisPhase && phase.id === 'structure' && (
+          <div className="bg-white border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              Empfohlen: Abteilungen und Karrierestufen gemeinsam im geführten Workshop anlegen — inklusive
+              Tech-Startup-Vorlage für einen schnellen Start.
+            </p>
+            <Link href="/einrichtung/struktur" className="flex-shrink-0">
+              <Button variant="default" size="sm">
+                Workshop öffnen
+                <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {!isAnalysisPhase && phase.steps.length > 0 && (
-          <div className="bg-white border-t border-slate-100">
+          <div className={`bg-white ${phase.id === 'structure' ? '' : 'border-t'} border-slate-100`}>
             {phase.steps.map((step) => (
               <StepRow key={step.id} step={step} />
             ))}
