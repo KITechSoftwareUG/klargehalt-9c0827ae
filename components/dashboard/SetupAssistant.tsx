@@ -132,6 +132,13 @@ export default function SetupAssistant({ readiness }: SetupAssistantProps) {
           </Tooltip>
         </TooltipProvider>
 
+        <Link href="/einrichtung">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+            Geführte Einrichtung öffnen
+            <ArrowRight className="ml-1 h-3 w-3" />
+          </Button>
+        </Link>
+
         {readiness.completedCount > 0 && !readiness.isAnalysisReady && (
           <p className="text-xs text-slate-400">
             Noch {5 - readiness.completedCount}{' '}

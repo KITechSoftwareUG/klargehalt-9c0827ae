@@ -11,13 +11,14 @@ export async function GET() {
   const { orgId } = guard;
   const supabase = createServiceClient();
 
-  const [deptResult, levelsResult, profilesResult, bandsResult, employeesResult] =
+  const [deptResult, levelsResult, profilesResult, bandsResult, employeesResult, decisionsResult] =
     await Promise.all([
       supabase.from('departments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('job_levels').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('job_profiles').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('pay_bands').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('employees').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
+      supabase.from('salary_decisions').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
     ]);
 
   return NextResponse.json({
@@ -26,5 +27,6 @@ export async function GET() {
     profiles: profilesResult.count ?? 0,
     bands: bandsResult.count ?? 0,
     employees: employeesResult.count ?? 0,
+    salaryDecisions: decisionsResult.count ?? 0,
   });
 }
