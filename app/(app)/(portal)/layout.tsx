@@ -11,7 +11,7 @@ import {
     Shield, Users, Settings, LogOut, CreditCard,
     Building2, Scale,
     Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
-    Sparkles, Handshake, Bot, Lock, Rocket,
+    Sparkles, Handshake, Bot, Lock, Rocket, BarChart3,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
@@ -27,6 +27,7 @@ type AppView =
     | 'jobprofile'
     | 'karrierestufen'
     | 'abteilungen'
+    | 'auswertung'
     | 'mein-gehalt'
     | 'abrechnung'
     | 'einstellungen'
@@ -50,6 +51,7 @@ const VIEW_TO_PATH: Record<AppView, string> = {
     jobprofile:            '/jobprofile',
     karrierestufen:        '/karrierestufen',
     abteilungen:           '/abteilungen',
+    auswertung:            '/auswertung',
     'mein-gehalt':         '/mein-gehalt',
     abrechnung:            '/abrechnung',
     einstellungen:         '/einstellungen',
@@ -82,6 +84,7 @@ const MAIN_NAV: NavItem[] = [
     { label: 'Mitarbeiter',    icon: Users,      view: 'mitarbeiter',    group: 'Mitarbeiter' },
     // Compliance-Kern
     { label: 'Dashboard',              icon: ShieldCheck, view: 'dashboard',           group: 'Compliance' },
+    { label: 'Auswertung',             icon: BarChart3,   view: 'auswertung',          group: 'Compliance' },
     { label: 'Compliance-Prüfungen',   icon: FileCheck,   view: 'compliance-workflow', group: 'Compliance', proLocked: true },
     // Premium & Services
     { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true, proLocked: true },

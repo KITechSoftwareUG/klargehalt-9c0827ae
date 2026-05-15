@@ -24,31 +24,17 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Rate limit: max 5 repair attempts per user per hour to prevent DB write abuse.
-  const rateLimitKey = `repair-role:${context.user.id}`;
-  if (!(await checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000))) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  }
-
-  // Verify against Logto directly. The active-org cookie is only a selector and
-  // can lag JWT claims after onboarding, so claims alone cannot be the authority.
-  const organizationToken = await getOrganizationToken(
-    getLogtoConfig(),
-    context.activeOrganizationId,
-  ).catch(() => null);
-  if (!organizationToken) {
-    return NextResponse.json(
-      { error: 'Forbidden: not a member of this organization' },
-      { status: 403 }
-    );
-  }
-
   const adminClient = createSupabaseAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Check again server-side to be idempotent
+  // FAST PATH (no rate-limit): if the user already has an active org_members
+  // row, this is a pure READ. useAuth() retries this endpoint legitimately
+  // when the client-side Supabase JWT lags or briefly 401s — penalising those
+  // retries with a 429 was the cause of the "Mitarbeiter / Kein Zugriff"
+  // flapping in production. The rate-limit was always meant to protect the
+  // INSERT path (privilege escalation by spamming), not the read.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingRole } = await (adminClient as any)
     .from('organization_members')
@@ -60,6 +46,25 @@ export async function POST() {
 
   if (existingRole) {
     return NextResponse.json({ role: existingRole.role, repaired: false });
+  }
+
+  // INSERT PATH — from here on we WILL write a row. Apply the rate limit.
+  const rateLimitKey = `repair-role:${context.user.id}`;
+  if (!(await checkRateLimit(rateLimitKey, 5, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  // Verify the user really is a member of this Logto org (claims alone are
+  // not authoritative because of JWT-lag right after onboarding).
+  const organizationToken = await getOrganizationToken(
+    getLogtoConfig(),
+    context.activeOrganizationId,
+  ).catch(() => null);
+  if (!organizationToken) {
+    return NextResponse.json(
+      { error: 'Forbidden: not a member of this organization' },
+      { status: 403 }
+    );
   }
 
   // Determine the correct role: only the org creator gets 'admin'.
