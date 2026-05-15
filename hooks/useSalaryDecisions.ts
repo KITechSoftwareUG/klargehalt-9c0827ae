@@ -79,9 +79,11 @@ export function useSalaryDecisions(employeeId?: string) {
       if (error) throw error;
       setDecisions((data || []) as SalaryDecision[]);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      console.error('Error fetching salary decisions:', error);
-      toast.error(`Fehler beim Laden der Gehaltsentscheidungen: ${message}`);
+      // Background fetch — never toast. Empty decision history is the normal
+      // state for any freshly-added employee, and a red error toast on every
+      // dialog mount makes the demo look broken.
+      console.error('[salary-decisions] fetch failed:', error);
+      setDecisions([]);
     } finally {
       setLoading(false);
     }

@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, AlertCircle, Scale, X, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, AlertCircle, Scale, X, FileText, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SalaryFactor, SalaryFactorType, SalaryJustification } from '@/lib/types/salary-justification';
 import { SalaryDecisionDialog } from '@/components/dashboard/SalaryDecisionDialog';
@@ -785,6 +785,15 @@ const EmployeesView = () => {
                         className="text-primary hover:text-primary"
                       >
                         <FileText className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(`/api/reports/employee/${employee.id}/pdf`, '_blank', 'noopener,noreferrer')}
+                        title="Auskunftsbericht (PDF) — EU 2023/970"
+                        className="text-primary hover:text-primary"
+                      >
+                        <FileDown className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(employee)}>
                         <Pencil className="w-4 h-4" />
