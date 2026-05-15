@@ -147,16 +147,26 @@ export const getServerAuthContext = async () => {
 
   const user = mapLogtoUser(context.claims, context.userInfo);
   const jwtOrganizations = getOrganizationsFromClaims(context.claims);
-  const activeOrganizationId = await getActiveOrganizationIdFromCookies();
+  const cookieActiveOrganizationId = await getActiveOrganizationIdFromCookies();
 
   // JWT lag: Logto only updates the organizations claim on next login. After
   // onboarding the JWT is still empty, but the kg_active_org cookie is the
   // source of truth. Append the cookie org so the client resolves
   // activeOrganization correctly without forcing a re-login.
   const organizations =
-    activeOrganizationId && !jwtOrganizations.some((o) => o.id === activeOrganizationId)
-      ? [...jwtOrganizations, { id: activeOrganizationId, name: null as null }]
+    cookieActiveOrganizationId && !jwtOrganizations.some((o) => o.id === cookieActiveOrganizationId)
+      ? [...jwtOrganizations, { id: cookieActiveOrganizationId, name: null as null }]
       : jwtOrganizations;
+
+  // Fallback: kg_active_org is a session cookie (no maxAge) so a browser
+  // restart deletes it while the Logto session survives. Without this, a
+  // returning user gets organizations.length > 0 but activeOrganization ===
+  // null — and because AuthLauncher/Onboarding key off organizations.length
+  // while PortalLayout keys off orgId, that drives an infinite
+  // /sign-in → /dashboard → /onboarding redirect loop. Default to the first
+  // JWT org (mirrors the equivalent middleware.ts recovery branch).
+  const activeOrganizationId =
+    cookieActiveOrganizationId ?? jwtOrganizations[0]?.id ?? null;
 
   return {
     ...context,
