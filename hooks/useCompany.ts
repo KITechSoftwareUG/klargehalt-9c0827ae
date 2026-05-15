@@ -13,6 +13,10 @@ export interface Company {
   industry: string | null;
   employee_size_band: string | null;
   reporting_frequency: string | null;
+  logo_url: string | null;
+  default_currency: string;
+  default_locale: string;
+  default_timezone: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +28,10 @@ export interface CompanyFormData {
   industry?: string;
   employee_size_band?: '100-149' | '150-249' | '250+';
   reporting_frequency?: 'annual' | 'triennial';
+  logo_url?: string | null;
+  default_currency?: string;
+  default_locale?: string;
+  default_timezone?: string;
 }
 
 export function useCompany() {

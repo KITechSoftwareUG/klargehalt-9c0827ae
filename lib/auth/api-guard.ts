@@ -125,4 +125,5 @@ export const PAY_BAND_WRITE_FIELDS = [
 export const COMPANY_WRITE_FIELDS = [
   'name', 'legal_name', 'country', 'industry', 'employee_size_band',
   'reporting_frequency',
+  'logo_url', 'default_currency', 'default_locale', 'default_timezone',
 ] as const;
