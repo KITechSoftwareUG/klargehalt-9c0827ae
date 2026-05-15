@@ -13,7 +13,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('companies')
-    .select('id, organization_id, name, legal_name, country, industry, employee_size_band, reporting_frequency, created_at, updated_at')
+    .select('id, organization_id, name, legal_name, country, industry, employee_size_band, reporting_frequency, logo_url, default_currency, default_locale, default_timezone, created_at, updated_at')
     .eq('organization_id', orgId)
     .maybeSingle();
 

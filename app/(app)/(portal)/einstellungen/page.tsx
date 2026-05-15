@@ -1,20 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowRight, FileUp } from 'lucide-react';
-import CompanySetup from '@/components/dashboard/CompanySetup';
+import CompanySettingsView from '@/components/dashboard/CompanySettingsView';
 import { RoleGuard } from '@/components/RoleGuard';
 import AccessDenied from '@/components/dashboard/AccessDenied';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export default function EinstellungenPage() {
-    const router = useRouter();
     return (
         <RoleGuard roles={['admin']} fallback={<AccessDenied />}>
             <div className="space-y-8">
-                <CompanySetup onComplete={() => router.push('/dashboard')} />
+                <CompanySettingsView />
                 <DataMigrationCard />
             </div>
         </RoleGuard>
