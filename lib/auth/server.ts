@@ -69,10 +69,11 @@ export const getActiveOrganizationIdFromCookies = async () => {
 };
 
 const getLocalE2EAuthContext = async () => {
-  if (
-    process.env.NODE_ENV === 'production' ||
-    process.env.KLARGEHALT_E2E_AUTH !== '1'
-  ) {
+  // Restrict to development/test only — staging/preview/anything-else must
+  // never accept the cookie-based impersonation backdoor.
+  const isE2ESafeEnv =
+    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+  if (!isE2ESafeEnv || process.env.KLARGEHALT_E2E_AUTH !== '1') {
     return null;
   }
 

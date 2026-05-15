@@ -168,7 +168,7 @@ const EmployeesView = () => {
 
   // Invite state
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
-  const [inviteResult, setInviteResult] = useState<{ email: string; tempPassword: string; alreadyExists: boolean } | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ email: string; alreadyExists: boolean } | null>(null);
 
   // CSV import state
   const [csvImporting, setCsvImporting] = useState(false);
@@ -191,11 +191,10 @@ const EmployeesView = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId: employee.id }),
       });
-      const data = await res.json() as { success?: boolean; email?: string; tempPassword?: string; alreadyExists?: boolean; error?: string };
+      const data = await res.json() as { success?: boolean; email?: string; alreadyExists?: boolean; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Einladung fehlgeschlagen');
       setInviteResult({
         email: data.email ?? employee.email,
-        tempPassword: data.tempPassword ?? '',
         alreadyExists: data.alreadyExists ?? false,
       });
     } catch (err: unknown) {
@@ -1029,28 +1028,20 @@ const EmployeesView = () => {
             </DialogTitle>
             <DialogDescription>
               {inviteResult?.alreadyExists
-                ? 'Der Nutzer existierte bereits. Das Passwort wurde zurückgesetzt.'
-                : 'Das Mitarbeiterkonto wurde erstellt.'}
+                ? 'Der Nutzer existierte bereits. Wir haben ihm eine E-Mail mit den Zugangshinweisen geschickt.'
+                : 'Das Mitarbeiterkonto wurde erstellt. Wir haben eine E-Mail mit dem temporären Passwort an den Mitarbeiter geschickt.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="rounded-lg bg-muted p-4 space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Login-URL</p>
-                <p className="text-sm font-mono font-medium">{process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.klargehalt.de'}/sign-in</p>
-              </div>
-              <div>
                 <p className="text-xs text-muted-foreground mb-1">E-Mail</p>
                 <p className="text-sm font-mono font-medium">{inviteResult?.email}</p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Temporäres Passwort</p>
-                <p className="text-lg font-mono font-bold tracking-widest text-primary">{inviteResult?.tempPassword}</p>
-              </div>
             </div>
-            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>Teilen Sie diese Zugangsdaten sicher mit dem Mitarbeiter. Das Passwort sollte nach dem ersten Login geändert werden.</p>
+              <p>Aus Sicherheitsgründen werden Zugangsdaten ausschließlich per E-Mail an den Mitarbeiter gesendet — nicht hier angezeigt.</p>
             </div>
           </div>
           <div className="flex justify-end">

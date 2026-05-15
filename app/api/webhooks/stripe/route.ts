@@ -111,19 +111,28 @@ export async function POST(request: NextRequest) {
 
   const supabase = supabaseAdmin();
 
+  // Idempotency-first: claim the event BEFORE running side effects.
+  // Two concurrent retries from Stripe can both pass a read-then-insert check
+  // and both fan out emails. With ON CONFLICT we proceed only if WE inserted
+  // the marker — losers exit cleanly. If processing later fails we delete the
+  // marker so Stripe's retry can take over.
+  const { data: claim, error: claimErr } = await supabase
+    .from('processed_stripe_events')
+    .upsert({ event_id: event.id }, { onConflict: 'event_id', ignoreDuplicates: true })
+    .select('event_id');
+
+  if (claimErr) {
+    console.error('Stripe webhook: idempotency claim failed', claimErr);
+    Sentry.captureException(claimErr, { tags: { route: 'webhook_stripe', stage: 'idempotency_claim' } });
+    return NextResponse.json({ error: 'Idempotency check failed' }, { status: 500 });
+  }
+
+  if (!claim || claim.length === 0) {
+    console.log(`Stripe webhook: duplicate event ${event.id}, skipping`);
+    return NextResponse.json({ received: true });
+  }
+
   try {
-    // Idempotency: skip already-processed events
-    const { data: alreadyProcessed } = await supabase
-      .from('processed_stripe_events')
-      .select('event_id')
-      .eq('event_id', event.id)
-      .maybeSingle();
-
-    if (alreadyProcessed) {
-      console.log(`Stripe webhook: duplicate event ${event.id}, skipping`);
-      return NextResponse.json({ received: true });
-    }
-
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -586,13 +595,15 @@ export async function POST(request: NextRequest) {
       default:
         console.log(`Stripe webhook: unhandled event ${event.type}`);
     }
-
-    // Mark as processed after successful execution. If processing failed
-    // (threw above), Stripe will retry — and we want it to.
-    await supabase
-      .from('processed_stripe_events')
-      .insert({ event_id: event.id });
   } catch (error) {
+    // Release the idempotency claim so Stripe's retry can re-process this event.
+    // Best-effort: if release fails the next retry just no-ops, which is strictly
+    // better than the previous behaviour where partial side effects could repeat.
+    await supabase.from('processed_stripe_events').delete().eq('event_id', event.id).then(
+      () => undefined,
+      (e) => console.error('Stripe webhook: failed to release idempotency claim', e),
+    );
+
     const isUnmappedPrice = error instanceof UnmappedPriceError;
     console.error(`Stripe webhook: error processing ${event.type}`, error);
     Sentry.captureException(error, {

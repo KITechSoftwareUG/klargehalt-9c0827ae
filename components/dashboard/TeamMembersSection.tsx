@@ -30,7 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { UserPlus, Trash2, Loader2, Copy, Check } from 'lucide-react';
+import { UserPlus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -82,8 +82,7 @@ export default function TeamMembersSection() {
     const [inviting, setInviting] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState<'admin' | 'hr_manager'>('hr_manager');
-    const [tempPasswordResult, setTempPasswordResult] = useState<{ email: string; password: string | null; alreadyExisted: boolean } | null>(null);
-    const [pwCopied, setPwCopied] = useState(false);
+    const [inviteSentResult, setInviteSentResult] = useState<{ email: string; alreadyExisted: boolean } | null>(null);
     const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
     const [removing, setRemoving] = useState(false);
     const [roleSavingId, setRoleSavingId] = useState<string | null>(null);
@@ -126,9 +125,8 @@ export default function TeamMembersSection() {
                 toast.error(json.error || 'Einladung fehlgeschlagen');
                 return;
             }
-            setTempPasswordResult({
+            setInviteSentResult({
                 email: inviteEmail.trim(),
-                password: json.tempPassword,
                 alreadyExisted: json.alreadyExisted,
             });
             setInviteEmail('');
@@ -375,61 +373,32 @@ export default function TeamMembersSection() {
                 </DialogContent>
             </Dialog>
 
-            {/* Temp password / confirmation dialog */}
+            {/* Invite-sent confirmation. Credentials are delivered via email,
+                never returned in the API response — they would otherwise sit in
+                the inviter's HTTPS body, DevTools, proxies, browser extensions. */}
             <Dialog
-                open={!!tempPasswordResult}
+                open={!!inviteSentResult}
                 onOpenChange={(open) => {
-                    if (!open) {
-                        setTempPasswordResult(null);
-                        setPwCopied(false);
-                    }
+                    if (!open) setInviteSentResult(null);
                 }}
             >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Einladung versendet</DialogTitle>
                         <DialogDescription>
-                            {tempPasswordResult?.alreadyExisted
-                                ? 'Diese Person hatte bereits einen Account und wurde der Organisation hinzugefügt. Sie kann sich mit ihrem bestehenden Passwort einloggen.'
-                                : 'Bitte gib das temporäre Passwort an die eingeladene Person weiter. Sie sollte es beim ersten Login ändern.'}
+                            {inviteSentResult?.alreadyExisted
+                                ? 'Diese Person hatte bereits einen Account und wurde der Organisation hinzugefügt. Sie kann sich mit ihrem bestehenden Passwort einloggen — wir haben sie per E-Mail benachrichtigt.'
+                                : 'Wir haben eine E-Mail mit einem temporären Passwort an die eingeladene Person geschickt. Sie sollte es beim ersten Login ändern.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 py-2">
                         <div className="space-y-1">
                             <Label className="text-xs text-slate-500">Email</Label>
-                            <p className="font-mono text-sm">{tempPasswordResult?.email}</p>
+                            <p className="font-mono text-sm">{inviteSentResult?.email}</p>
                         </div>
-                        {tempPasswordResult?.password && (
-                            <div className="space-y-1">
-                                <Label className="text-xs text-slate-500">Temporäres Passwort</Label>
-                                <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-100 px-3 py-2 rounded text-sm font-mono">
-                                        {tempPasswordResult.password}
-                                    </code>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(tempPasswordResult.password!);
-                                            setPwCopied(true);
-                                            setTimeout(() => setPwCopied(false), 2000);
-                                        }}
-                                    >
-                                        {pwCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                     <DialogFooter>
-                        <Button
-                            onClick={() => {
-                                setTempPasswordResult(null);
-                                setPwCopied(false);
-                            }}
-                        >
-                            Schließen
-                        </Button>
+                        <Button onClick={() => setInviteSentResult(null)}>Schließen</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

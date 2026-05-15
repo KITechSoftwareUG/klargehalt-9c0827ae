@@ -3,18 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { getStripe } from '@/lib/stripe';
 import { detectDiscrepancies, applyReconciliation } from '@/lib/stripe-reconcile';
-
-const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID ?? '';
+import { isSuperAdminUserId } from '@/lib/auth/super-admin';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 async function guardSuperAdmin() {
   const auth = await getServerAuthContext();
-  if (!auth?.user || auth.user.id !== SUPER_ADMIN_USER_ID) {
+  if (!isSuperAdminUserId(auth?.user?.id)) {
     return { ok: false as const, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   }
-  return { ok: true as const, userId: auth.user.id };
+  return { ok: true as const, userId: auth!.user!.id };
 }
 
 export async function GET(_request: NextRequest) {

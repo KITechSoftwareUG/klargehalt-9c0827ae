@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { inviteEmployeeToOrg } from '@/lib/logto-management';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { sendEmployeeInviteEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Only admins can invite employees
+  // Only admins/HR can invite employees
   const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: roleRow } = await (supabase as any)
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'employeeId required' }, { status: 400 });
   }
 
-  // Fetch employee record
+  // Fetch employee record (RLS-scoped via the user's client)
   const { data: employee } = await supabase
     .from('employees')
     .select('id, first_name, last_name, email, user_id')
@@ -51,6 +52,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Mitarbeiter hat keine E-Mail-Adresse hinterlegt.' }, { status: 400 });
   }
 
+  // Look up company name for the email out-of-band
+  const admin = createServiceClient();
+  const { data: company } = await admin
+    .from('companies')
+    .select('name')
+    .eq('organization_id', context.activeOrganizationId)
+    .maybeSingle();
+  const companyName = (company?.name as string) || 'Ihre Organisation';
+
   try {
     const result = await inviteEmployeeToOrg({
       email: employee.email,
@@ -65,11 +75,21 @@ export async function POST(request: NextRequest) {
       .update({ user_id: result.logtoUserId })
       .eq('id', employee.id);
 
+    // Deliver credentials out-of-band — never return tempPassword in JSON.
+    try {
+      await sendEmployeeInviteEmail(employee.email, employee.first_name, companyName, result.tempPassword);
+    } catch (emailError) {
+      console.error('Failed to send employee invite email', { employeeId, error: emailError });
+      return NextResponse.json(
+        { error: 'Mitarbeiter angelegt, aber Einladungs-E-Mail konnte nicht gesendet werden. Bitte Support kontaktieren.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       alreadyExists: result.alreadyExists,
       email: employee.email,
-      tempPassword: result.tempPassword,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Einladung fehlgeschlagen';

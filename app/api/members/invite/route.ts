@@ -5,6 +5,7 @@ import { guardRole } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
 import { inviteMemberToOrg } from '@/lib/logto-management';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { sendMemberInviteEmail } from '@/lib/email';
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -107,11 +108,32 @@ export async function POST(request: NextRequest) {
     // legacy table mirror is best-effort
   }
 
+  // Look up company name for the invite email
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name')
+    .eq('organization_id', guard.orgId)
+    .maybeSingle();
+  const companyName = (company?.name as string) || 'Ihre Organisation';
+
+  // Deliver credentials out-of-band. Never return tempPassword in the JSON
+  // response — it would land in the inviter's DevTools / proxies / extensions.
+  try {
+    await sendMemberInviteEmail(email, role, companyName, inviteResult.tempPassword);
+  } catch (emailError) {
+    console.error('Failed to send member invite email', { userId: inviteResult.logtoUserId, error: emailError });
+    // Inviter already paid the side-effect cost (Logto user created, member row written).
+    // Surface the error so they can retry / contact support.
+    return NextResponse.json(
+      { error: 'Mitglied angelegt, aber Einladungs-E-Mail konnte nicht gesendet werden. Bitte Support kontaktieren.' },
+      { status: 500 }
+    );
+  }
+
   return NextResponse.json({
     success: true,
     email,
     role,
     alreadyExisted: inviteResult.alreadyExists,
-    tempPassword: inviteResult.tempPassword,
   });
 }

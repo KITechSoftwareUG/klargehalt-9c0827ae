@@ -438,6 +438,128 @@ export async function sendAssessmentValidatedToHR(
   });
 }
 
+/**
+ * Sends login credentials to an invited employee.
+ * Same rationale as sendMemberInviteEmail — never return credentials in JSON.
+ */
+export async function sendEmployeeInviteEmail(
+  to: string,
+  firstName: string,
+  companyName: string,
+  tempPassword: string | null,
+): Promise<void> {
+  const credentialsBlock = tempPassword
+    ? `
+      <p style="color: #475569; line-height: 1.6;">
+        Sie können sich mit dieser E-Mail-Adresse und dem folgenden temporären Passwort anmelden:
+      </p>
+      <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 14px; color: #0f172a; word-break: break-all;">
+        ${tempPassword}
+      </div>
+      <p style="color: #b91c1c; font-size: 13px; margin: 0 0 16px;">
+        Bitte ändern Sie das Passwort sofort nach dem ersten Login.
+      </p>
+    `
+    : `
+      <p style="color: #475569; line-height: 1.6;">
+        Ihr bestehender Account wurde mit Ihrem Mitarbeiter-Profil verknüpft. Melden Sie sich
+        wie gewohnt an — Ihre Zugangsdaten haben sich nicht geändert.
+      </p>
+    `;
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to,
+    subject: `Ihr KlarGehalt-Mitarbeiterzugang für ${companyName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #071423; margin-top: 0;">Hallo ${firstName || 'dort'}</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            <strong>${companyName}</strong> hat einen Mitarbeiterzugang für Sie eingerichtet.
+            Über das Portal können Sie unter anderem Ihre eigenen Gehaltsdaten einsehen.
+          </p>
+          ${credentialsBlock}
+          <a href="https://app.klargehalt.de/sign-in"
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Jetzt anmelden
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen? <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+/**
+ * Sends invite credentials to a newly invited team member.
+ * Replaces the previous flow that returned tempPassword in the API response —
+ * credentials must reach the inviteee out-of-band via email, never sit in the
+ * inviter's HTTPS response body where DevTools / proxies / browser extensions
+ * could capture them.
+ */
+export async function sendMemberInviteEmail(
+  to: string,
+  role: 'admin' | 'hr_manager',
+  companyName: string,
+  tempPassword: string | null,
+): Promise<void> {
+  const roleLabel = role === 'admin' ? 'Administrator' : 'HR-Manager';
+  const credentialsBlock = tempPassword
+    ? `
+      <p style="color: #475569; line-height: 1.6;">
+        Sie können sich mit dieser E-Mail-Adresse und dem folgenden temporären Passwort anmelden:
+      </p>
+      <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 14px; color: #0f172a; word-break: break-all;">
+        ${tempPassword}
+      </div>
+      <p style="color: #b91c1c; font-size: 13px; margin: 0 0 16px;">
+        Bitte ändern Sie das Passwort sofort nach dem ersten Login.
+      </p>
+    `
+    : `
+      <p style="color: #475569; line-height: 1.6;">
+        Ihr bestehender KlarGehalt-Account wurde zur Organisation hinzugefügt. Melden Sie sich
+        wie gewohnt an — Ihre Zugangsdaten haben sich nicht geändert.
+      </p>
+    `;
+  await getResend().emails.send({
+    from: FROM_NOREPLY,
+    to,
+    subject: `Sie wurden zu ${companyName} bei KlarGehalt eingeladen`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+        </div>
+        <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #071423; margin-top: 0;">Einladung zu ${companyName}</h2>
+          <p style="color: #475569; line-height: 1.6;">
+            Sie wurden als <strong>${roleLabel}</strong> zur Organisation
+            <strong>${companyName}</strong> eingeladen.
+          </p>
+          ${credentialsBlock}
+          <a href="https://app.klargehalt.de/sign-in"
+             style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                    border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+            Jetzt anmelden
+          </a>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+            Fragen? <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function sendCertificateIssuedToHR(
   hrEmail: string,
   hrName: string,

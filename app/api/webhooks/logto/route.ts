@@ -137,7 +137,7 @@ async function handleUserCreated(user: LogtoUserData) {
       })
       .eq('user_id', user.id);
     if (error) {
-      console.error('Webhook: Failed to update profile', error);
+      console.error('Webhook: Failed to update profile', { userId: user.id, error });
       throw error;
     }
   } else {
@@ -147,7 +147,7 @@ async function handleUserCreated(user: LogtoUserData) {
       full_name: user.name || user.username || '',
     });
     if (error) {
-      console.error('Webhook: Failed to insert profile', error);
+      console.error('Webhook: Failed to insert profile', { userId: user.id, error });
       throw error;
     }
   }
@@ -156,11 +156,11 @@ async function handleUserCreated(user: LogtoUserData) {
     try {
       await sendWelcomeEmail(user.primaryEmail, user.name || user.username || '');
     } catch (emailError) {
-      console.error('Webhook: Failed to send welcome email', emailError);
+      console.error('Webhook: Failed to send welcome email', { userId: user.id, error: emailError });
     }
   }
 
-  console.log(`Webhook: Profile synced for user ${user.id}`);
+  console.log('Webhook: Profile synced', { userId: user.id });
 }
 
 async function handleUserUpdated(user: LogtoUserData) {
@@ -178,15 +178,65 @@ async function handleUserUpdated(user: LogtoUserData) {
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('Webhook: Failed to update profile', error);
+    console.error('Webhook: Failed to update profile', { userId: user.id, error });
     throw error;
   }
 
-  console.log(`Webhook: Profile updated for user ${user.id}`);
+  console.log('Webhook: Profile updated', { userId: user.id });
+}
+
+/**
+ * Returns the list of organization_ids where this user is the SOLE active owner.
+ * Deleting them would leave those orgs without anyone able to manage seats,
+ * billing, or membership — which silently locks the customer out of admin
+ * actions. We refuse the deletion in that case and require ownership transfer.
+ */
+async function findSoleOwnerOrgs(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+): Promise<string[]> {
+  const { data: ownedRows } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .eq('role', 'owner')
+    .eq('status', 'active');
+
+  const ownedOrgIds = ((ownedRows ?? []) as Array<{ organization_id: string }>).map(
+    (r) => r.organization_id,
+  );
+  if (ownedOrgIds.length === 0) return [];
+
+  const sole: string[] = [];
+  for (const orgId of ownedOrgIds) {
+    const { count } = await supabase
+      .from('organization_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('role', 'owner')
+      .eq('status', 'active');
+    if ((count ?? 0) <= 1) sole.push(orgId);
+  }
+  return sole;
 }
 
 async function handleUserDeleted(user: LogtoUserData) {
   const supabase = getAdminClient();
+
+  // Refuse to delete a user who is the sole owner of any org — that would
+  // strand the org with no admin and break billing/seat management.
+  const orphanedOrgs = await findSoleOwnerOrgs(supabase, user.id);
+  if (orphanedOrgs.length > 0) {
+    console.error('Webhook: refusing User.Deleted — would strand orgs without owner', {
+      userId: user.id,
+      orphanedOrgs,
+    });
+    throw new Error(
+      `User.Deleted refused: user is the sole owner of ${orphanedOrgs.length} organization(s). ` +
+      `Transfer ownership first.`,
+    );
+  }
 
   const { error: roleError } = await supabase
     .from('user_roles')
@@ -194,7 +244,7 @@ async function handleUserDeleted(user: LogtoUserData) {
     .eq('user_id', user.id);
 
   if (roleError) {
-    console.error('Webhook: Failed to delete user roles', roleError);
+    console.error('Webhook: Failed to delete user roles', { userId: user.id, error: roleError });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -204,7 +254,7 @@ async function handleUserDeleted(user: LogtoUserData) {
     .eq('user_id', user.id);
 
   if (memberError) {
-    console.error('Webhook: Failed to delete organization_members', memberError);
+    console.error('Webhook: Failed to delete organization_members', { userId: user.id, error: memberError });
   }
 
   const { error: profileError } = await supabase
@@ -213,11 +263,11 @@ async function handleUserDeleted(user: LogtoUserData) {
     .eq('user_id', user.id);
 
   if (profileError) {
-    console.error('Webhook: Failed to delete profile', profileError);
+    console.error('Webhook: Failed to delete profile', { userId: user.id, error: profileError });
     throw profileError;
   }
 
-  console.log(`Webhook: User ${user.id} data cleaned up`);
+  console.log('Webhook: User data cleaned up', { userId: user.id });
 }
 
 export async function POST(request: NextRequest) {
@@ -240,17 +290,23 @@ export async function POST(request: NextRequest) {
 
   const { event, hookId, createdAt } = payload;
 
-  // Idempotency: deduplicate using hookId + createdAt as a stable event fingerprint.
-  // Logto does not provide a unique event ID, so we derive one from the webhook metadata.
+  // Idempotency-first: claim the event BEFORE running side effects.
+  // Logto retries on non-2xx responses; two concurrent retries that both pass a
+  // read-then-insert dedup check would both fan out welcome emails. With ON
+  // CONFLICT we proceed only if WE inserted the marker — losers exit cleanly.
   const eventFingerprint = `${hookId}:${createdAt}`;
   const supabase = getAdminClient();
-  const { data: alreadyProcessed } = await supabase
+  const { data: claim, error: claimErr } = await supabase
     .from('processed_logto_events')
-    .select('event_id')
-    .eq('event_id', eventFingerprint)
-    .maybeSingle();
+    .upsert({ event_id: eventFingerprint }, { onConflict: 'event_id', ignoreDuplicates: true })
+    .select('event_id');
 
-  if (alreadyProcessed) {
+  if (claimErr) {
+    console.error('Webhook: Logto idempotency claim failed', claimErr);
+    return NextResponse.json({ error: 'Idempotency check failed' }, { status: 500 });
+  }
+
+  if (!claim || claim.length === 0) {
     console.log(`Webhook: duplicate Logto event ${eventFingerprint}, skipping`);
     return NextResponse.json({ success: true });
   }
@@ -283,14 +339,13 @@ export async function POST(request: NextRequest) {
         console.log(`Webhook: Unhandled event ${event}`);
     }
 
-    // Mark event as processed to prevent duplicate processing on retries
-    await supabase
-      .from('processed_logto_events')
-      .insert({ event_id: eventFingerprint })
-      .throwOnError();
-
     return NextResponse.json({ success: true });
   } catch (error) {
+    // Release the idempotency claim so Logto's retry can re-process.
+    await supabase.from('processed_logto_events').delete().eq('event_id', eventFingerprint).then(
+      () => undefined,
+      (e) => console.error('Webhook: failed to release Logto idempotency claim', e),
+    );
     console.error(`Webhook: Error processing ${event}`, error);
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
   }
