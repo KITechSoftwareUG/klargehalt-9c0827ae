@@ -719,7 +719,7 @@ export default function VerguetungsMatrixView() {
             <span>Lege mind. 1 Job-Profil an, um fortzufahren</span>
           )}
         </div>
-        <Link href="/einrichtung">
+        <Link href="/einrichtung/mitarbeiter">
           <Button disabled={!canProceed} variant={canProceed ? 'default' : 'outline'}>
             Weiter zu Phase 3 (Mitarbeiter)
             <ArrowRight className="ml-1.5 h-4 w-4" />

@@ -145,6 +145,21 @@ function PhaseCard({ phase, locked }: { phase: SetupPhase; locked: boolean }) {
           </div>
         )}
 
+        {!isAnalysisPhase && phase.id === 'people' && (
+          <div className="bg-white border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              Empfohlen: Mitarbeiterliste als CSV hochladen — das System erkennt Abteilungen und
+              Profile automatisch und legt fehlende Einträge optional an.
+            </p>
+            <Link href="/einrichtung/mitarbeiter" className="flex-shrink-0">
+              <Button variant="default" size="sm">
+                CSV-Import öffnen
+                <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {!isAnalysisPhase && phase.steps.length > 0 && (
           <div className={`bg-white ${phase.id === 'structure' ? '' : 'border-t'} border-slate-100`}>
             {phase.steps.map((step) => (
