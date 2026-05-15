@@ -25,10 +25,12 @@ Das Pricing folgt der EU-Richtlinie 2023/970 (siehe `@.claude/docs/law.md` §3):
 **Happy Path (Single-User-Standard):**
 1. HR-Leiterin signt sich auf `klargehalt.de/preise` → Stripe Checkout (oder 14-Tage-Trial) → Sign-up
 2. Onboarding: wählt "Ich bin HR-Manager" + Firmendaten + Plan → wird **automatisch `owner`** ihrer Organisation
-3. Sie legt allein an: Departments → Job-Profile → Job-Levels → Pay-Bands → Mitarbeiter
-4. Sie sieht Gaps in `/dashboard/pay-equity-hr` und PayGapReport
-5. Sie dokumentiert Salary-Decisions (Hire/Raise/Promotion) in EmployeesView
-6. Bei Bedarf: lädt weitere Team-Mitglieder ein (admin / hr_manager) im **Billing-Bereich**, gemäß Plan-Limits
+3. Landet im **Setup-Hub** (`/einrichtung`) mit Phasen-Übersicht und Workshop-Shortcuts
+4. Strukturdaten anlegen über die Workshops: Struktur (`/einrichtung/struktur` — Abteilungen + Karrierestufen kombiniert), Vergütung (`/einrichtung/verguetung` — 2D-Matrix Job-Profile × Karrierestufen), oder direkt in den Einzelroutes (`/abteilungen`, `/karrierestufen`, `/jobprofile`, `/gehaltsbaender`)
+5. Mitarbeiter importieren via CSV-Wizard (`/einrichtung/mitarbeiter`) mit Fuzzy-Header-Matching + Gemini-AI-Mapping-Banner
+6. Pay-Gaps sieht sie im `/dashboard` (Compliance-Score + Pay-Gap-Karten)
+7. Salary-Decisions (Hire/Raise/Promotion) dokumentiert sie in `/mitarbeiter` via `SalaryDecisionDialog`
+8. Bei Bedarf: lädt weitere Team-Mitglieder ein (admin / hr_manager) im **Abrechnung** (`/abrechnung`), gemäß Plan-Limits
 
 **Erste Person = Owner.** Die im Onboarding selbst-gewählte Rolle (`selfReportedRole`) ist nur Analytics. Der erste User einer Organisation bekommt immer `role: 'owner'` in `organization_members`. Das ist der Inhaber des Tenant. Bei Einladungen wählt der Owner explizit die Rolle.
 
@@ -40,9 +42,18 @@ Das Pricing folgt der EU-Richtlinie 2023/970 (siehe `@.claude/docs/law.md` §3):
 
 ---
 
-## Build Status (2026-05-12)
+## Build Status (Stand 2026-05-15)
 
-**Done:** Job Profiles, Pay Bands, Job Levels, Departments, Pay Gap Report, HR Pay Equity, Audit Logs, Lawyer Dashboard/Reviews/Badge, Joint Assessment, Compliance Score, RBAC, Stripe Billing, Super-Admin Panel, salary decision documentation.
+**Done:** Job Profiles, Pay Bands, Job Levels, Departments, Pay Gap Report, HR Pay Equity, Audit Logs, Compliance-Workflow (kombiniert Lawyer Reviews + Joint Assessment), Compliance Score, RBAC, Stripe Billing (inkl. Cancel-Lifecycle, SCA, Disputes, Refunds), Super-Admin Panel, Salary Decision Documentation, **Setup-Hub mit 5 Phasen**, **CSV-Import mit Gemini-AI-Mapping**, **Basis-Tier-Repositioning** (Sidebar Pro-Locks + `/preise`-Spalte umpositioniert), **Inline-Create-Pattern** für Selects, **Daten-Migration-Sektion** in Einstellungen, **Diagnostic Error Messages** im Import.
+
+**Recently shipped (PR-Liste, Mai 2026):**
+- #28 — Stripe SCA + Dispute Closure + customer.updated events
+- #29 — `payment_issue='action_required'` CHECK constraint
+- #31 — Security audit remediation (1 P0, 7 P1, 6 P2)
+- #33–#41 — Setup-Hub Phasen 1–5 (Hub-Hub, Struktur-Workshop, Vergütungs-Matrix, CSV-Import, Inline-Create) + KI-CSV-Mapping + Basis-Tier-Repositioning
+- #40 — Evaluation-Method-Info-Box für Job-Profiles
+- #42 — Diagnostische Fehlermeldungen statt "Fehler beim Erstellen"
+- #43 — `pay_gap_snapshots` Schema-Drift behoben (Migration `20260515150000`)
 
 **Product core status:**
 

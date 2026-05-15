@@ -20,7 +20,7 @@ Greift ab dem nationalen Umsetzungsdatum für **alle Arbeitgeber unabhängig von
 | **Verbot der Entgelthistorie** | Bewerber dürfen nicht nach aktuellem oder früherem Gehalt gefragt werden. Zweck: bestehende Diskriminierungen sollen nicht von Job zu Job "mitgeschleppt" werden. |
 | **Geschlechtsneutralität** | Stellenausschreibungen und Auswahlverfahren müssen vollständig geschlechtsneutral formuliert sein. |
 
-**Klargehalt-Bezug:** Modul `job_postings` (`/dashboard/job-postings`) — Stellenanzeigen-Compliance ist Teil der Plattform.
+**Klargehalt-Bezug:** Modul `job_postings` (API: `/api/job-postings`, UI eingebettet in Compliance-Workflow) — Stellenanzeigen-Compliance ist Teil der Plattform.
 
 ---
 
@@ -34,7 +34,7 @@ Greift ab dem nationalen Umsetzungsdatum für **alle Arbeitgeber unabhängig von
 | **Kriterien-Transparenz** | Unternehmen müssen offenlegen, nach welchen objektiven, geschlechtsneutralen Kriterien Entgelt und berufliche Entwicklung festgelegt werden. |
 | **Offenlegungsverbot ist nichtig** | Vertragsklauseln, die Mitarbeiter daran hindern, über ihr Gehalt zu sprechen, sind ungültig — soweit es der Durchsetzung des Gleichbehandlungsprinzips dient. |
 
-**Klargehalt-Bezug:** Modul `info_requests` + `/dashboard/my-salary` + `/dashboard/hr-requests` + `/dashboard/rights-notifications`.
+**Klargehalt-Bezug:** Modul `info_requests` (API: `/api/info-requests`) + `/mein-gehalt` (Mitarbeiter-Self-View) + `rights_notifications` Tabelle (`/api/rights-notifications`).
 
 ---
 
@@ -56,7 +56,7 @@ Greift ab dem nationalen Umsetzungsdatum für **alle Arbeitgeber unabhängig von
 - Anteil männlicher/weiblicher Arbeitnehmer in jedem Quartil der Lohnverteilung
 - Pay Gap aufgeschlüsselt nach Gruppen gleicher/gleichwertiger Arbeit
 
-**Klargehalt-Bezug:** Modul `PayGapReport` (`/dashboard/reports`, `/dashboard/pay-equity-mgmt`) — **NICHT in Basis-Tier enthalten**, da Basis (1–50 MA) keiner Berichtspflicht unterliegt.
+**Klargehalt-Bezug:** Modul `PayGapReport` (PDF-Export via `/api/reports/pay-gap/pdf`, UI in `/dashboard` + `/compliance-workflow`) — PDF-Export & Trendanalyse **NICHT in Basis-Tier enthalten**, da Basis (1–50 MA) keiner Berichtspflicht unterliegt. Pay-Gap-Monitoring (read-only Karten) ist auch in Basis verfügbar.
 
 ---
 
@@ -70,7 +70,7 @@ Stellt ein Bericht ein Lohngefälle von **mehr als 5 %** zwischen Frauen und Mä
 2. müssen Maßnahmen zur Schließung der Lücke innerhalb einer angemessenen Frist ergriffen werden;
 3. müssen die Ursachen, identifizierte Maßnahmen und deren Wirksamkeit dokumentiert werden.
 
-**Klargehalt-Bezug:** Modul `joint_assessment` (`/dashboard/joint-assessment`) — Pflicht-Workflow für den Auslöse-Fall.
+**Klargehalt-Bezug:** Modul `compliance_assessments` (API: `/api/compliance/assessments`, UI eingebettet in `/compliance-workflow`) — Pflicht-Workflow für den Auslöse-Fall. Nur in Professional+ verfügbar (Basis-Tier zeigt Lock-Icon).
 
 ---
 
@@ -93,14 +93,14 @@ Die Richtlinie gibt Arbeitnehmern scharfe Schwerter:
 | Schritt | Klargehalt-Modul | Basis-Tier? |
 |---|---|---|
 | **Stellenbewertung systematisieren** (objektive Kriterien für "gleichwertige Arbeit": Belastung, Verantwortung, Ausbildung, Arbeitsbedingungen) | `job_profiles`, `job_levels`, `departments` | ✅ |
-| **Lohn-Pre-Audit** (interne Gender-Pay-Gap-Analyse zum Monitoring) | `pay_bands`, `usePayEquity` Hook, `/dashboard/pay-equity-hr` | ✅ (Monitoring inkl., kein Berichts-Export) |
+| **Lohn-Pre-Audit** (interne Gender-Pay-Gap-Analyse zum Monitoring) | `pay_bands`, `usePayEquity` Hook, Pay-Gap-Karten im `/dashboard` | ✅ (Monitoring inkl., kein Berichts-Export) |
 | **Recruiting-Prozesse anpassen** (Gehaltsspannen, kein Altgehalt-Fragen) | `job_postings` | ✅ |
 | **Entgeltentscheidungen objektivieren & dokumentieren** | `salary_decisions` ← **das Produkt-Herzstück** | ✅ |
 | **Externe Validierung** (defensible Position bei Streitfall) | `lawyer_reviews`, `lawyer_requests`, `lawyer_profiles` | Add-on (€799 / €399 Renewal) |
 | **Audit-Trail führen** | `audit_logs` (immutable) | ✅ |
 | **PDF-Bericht für Behörden** | `PayGapReport` Export | ❌ Professional+ |
 | **Trend-Analyse über Zeit** | `trend_analysis` | ❌ Professional+ |
-| **Joint Assessment durchführen können** | `/dashboard/joint-assessment` | ❌ Professional+ |
+| **Joint Assessment durchführen können** | `compliance_assessments` Tabelle, UI in `/compliance-workflow` | ❌ Professional+ |
 
 **Logik:** Basis = MA ≤ 50, also keine Berichtspflicht → reines Monitoring + Dokumentation. Professional = wachsende Firma mit Berichtspflicht ab 100 MA → Export + Joint Assessment.
 
