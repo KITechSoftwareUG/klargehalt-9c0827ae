@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, KeyRound, AlertCircle, Scale, X, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, CheckCircle, XCircle, Euro, Mail, Upload, AlertCircle, Scale, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SalaryFactor, SalaryFactorType, SalaryJustification } from '@/lib/types/salary-justification';
 import { SalaryDecisionDialog } from '@/components/dashboard/SalaryDecisionDialog';
@@ -171,9 +171,6 @@ const EmployeesView = () => {
   // Decision dialog state
   const [decisionEmployee, setDecisionEmployee] = useState<Employee | null>(null);
 
-  // Invite state
-  const [inviteLoading, setInviteLoading] = useState<string | null>(null);
-  const [inviteResult, setInviteResult] = useState<{ email: string; alreadyExists: boolean } | null>(null);
 
   // CSV import state
   const [csvImporting, setCsvImporting] = useState(false);
@@ -184,29 +181,11 @@ const EmployeesView = () => {
     setJustificationSummary('');
   };
 
-  const handleInvite = async (employee: Employee) => {
-    if (!employee.email) {
-      toast.error('Keine E-Mail-Adresse für diesen Mitarbeiter hinterlegt.');
-      return;
-    }
-    setInviteLoading(employee.id);
-    try {
-      const res = await fetch('/api/employees/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: employee.id }),
-      });
-      const data = await res.json() as { success?: boolean; email?: string; alreadyExists?: boolean; error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Einladung fehlgeschlagen');
-      setInviteResult({
-        email: data.email ?? employee.email,
-        alreadyExists: data.alreadyExists ?? false,
-      });
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Einladung fehlgeschlagen');
-    } finally {
-      setInviteLoading(null);
-    }
+  const handleInvite = (_employee: Employee) => {
+    // Mitarbeiter-Portal-Einladung ist post-MVP. Button bleibt als Discovery-Hinweis
+    // sichtbar, signalisiert aber explizit "coming soon" statt den nicht-finalen
+    // Flow auszulösen.
+    toast.info('Mitarbeiter-Portal-Einladung ist demnächst verfügbar.');
   };
 
   const handleCsvImport = async (file: File) => {
@@ -896,13 +875,10 @@ const EmployeesView = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleInvite(employee)}
-                          disabled={inviteLoading === employee.id}
-                          title={employee.user_id ? 'Erneut einladen' : 'Zum Portal einladen'}
-                          className={employee.user_id ? 'text-green-600' : 'text-blue-600'}
+                          title="Mitarbeiter-Portal-Einladung — demnächst verfügbar"
+                          className="text-muted-foreground"
                         >
-                          {inviteLoading === employee.id
-                            ? <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                            : <Mail className="w-4 h-4" />}
+                          <Mail className="w-4 h-4" />
                         </Button>
                       )}
                       <Button
@@ -1002,38 +978,6 @@ const EmployeesView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Invite Result Dialog */}
-      <Dialog open={inviteResult !== null} onOpenChange={() => setInviteResult(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-primary" />
-              Zugangsdaten bereit
-            </DialogTitle>
-            <DialogDescription>
-              {inviteResult?.alreadyExists
-                ? 'Der Nutzer existierte bereits. Wir haben ihm eine E-Mail mit den Zugangshinweisen geschickt.'
-                : 'Das Mitarbeiterkonto wurde erstellt. Wir haben eine E-Mail mit dem temporären Passwort an den Mitarbeiter geschickt.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="rounded-lg bg-muted p-4 space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">E-Mail</p>
-                <p className="text-sm font-mono font-medium">{inviteResult?.email}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>Aus Sicherheitsgründen werden Zugangsdaten ausschließlich per E-Mail an den Mitarbeiter gesendet — nicht hier angezeigt.</p>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setInviteResult(null)}>Schließen</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Salary Decision Dialog */}
       {decisionEmployee && (
