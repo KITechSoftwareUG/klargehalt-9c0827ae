@@ -99,13 +99,16 @@ export function useLawyerReviews() {
       if (error) throw error;
       setReviews((data || []) as LawyerReview[]);
     } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : 'Rechtliche Bewertungen konnten nicht geladen werden';
-      toast({ title: 'Fehler', description: msg, variant: 'destructive' });
+      // Background fetch — never toast. An empty lawyer_reviews list is the
+      // normal state for an org without an active legal review, and surfacing
+      // the failure as a red toast confuses users who haven't done anything.
+      // Errors still go to the console for debugging.
+      console.error('[lawyer-reviews] fetch failed:', error);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, orgId, supabase, toast]);
+  }, [isLoaded, user, orgId, supabase]);
 
   useEffect(() => {
     if (isLoaded && user && orgId) {
