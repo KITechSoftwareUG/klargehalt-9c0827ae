@@ -148,8 +148,9 @@ function PhaseCard({ phase, locked }: { phase: SetupPhase; locked: boolean }) {
         {!isAnalysisPhase && phase.id === 'people' && (
           <div className="bg-white border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3">
             <p className="text-xs text-slate-500">
-              Empfohlen: Mitarbeiterliste als CSV hochladen — das System erkennt Abteilungen und
-              Profile automatisch und legt fehlende Einträge optional an.
+              Empfohlen: Mitarbeiterliste als CSV hochladen — KI erkennt die Spaltenzuordnung
+              automatisch, Abteilungen und Profile werden vorgeschlagen und fehlende Einträge
+              optional angelegt.
             </p>
             <Link href="/einrichtung/mitarbeiter" className="flex-shrink-0">
               <Button variant="default" size="sm">

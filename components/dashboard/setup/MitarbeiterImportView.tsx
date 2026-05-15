@@ -18,6 +18,7 @@ import {
   Users,
   Download,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -742,13 +743,24 @@ function Step1Upload({ onFileParsed }: Step1Props) {
   );
 }
 
+// ─── AI mapping state (lifted for shared use) ────────────────────────────────
+
+type AiState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'ready'; mapping: Record<string, string> }
+  | { status: 'error'; message: string }
+  | { status: 'unavailable' };
+
 // ─── Step 2: Column mapping ───────────────────────────────────────────────────
 
 interface Step2Props {
   csvHeaders: string[];
   mapping: Record<string, string>;
   rowCount: number;
+  aiState: AiState;
   onMappingChange: (mapping: Record<string, string>) => void;
+  onRequestAiSuggestion: () => void;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -757,7 +769,9 @@ function Step2Mapping({
   csvHeaders,
   mapping,
   rowCount,
+  aiState,
   onMappingChange,
+  onRequestAiSuggestion,
   onContinue,
   onBack,
 }: Step2Props) {
@@ -768,15 +782,88 @@ function Step2Mapping({
     onMappingChange({ ...mapping, [fieldKey]: csvHeader === '__none__' ? '' : csvHeader });
   }
 
+  // Compute diff between current mapping and AI suggestion
+  const aiDiffCount = useMemo(() => {
+    if (aiState.status !== 'ready') return 0;
+    let diff = 0;
+    for (const field of EMPLOYEE_FIELDS) {
+      const current = mapping[field.key] ?? '';
+      const proposed = aiState.mapping[field.key] ?? '';
+      if (current !== proposed) diff++;
+    }
+    return diff;
+  }, [aiState, mapping]);
+
+  function applyAiSuggestion() {
+    if (aiState.status !== 'ready') return;
+    // Merge: AI suggestions overwrite, but preserve user choices for fields AI didn't map.
+    const merged: Record<string, string> = { ...mapping };
+    for (const [k, v] of Object.entries(aiState.mapping)) {
+      if (v) merged[k] = v;
+    }
+    onMappingChange(merged);
+    toast.success('KI-Vorschlag übernommen');
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-slate-600">
-        <FileText className="h-4 w-4 text-slate-400" />
-        <span>
-          <span className="font-medium">{rowCount}</span> Datenzeilen erkannt ·{' '}
-          <span className="font-medium">{csvHeaders.length}</span> Spalten
-        </span>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <FileText className="h-4 w-4 text-slate-400" />
+          <span>
+            <span className="font-medium">{rowCount}</span> Datenzeilen erkannt ·{' '}
+            <span className="font-medium">{csvHeaders.length}</span> Spalten
+          </span>
+        </div>
+        {aiState.status !== 'unavailable' && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRequestAiSuggestion}
+            disabled={aiState.status === 'loading'}
+            className="border-violet-200 text-violet-700 hover:bg-violet-50"
+          >
+            {aiState.status === 'loading' ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {aiState.status === 'loading' ? 'KI denkt nach...' : 'KI-Vorschlag erneut laden'}
+          </Button>
+        )}
       </div>
+
+      {aiState.status === 'ready' && aiDiffCount > 0 && (
+        <Card className="border border-violet-200 bg-violet-50/50">
+          <CardContent className="py-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-violet-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-violet-900">
+                KI schlägt {aiDiffCount} {aiDiffCount === 1 ? 'Anpassung' : 'Anpassungen'} vor
+              </p>
+              <p className="text-xs text-violet-700 mt-0.5">
+                Spaltenzuordnung wurde anhand der CSV-Überschriften analysiert. Du kannst sie übernehmen oder ignorieren.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={applyAiSuggestion}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              Übernehmen
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {aiState.status === 'error' && (
+        <Card className="border border-slate-200 bg-slate-50">
+          <CardContent className="py-2.5 flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+            <p className="text-xs text-slate-600">{aiState.message}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border border-slate-200 overflow-hidden">
         <CardContent className="p-0">
@@ -1478,6 +1565,7 @@ export default function MitarbeiterImportView() {
   const [importResults, setImportResults] = useState<RowResult[]>([]);
   const [newDeptCount, setNewDeptCount] = useState(0);
   const [newProfileCount, setNewProfileCount] = useState(0);
+  const [aiState, setAiState] = useState<AiState>({ status: 'idle' });
 
   // Derived entity analysis (memoized for step 3)
   const activeProfiles = useMemo(
@@ -1546,14 +1634,47 @@ export default function MitarbeiterImportView() {
 
   // ── Handlers ──
 
+  const requestAiSuggestion = useCallback(async (headers: string[]) => {
+    setAiState({ status: 'loading' });
+    try {
+      const res = await fetch('/api/setup/csv-mapping-suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvHeaders: headers }),
+      });
+      if (res.status === 503) {
+        setAiState({ status: 'unavailable' });
+        return;
+      }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setAiState({
+          status: 'error',
+          message: body.error ?? 'KI-Mapping fehlgeschlagen — bitte manuell zuordnen.',
+        });
+        return;
+      }
+      const data = (await res.json()) as { mapping: Record<string, string> };
+      setAiState({ status: 'ready', mapping: data.mapping ?? {} });
+    } catch {
+      setAiState({
+        status: 'error',
+        message: 'Netzwerkfehler beim Laden des KI-Vorschlags.',
+      });
+    }
+  }, []);
+
   const handleFileParsed = useCallback(
     (headers: string[], rows: Record<string, string>[]) => {
       setCsvHeaders(headers);
       setRawRows(rows);
       setMapping(autoDetectMapping(headers));
+      setAiState({ status: 'idle' });
       setStep(2);
+      // Fire AI suggestion in background — synonym match already populated UI.
+      void requestAiSuggestion(headers);
     },
-    []
+    [requestAiSuggestion]
   );
 
   const handleMappingContinue = useCallback(() => {
@@ -1613,8 +1734,8 @@ export default function MitarbeiterImportView() {
             <h1 className="text-xl font-semibold text-slate-900">Phase 3: Mitarbeiter importieren</h1>
             <p className="mt-1 text-sm text-slate-500 leading-relaxed max-w-2xl">
               Lade eine CSV-Datei hoch und importiere deine Mitarbeiterliste in einem Schritt.
-              Das System erkennt Abteilungen und Profile automatisch und legt fehlende Einträge
-              optional an.
+              KI schlägt die passende Spaltenzuordnung vor, Abteilungen und Profile werden
+              automatisch erkannt und fehlende Einträge optional angelegt.
             </p>
           </div>
         </div>
@@ -1642,7 +1763,9 @@ export default function MitarbeiterImportView() {
           csvHeaders={csvHeaders}
           mapping={mapping}
           rowCount={rawRows.length}
+          aiState={aiState}
           onMappingChange={setMapping}
+          onRequestAiSuggestion={() => void requestAiSuggestion(csvHeaders)}
           onContinue={handleMappingContinue}
           onBack={() => setStep(1)}
         />
