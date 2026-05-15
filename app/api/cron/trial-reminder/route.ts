@@ -84,7 +84,11 @@ export async function GET(request: NextRequest) {
           }
           totalSent++;
         } catch (emailError) {
-          console.error(`Cron trial-reminder: Failed to send to ${profile.email}`, emailError);
+          // Never log raw email — log structured org reference instead.
+          console.error('Cron trial-reminder: send failed', {
+            organizationId: company.organization_id,
+            error: emailError,
+          });
         }
       }
     }

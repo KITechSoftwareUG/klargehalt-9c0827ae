@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { hasUserMfaEnrolled } from '@/lib/logto-management';
 import { createServiceClient } from '@/lib/supabase/server';
+import { isSuperAdminUserId } from '@/lib/auth/super-admin';
 
 export async function GET() {
   const context = await getServerAuthContext();
@@ -39,5 +40,6 @@ export async function GET() {
     organizations: context.organizations,
     activeOrganizationId: context.activeOrganizationId,
     mfaEnabled,
+    isSuperAdmin: isSuperAdminUserId(context.user?.id),
   });
 }

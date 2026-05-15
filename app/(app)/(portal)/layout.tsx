@@ -92,8 +92,6 @@ const LAWYER_NAV: NavItem[] = [
     { label: 'Audit-Log',            icon: Shield,    view: 'audit',               group: 'Anwalt' },
 ];
 
-const SUPER_ADMIN_USER_ID = 'zqf0ih9ji1m1';
-
 function getActiveView(pathname: string): AppView {
     const clean = pathname.replace(/\/$/, '');
     for (const [view, path] of Object.entries(VIEW_TO_PATH)) {
@@ -105,7 +103,7 @@ function getActiveView(pathname: string): AppView {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { user, role, selfReportedRole, profile, loading, isLoaded, orgId, signOut } = useAuth();
+    const { user, role, selfReportedRole, profile, loading, isLoaded, orgId, signOut, isSuperAdmin } = useAuth();
     const { isExpired, isTrialing } = useSubscription();
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -226,7 +224,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 </nav>
             )}
 
-            {user?.id === SUPER_ADMIN_USER_ID && (
+            {isSuperAdmin && (
                 <div className="px-4 pb-2">
                     <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                         Super Admin

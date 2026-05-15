@@ -1,12 +1,31 @@
 import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
+// Sentry telemetry is proxied through /monitoring (tunnelRoute below) so its
+// origin doesn't need a connect-src exception — and ad-blockers don't drop it.
+const cspDirectives = [
+  "default-src 'self'",
+  // Next.js requires inline scripts for hydration; analytics is self-hosted.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://analytics.klargehalt.de https://js.stripe.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://btbucjkczpejplykyvkj.supabase.co https://images.unsplash.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.logto.app https://auth.klargehalt.de https://api.stripe.com https://api.resend.com https://analytics.klargehalt.de",
+  "frame-src https://js.stripe.com https://hooks.stripe.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://checkout.stripe.com",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+];
+
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  { key: 'Content-Security-Policy', value: cspDirectives.join('; ') },
 ];
 
 const nextConfig: NextConfig = {
@@ -88,11 +107,10 @@ export default withSentryConfig(nextConfig, {
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
-  // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-  // side errors will fail.
-  // tunnelRoute: "/monitoring",
+  // Tunnel Sentry telemetry through this app's origin. Drops the need for a
+  // connect-src exception in CSP, sidesteps ad-blockers, and keeps the
+  // ingest URL out of the browser DevTools network tab.
+  tunnelRoute: "/monitoring",
 
   webpack: {
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { createClient } from '@supabase/supabase-js';
-
-const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID ?? '';
+import { isSuperAdminUserId } from '@/lib/auth/super-admin';
 
 async function getLogtoM2MToken(): Promise<string> {
     const res = await fetch(`${process.env.LOGTO_ENDPOINT}/oidc/token`, {
@@ -68,7 +67,7 @@ export interface AdminUser {
 
 export async function GET() {
     const auth = await getServerAuthContext();
-    if (!auth?.user || auth.user.id !== SUPER_ADMIN_USER_ID) {
+    if (!isSuperAdminUserId(auth?.user?.id)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

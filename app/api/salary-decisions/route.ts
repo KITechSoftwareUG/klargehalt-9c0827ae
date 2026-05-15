@@ -52,12 +52,60 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Cross-tenant FK guard: service_role bypasses RLS, so we MUST verify every
+  // FK target belongs to the caller's org. Otherwise an admin in Org A could
+  // attach a salary_decision to Org B's employee/pay_band/lawyer_review and
+  // pollute the audit trail — destroying the integrity guarantee that is the
+  // product's core legal value.
+  const { data: emp } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('id', parsed.data.employee_id)
+    .eq('organization_id', guard.orgId)
+    .maybeSingle();
+  if (!emp) {
+    return NextResponse.json(
+      { error: 'Employee not found in your organization' },
+      { status: 422 },
+    );
+  }
+
+  if (parsed.data.pay_band_id) {
+    const { data: band } = await supabase
+      .from('pay_bands')
+      .select('id')
+      .eq('id', parsed.data.pay_band_id)
+      .eq('organization_id', guard.orgId)
+      .maybeSingle();
+    if (!band) {
+      return NextResponse.json(
+        { error: 'Pay band not found in your organization' },
+        { status: 422 },
+      );
+    }
+  }
+
+  if (parsed.data.lawyer_review_id) {
+    const { data: review } = await supabase
+      .from('lawyer_reviews')
+      .select('id')
+      .eq('id', parsed.data.lawyer_review_id)
+      .eq('organization_id', guard.orgId)
+      .maybeSingle();
+    if (!review) {
+      return NextResponse.json(
+        { error: 'Lawyer review not found in your organization' },
+        { status: 422 },
+      );
+    }
+  }
+
   const { data, error } = await supabase
     .from('salary_decisions')
     .insert({
-	      ...parsed.data,
-	      organization_id: guard.orgId,
-	      decided_by_user_id: guard.userId,
+      ...parsed.data,
+      organization_id: guard.orgId,
+      decided_by_user_id: guard.userId,
       decided_at: parsed.data.decided_at ?? new Date().toISOString(),
     })
     .select()

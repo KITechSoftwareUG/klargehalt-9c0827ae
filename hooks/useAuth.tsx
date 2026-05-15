@@ -40,6 +40,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoaded: boolean;
   isSignedIn: boolean;
+  isSuperAdmin: boolean;
   profile: Profile | null;
   role: AppRole | null;
   selfReportedRole: string | null;
@@ -60,6 +61,7 @@ type MeResponse = {
   organizations: Organization[];
   activeOrganizationId: string | null;
   mfaEnabled: boolean;
+  isSuperAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     organizations: [],
     activeOrganizationId: null,
     mfaEnabled: false,
+    isSuperAdmin: false,
   });
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -113,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         organizations: [],
         activeOrganizationId: null,
         mfaEnabled: false,
+        isSuperAdmin: false,
       });
     } finally {
       setAuthLoading(false);
@@ -249,6 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: authState.user,
         isLoaded: !authLoading,
         isSignedIn: authState.isAuthenticated,
+        isSuperAdmin: authState.isSuperAdmin,
         profile,
         role,
         selfReportedRole,
