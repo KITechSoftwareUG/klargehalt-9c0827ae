@@ -63,11 +63,16 @@ AS $$
   );
 $$;
 
+-- No `anon` grant: the RESTRICTIVE policies below are TO authenticated only,
+-- and org_id() is NULL for anon (function would vacuously pass anyway).
+-- Least privilege for a SECURITY DEFINER fn that reads tenant status.
 REVOKE ALL ON FUNCTION public.org_not_deleted() FROM public;
-GRANT EXECUTE ON FUNCTION public.org_not_deleted() TO authenticated, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.org_not_deleted() TO authenticated, service_role;
 
 -- Additive RESTRICTIVE policies: AND with existing permissive policies without
--- rewriting them. Scoped to SELECT on the two most sensitive tables only.
+-- rewriting them. SELECT-scoped, on the PII/compliance-sensitive tables a
+-- stolen org JWT could otherwise read directly via the anon Supabase key while
+-- the tenant is locked. (Cron uses service_role → bypasses RLS entirely.)
 DROP POLICY IF EXISTS employees_block_when_org_deleted ON public.employees;
 CREATE POLICY employees_block_when_org_deleted ON public.employees
   AS RESTRICTIVE FOR SELECT TO authenticated
@@ -75,6 +80,12 @@ CREATE POLICY employees_block_when_org_deleted ON public.employees
 
 DROP POLICY IF EXISTS salary_decisions_block_when_org_deleted ON public.salary_decisions;
 CREATE POLICY salary_decisions_block_when_org_deleted ON public.salary_decisions
+  AS RESTRICTIVE FOR SELECT TO authenticated
+  USING (public.org_not_deleted());
+
+-- audit_logs before/after_state JSON embeds salaries/PII — same lock.
+DROP POLICY IF EXISTS audit_logs_block_when_org_deleted ON public.audit_logs;
+CREATE POLICY audit_logs_block_when_org_deleted ON public.audit_logs
   AS RESTRICTIVE FOR SELECT TO authenticated
   USING (public.org_not_deleted());
 

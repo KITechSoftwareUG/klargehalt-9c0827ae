@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { logAuditEntry } from '@/lib/audit-log';
 import { reactivateStripeSubscription } from '@/lib/account-deletion';
 import { sendAccountRestoredEmail } from '@/lib/email';
@@ -15,6 +16,10 @@ export async function POST() {
   const context = await getServerAuthContext();
   const guard = await guardRole(context, ['owner'], { bypassDeletionLock: true });
   if (guard instanceof NextResponse) return guard;
+
+  if (!(await checkRateLimit(`account-restore:${guard.orgId}`, 5, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: 'Zu viele Anfragen.' }, { status: 429 });
+  }
 
   const supabase = createServiceClient();
   const { data: company } = await supabase
@@ -46,7 +51,7 @@ export async function POST() {
     console.error(
       '[account/restore] Stripe reactivate failed (continuing):',
       guard.orgId,
-      stripeResult.error
+      stripeResult.error?.slice(0, 120)
     );
   }
 

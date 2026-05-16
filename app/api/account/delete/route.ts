@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { logAuditEntry } from '@/lib/audit-log';
 import {
   ACCOUNT_DELETION_GRACE_DAYS,
@@ -30,8 +31,15 @@ const bodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
-  const guard = await guardRole(context, ['owner']);
+  // bypassDeletionLock: re-calling delete on an already-locked org must hit
+  // the idempotent "alreadyScheduled" path below, not a generic 403 from the
+  // lock itself. The conditional UPDATE (status='active') is the real guard.
+  const guard = await guardRole(context, ['owner'], { bypassDeletionLock: true });
   if (guard instanceof NextResponse) return guard;
+
+  if (!(await checkRateLimit(`account-delete:${guard.orgId}`, 3, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: 'Zu viele Anfragen.' }, { status: 429 });
+  }
 
   const body = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
     console.error(
       '[account/delete] Stripe cancel failed (continuing):',
       guard.orgId,
-      stripeResult.error
+      stripeResult.error?.slice(0, 120)
     );
   }
 

@@ -624,6 +624,11 @@ export async function sendCertificateIssuedToHR(
   });
 }
 
+/** Minimal HTML escape for user-controlled values (e.g. companyName) in email bodies. */
+const escHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const accountEmailShell = (heading: string, accent: string, body: string): string => `
   <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
     <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
@@ -655,7 +660,7 @@ export async function sendAccountDeletionScheduledEmail(
     subject: `Ihr KlarGehalt-Konto wird gelöscht — Reaktivierung bis ${scheduledForFormatted}`,
     html: accountEmailShell('Konto zur Löschung vorgemerkt', '#b45309', `
       <p style="color: #475569; line-height: 1.6;">
-        Die Löschung des Kontos <strong>${companyName}</strong> wurde vorgemerkt.
+        Die Löschung des Kontos <strong>${escHtml(companyName)}</strong> wurde vorgemerkt.
         Das Abonnement wird zum Ende der laufenden Abrechnungsperiode beendet.
       </p>
       <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 20px 0;">
@@ -693,7 +698,7 @@ export async function sendAccountRestoredEmail(to: string, companyName: string):
     subject: 'Ihr KlarGehalt-Konto wurde reaktiviert',
     html: accountEmailShell('Konto reaktiviert', '#065f46', `
       <p style="color: #475569; line-height: 1.6;">
-        Die vorgemerkte Löschung des Kontos <strong>${companyName}</strong>
+        Die vorgemerkte Löschung des Kontos <strong>${escHtml(companyName)}</strong>
         wurde aufgehoben. Das Konto ist wieder vollständig nutzbar.
       </p>
       <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
@@ -720,7 +725,7 @@ export async function sendAccountAnonymizedEmail(to: string, companyName: string
     subject: 'Ihr KlarGehalt-Konto wurde endgültig gelöscht',
     html: accountEmailShell('Konto endgültig gelöscht', '#071423', `
       <p style="color: #475569; line-height: 1.6;">
-        Das Konto <strong>${companyName}</strong> wurde endgültig gelöscht.
+        Das Konto <strong>${escHtml(companyName)}</strong> wurde endgültig gelöscht.
         Personenbezogene Daten wurden entfernt bzw. pseudonymisiert; ein Zugang
         besteht nicht mehr.
       </p>
