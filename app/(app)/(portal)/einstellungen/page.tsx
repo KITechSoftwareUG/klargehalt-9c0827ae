@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, FileUp } from 'lucide-react';
 import CompanySettingsView from '@/components/dashboard/CompanySettingsView';
+import DangerZoneCard from '@/components/dashboard/DangerZoneCard';
 import { RoleGuard } from '@/components/RoleGuard';
 import AccessDenied from '@/components/dashboard/AccessDenied';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,8 @@ export default function EinstellungenPage() {
             <div className="space-y-8">
                 <CompanySettingsView />
                 <DataMigrationCard />
+                {/* Owner-only — DangerZoneCard renders null for non-owners */}
+                <DangerZoneCard />
             </div>
         </RoleGuard>
     );

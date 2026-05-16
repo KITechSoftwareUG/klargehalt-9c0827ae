@@ -18,6 +18,7 @@ import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
 import { WelcomeModal } from '@/components/WelcomeModal';
 import { MfaBanner } from '@/components/MfaBanner';
 import TrialExpiredOverlay from '@/components/dashboard/TrialExpiredOverlay';
+import { AccountDeletionRedirect } from '@/components/AccountDeletionRedirect';
 
 type AppView =
     | 'dashboard'
@@ -345,6 +346,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="min-h-screen bg-slate-50/50">
+            <AccountDeletionRedirect />
             <aside className="sidebar-scroll fixed left-0 top-0 z-40 h-screen w-72 bg-[#0F172A] text-white overflow-y-auto hidden lg:block">
                 {sidebarNav}
             </aside>

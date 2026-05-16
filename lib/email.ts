@@ -623,3 +623,114 @@ export async function sendCertificateIssuedToHR(
     `,
   });
 }
+
+const accountEmailShell = (heading: string, accent: string, body: string): string => `
+  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+    <div style="background: #071423; padding: 32px 40px; border-radius: 8px 8px 0 0;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">KlarGehalt</h1>
+    </div>
+    <div style="padding: 40px; background: #f8fafc; border-radius: 0 0 8px 8px;">
+      <h2 style="color: ${accent}; margin-top: 0;">${heading}</h2>
+      ${body}
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;" />
+      <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+        Fragen? <a href="mailto:support@klargehalt.de" style="color: #2563eb;">support@klargehalt.de</a>
+      </p>
+    </div>
+  </div>
+`;
+
+/**
+ * Konto zur Löschung vorgemerkt (Owner). Soft-lock: 30-Tage-Frist, reaktivierbar.
+ * Wording strikt nach law.md §7 — keine Heilsversprechen.
+ */
+export async function sendAccountDeletionScheduledEmail(
+  to: string,
+  companyName: string,
+  scheduledForFormatted: string,
+): Promise<void> {
+  await getResend().emails.send({
+    from: FROM_SUPPORT,
+    to,
+    subject: `Ihr KlarGehalt-Konto wird gelöscht — Reaktivierung bis ${scheduledForFormatted}`,
+    html: accountEmailShell('Konto zur Löschung vorgemerkt', '#b45309', `
+      <p style="color: #475569; line-height: 1.6;">
+        Die Löschung des Kontos <strong>${companyName}</strong> wurde vorgemerkt.
+        Das Abonnement wird zum Ende der laufenden Abrechnungsperiode beendet.
+      </p>
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0; color: #92400e; line-height: 1.6;">
+          Endgültige Löschung am <strong>${scheduledForFormatted}</strong>.
+          Bis dahin können Sie das Konto jederzeit reaktivieren — danach ist
+          die Löschung nicht umkehrbar.
+        </p>
+      </div>
+      <p style="color: #475569; line-height: 1.6;">
+        Aus gesetzlichen Aufbewahrungsgründen (EU-Entgelttransparenzrichtlinie
+        2023/970, DSGVO Art. 17 Abs. 3 lit. b) bleibt die
+        Compliance-Dokumentation — Begründungs-Trail und Audit-Protokoll — in
+        anonymisierter Form erhalten. Personenbezogene Daten Ihrer
+        Mitarbeitenden werden entfernt bzw. pseudonymisiert.
+      </p>
+      <a href="https://app.klargehalt.de/konto-gesperrt"
+         style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+        Konto reaktivieren
+      </a>
+      <p style="color: #94a3b8; font-size: 13px; margin: 20px 0 0;">
+        Sie haben diese Löschung nicht veranlasst? Reaktivieren Sie das Konto
+        umgehend und ändern Sie Ihr Passwort.
+      </p>
+    `),
+  });
+}
+
+/** Konto reaktiviert (innerhalb der 30-Tage-Frist). */
+export async function sendAccountRestoredEmail(to: string, companyName: string): Promise<void> {
+  await getResend().emails.send({
+    from: FROM_SUPPORT,
+    to,
+    subject: 'Ihr KlarGehalt-Konto wurde reaktiviert',
+    html: accountEmailShell('Konto reaktiviert', '#065f46', `
+      <p style="color: #475569; line-height: 1.6;">
+        Die vorgemerkte Löschung des Kontos <strong>${companyName}</strong>
+        wurde aufgehoben. Das Konto ist wieder vollständig nutzbar.
+      </p>
+      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0; color: #065f46; line-height: 1.6;">
+          Bitte prüfen Sie in der Abrechnung, ob ein aktives Abonnement
+          besteht — andernfalls schließen Sie es erneut ab, um den vollen
+          Funktionsumfang zu behalten.
+        </p>
+      </div>
+      <a href="https://app.klargehalt.de/abrechnung"
+         style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px;
+                border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+        Zur Abrechnung
+      </a>
+    `),
+  });
+}
+
+/** Endgültige Löschung durchgeführt (Cron, nach Ablauf der Frist). */
+export async function sendAccountAnonymizedEmail(to: string, companyName: string): Promise<void> {
+  await getResend().emails.send({
+    from: FROM_SUPPORT,
+    to,
+    subject: 'Ihr KlarGehalt-Konto wurde endgültig gelöscht',
+    html: accountEmailShell('Konto endgültig gelöscht', '#071423', `
+      <p style="color: #475569; line-height: 1.6;">
+        Das Konto <strong>${companyName}</strong> wurde endgültig gelöscht.
+        Personenbezogene Daten wurden entfernt bzw. pseudonymisiert; ein Zugang
+        besteht nicht mehr.
+      </p>
+      <p style="color: #475569; line-height: 1.6;">
+        Aus gesetzlichen Aufbewahrungsgründen (EU-Entgelttransparenzrichtlinie
+        2023/970, DSGVO Art. 17 Abs. 3 lit. b) bleibt die
+        Compliance-Dokumentation in anonymisierter Form gespeichert. In
+        Backups können Restdaten für bis zu 7 Tage fortbestehen, bevor sie
+        endgültig entfallen.
+      </p>
+    `),
+  });
+}
