@@ -71,13 +71,15 @@ CREATE TRIGGER trg_refresh_pay_gap_after_employee_insert
   FOR EACH STATEMENT
   EXECUTE FUNCTION public.refresh_pay_gap_after_employee_change_stmt();
 
--- AFTER UPDATE OF <cols> already restricts firing to relevant column writes.
--- Statement-level triggers cannot use a row-level WHEN clause; losing that
--- micro-skip means a no-op column-touch update costs one full refresh — still
--- vastly cheaper than the previous per-row behaviour.
+-- Postgres forbids combining a trigger column-list (AFTER UPDATE OF <cols>)
+-- with transition tables (REFERENCING ... TABLE) — SQLSTATE 0A000. The
+-- statement-level rewrite needs the transition tables, so the column-list
+-- restriction is dropped: the trigger now fires on ANY employee UPDATE. A
+-- no-op update on an unrelated column costs one extra org-wide refresh — the
+-- same accepted tradeoff as losing the row-level WHEN clause, and still vastly
+-- cheaper than the previous per-row behaviour.
 CREATE TRIGGER trg_refresh_pay_gap_after_employee_update
-  AFTER UPDATE OF gender, base_salary, variable_pay, department_id,
-                  job_profile_id, job_level_id, is_active ON public.employees
+  AFTER UPDATE ON public.employees
   REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
   FOR EACH STATEMENT
   EXECUTE FUNCTION public.refresh_pay_gap_after_employee_change_stmt();
