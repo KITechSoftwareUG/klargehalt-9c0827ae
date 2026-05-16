@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,8 +70,7 @@ export function PayGapReportView() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // toast is not imported here — use alert as fallback
-      alert('PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
+      toast.error('PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
     } finally {
       setPdfLoading(false);
     }

@@ -78,7 +78,11 @@ export default function TrialExpiredOverlay() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tier, interval }),
             });
-            const data = (await res.json()) as { url?: string; error?: string };
+            const data = (await res.json()) as { url?: string; error?: string; code?: string; redirect?: string };
+            if (res.status === 403 && data.code === 'CONTRACTS_NOT_ACCEPTED' && data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
             if (!res.ok) {
                 toast.error(data.error || 'Checkout konnte nicht gestartet werden');
                 return;

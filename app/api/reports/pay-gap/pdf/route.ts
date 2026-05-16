@@ -1,29 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardRole } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getEffectiveTier, hasFeature, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
 import puppeteer from 'puppeteer';
 
 export async function GET(request: NextRequest) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation + RBAC gate (Risk #1): membership + role validated against
+  // organization_members before any service-role read. Replaces the prior
+  // user_roles lookup that was filtered by the attacker-supplied cookie org
+  // (degenerate when the victim org had no user_roles row).
+  const guard = await guardRole(context, ['admin', 'hr_manager']);
+  if (guard instanceof NextResponse) return guard;
 
-  const orgId = context.activeOrganizationId;
+  const orgId = guard.orgId;
   const supabase = createServiceClient();
-
-  // Only admins and HR managers can generate pay gap reports
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.claims?.sub ?? '')
-    .eq('organization_id', orgId)
-    .maybeSingle();
-
-  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   // Fetch company info
 	  const { data: company } = await supabase

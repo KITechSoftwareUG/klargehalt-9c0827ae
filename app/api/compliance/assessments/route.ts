@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember, guardRole } from '@/lib/auth/api-guard';
 
 const supabaseAdmin = () =>
   createServiceClient(
@@ -18,16 +19,16 @@ const createAssessmentSchema = z.object({
 
 export async function GET() {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation gate (Risk #1): membership-validate before service-role read.
+  const guard = await guardOrgMember(context);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
 
   const { data, error } = await supabase
     .from('compliance_assessments')
     .select('*')
-    .eq('organization_id', context.activeOrganizationId)
+    .eq('organization_id', guard.orgId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -40,22 +41,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation + RBAC gate (Risk #1 + Risk #2): guardRole validates
+  // active membership AND role against organization_members — the RBAC source
+  // of truth — replacing the legacy user_roles lookup that also trusted the
+  // unverified cookie org.
+  const guard = await guardRole(context, ['admin', 'hr_manager']);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
-
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
-    .maybeSingle();
-
-  if (!userRole || !['admin', 'hr_manager'].includes(userRole.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   let body: unknown;
   try {
@@ -76,8 +69,8 @@ export async function POST(request: NextRequest) {
     .from('compliance_assessments')
     .insert({
       ...parsed.data,
-      organization_id: context.activeOrganizationId,
-      initiated_by: context.user!.id,
+      organization_id: guard.orgId,
+      initiated_by: guard.userId,
       status: 'DRAFT',
     })
     .select()

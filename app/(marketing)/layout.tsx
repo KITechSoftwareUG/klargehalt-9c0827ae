@@ -127,12 +127,7 @@ export default function MarketingLayout({
                         }),
                     }}
                 />
-                <Script
-                    defer
-                    data-domain="klargehalt.de"
-                    src="https://analytics.klargehalt.de/js/script.js"
-                    strategy="afterInteractive"
-                />
+
             </head>
             <body className={font.className}>
                 <Providers>

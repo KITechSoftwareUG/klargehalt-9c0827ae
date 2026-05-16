@@ -13,8 +13,16 @@ async function startCheckout(tier: 'professional' | 'basis' = 'professional') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tier, interval: 'monthly' }),
     });
+    const data = (await res.json().catch(() => ({}))) as {
+      url?: string;
+      code?: string;
+      redirect?: string;
+    };
+    if (res.status === 403 && data.code === 'CONTRACTS_NOT_ACCEPTED' && data.redirect) {
+      window.location.href = data.redirect;
+      return;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json() as { url?: string };
     if (data.url) {
       window.location.href = data.url;
     } else {

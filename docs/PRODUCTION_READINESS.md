@@ -80,52 +80,41 @@ const EU_ONLY_CONFIG = {
 
 ## 2. Backup-Strategie
 
-### 2.1 Backup-Architektur
+> ⚠️ **STATUS 2026-05-15 — KRITISCHE LÜCKE, NICHT PRODUKTIONSREIF.**
+> Die zuvor hier dokumentierte Architektur (WAL-Streaming, Geo-Redundanz,
+> PITR mit 5-Min-RPO) **existierte nie**. Sie wurde entfernt, weil sie
+> falsche Sicherheit suggerierte (Architektur-Review Risk #12). Unten steht
+> der **tatsächliche** Stand (verifiziert über Coolify-/Supabase-API) und
+> was vor dem ersten zahlenden Kunden umgesetzt werden MUSS (Risk #2 / #4).
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    BACKUP-STRATEGIE                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Echtzeit  │    │   Täglich   │    │  Wöchentlich│     │
-│  │   WAL-Log   │    │  Snapshot   │    │  Full Backup│     │
-│  │  Streaming  │    │   01:00 UTC │    │  Sonntag    │     │
-│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘     │
-│         │                  │                  │             │
-│         ▼                  ▼                  ▼             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Primäres Backup-Storage                │   │
-│  │              (gleiches RZ, verschlüsselt)           │   │
-│  └─────────────────────────┬───────────────────────────┘   │
-│                            │                               │
-│                            ▼                               │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           Geo-redundantes Backup-Storage            │   │
-│  │           (anderes EU-RZ, verschlüsselt)            │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+### 2.1 Tatsächlicher Stand (verifiziert)
 
-### 2.2 Backup-Konfiguration
+| Datenspeicher | Backup | Aufbewahrung | PITR | Off-Site |
+|---|---|---|---|---|
+| Supabase (App-DB: Gehälter, `salary_decisions`, `audit_logs`) | Täglicher Snapshot (Supabase-managed) | 7 Tage | ❌ nein (nur Pro-Plan) | ❌ nein |
+| Logto-Postgres (Identitäten, Org-Membership) | **❌ KEINS** (`scheduled_backups=False`) | — | ❌ | ❌ |
+| Coolify Env-Vars / Secrets | **❌ KEINS** (einzige Kopie in der Coolify-UI auf der SPOF-VPS) | — | — | ❌ |
 
-| Backup-Typ | Frequenz | Aufbewahrung | Verschlüsselung |
-|------------|----------|--------------|-----------------|
-| WAL-Streaming | Kontinuierlich | 7 Tage | AES-256 |
-| Täglicher Snapshot | 01:00 UTC | 30 Tage | AES-256 |
-| Wöchentliches Full | Sonntag 02:00 UTC | 12 Wochen | AES-256 |
-| Monatliches Archiv | 1. des Monats | 24 Monate | AES-256 |
-| Jährliches Archiv | 1. Januar | 10 Jahre | AES-256 |
+### 2.2 Reale RPO/RTO (Ist-Zustand, **nicht** Ziel)
 
-### 2.3 Recovery Point Objective (RPO) & Recovery Time Objective (RTO)
+| Szenario | RPO (real) | RTO (real) | Realität |
+|---|---|---|---|
+| Supabase Bad-Migration / versehentliche Löschung | bis zu 24 h | Stunden | kein PITR — nur Tages-Snapshot; bis zu 24 h Verlust der legally-load-bearing `salary_decisions`/`audit_logs` |
+| VPS-Totalverlust | **total** (Logto-DB + Secrets) | **Tage, mit permanentem Verlust** | Logto-DB ohne Backup → alle Kunden permanent ausgesperrt; Secrets weg → kein Rebuild möglich |
+| Ransomware | total | unbestimmt | kein Offline-Backup vorhanden |
 
-| Szenario | RPO | RTO | Methode |
-|----------|-----|-----|---------|
-| Datenbank-Korruption | 5 Minuten | 15 Minuten | Point-in-Time Recovery |
-| Versehentliche Löschung | 0 Minuten | 30 Minuten | WAL Replay |
-| Rechenzentrum-Ausfall | 1 Stunde | 4 Stunden | Geo-Failover |
-| Ransomware-Angriff | 24 Stunden | 8 Stunden | Offline-Backup Restore |
+### 2.3 PFLICHT vor erstem zahlendem Kunden (noch NICHT umgesetzt)
+
+Credential-/Konsolen-gebunden — siehe Infra-Handoff der Phase-0-Härtung
+(Risk #2 / #4):
+
+1. Supabase → **Pro-Plan**, **PITR aktivieren**, **Auto-Pause deaktivieren**.
+2. Coolify → nächtliches `pg_dump` der Logto-Postgres → Off-VPS Object-Storage (S3/R2), 30 Tage Retention; **einmal Test-Restore durchführen**.
+3. Secrets verschlüsselt off-box sichern (`sops`/`age`, encrypted im Repo).
+4. Externes Uptime-Monitoring auf `app.` + `auth.` + synthetischer Supabase-Read.
+
+Bis (1)–(3) erledigt und **per Test-Restore verifiziert** sind, ist dieses
+System **nicht DR-fähig** und darf keine zahlenden Kunden aufnehmen.
 
 ### 2.4 Backup-Verifizierung
 

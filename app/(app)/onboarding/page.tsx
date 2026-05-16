@@ -138,6 +138,14 @@ export default function OnboardingPage() {
                     body: JSON.stringify({ tier: selectedPlan, interval: 'monthly' }),
                 });
                 const checkoutData = await checkoutRes.json();
+                if (
+                    checkoutRes.status === 403 &&
+                    checkoutData?.code === 'CONTRACTS_NOT_ACCEPTED' &&
+                    checkoutData?.redirect
+                ) {
+                    window.location.href = checkoutData.redirect;
+                    return;
+                }
                 if (!checkoutRes.ok) {
                     throw new Error(checkoutData.error || 'Checkout konnte nicht gestartet werden.');
                 }

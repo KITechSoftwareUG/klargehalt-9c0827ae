@@ -20,6 +20,7 @@
 
 import { NextResponse } from 'next/server';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 import { createServiceClient } from '@/lib/supabase/server';
 
 type EmpRow = {
@@ -84,10 +85,12 @@ function buildGap(employees: EmpRow[], opts: { suppressBelow?: number } = {}) {
 
 export async function GET() {
   const ctx = await getServerAuthContext();
-  if (!ctx.isAuthenticated || !ctx.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const orgId = ctx.activeOrganizationId;
+  // Tenant-isolation gate: kg_active_org is an unverified cookie. guardOrgMember
+  // confirms the caller is an active organization_members row for that org
+  // BEFORE any service-role (RLS-bypassing) query runs. Risk #1.
+  const guard = await guardOrgMember(ctx);
+  if (guard instanceof NextResponse) return guard;
+  const orgId = guard.orgId;
   const admin = createServiceClient();
 
   const [

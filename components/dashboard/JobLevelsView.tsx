@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useJobLevels, JobLevel, JobLevelFormData } from '@/hooks/useJobLevels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,8 +105,15 @@ const JobLevelsView = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }

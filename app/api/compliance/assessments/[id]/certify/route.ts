@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardRole } from '@/lib/auth/api-guard';
 import { sendCertificateIssuedToHR } from '@/lib/email';
 
 const supabaseAdmin = () =>
@@ -25,22 +26,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation + RBAC gate (Risk #1): validates active 'lawyer'
+  // membership against organization_members (RBAC source of truth) instead of
+  // the legacy user_roles table, before any service-role read.
+  const guard = await guardRole(context, ['lawyer']);
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = supabaseAdmin();
-
-  const { data: userRole } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
-    .maybeSingle();
-
-  if (!userRole || userRole.role !== 'lawyer') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   const { id } = await params;
 
@@ -48,7 +40,7 @@ export async function POST(
     .from('compliance_assessments')
     .select('id, status, organization_id, title, initiated_by, period_from, period_to')
     .eq('id', id)
-    .eq('organization_id', context.activeOrganizationId)
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
   if (assessmentError) {
@@ -83,7 +75,7 @@ export async function POST(
   }
 
   const { lawyer_statement, valid_months } = parsed.data;
-  const orgId = context.activeOrganizationId;
+  const orgId = guard.orgId;
 
   const [
     { count: employeesCount, error: empError },

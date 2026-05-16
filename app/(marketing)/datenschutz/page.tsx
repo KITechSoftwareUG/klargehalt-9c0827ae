@@ -88,7 +88,6 @@ export default function DatenschutzPage() {
                         <li>Verwaltung von Gehaltsstrukturen und Gehaltsbändern gemäß der EU-Entgelttransparenzrichtlinie 2023/970</li>
                         <li>Berechnung und Analyse des geschlechtsspezifischen Entgeltgefälles (Gender Pay Gap)</li>
                         <li>Erstellung von Compliance-Berichten zur Erfüllung der Berichtspflichten</li>
-                        <li>KI-gestützte Analyse von Entgeltunterschieden (auf Anforderung des Kunden)</li>
                     </ul>
                     <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">Technische Schutzmaßnahmen für Gehaltsdaten</h3>
                     <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
@@ -98,14 +97,21 @@ export default function DatenschutzPage() {
                         <li><strong>Audit-Trail:</strong> Jeder Zugriff auf und jede Änderung an Gehaltsdaten wird protokolliert und ist nachvollziehbar.</li>
                         <li><strong>Minimierung:</strong> Es werden nur die Gehaltsdaten erhoben und verarbeitet, die für die Zwecke der Entgelttransparenz-Compliance erforderlich sind.</li>
                     </ul>
-                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">Verarbeitung durch KI-Systeme</h3>
+                    {/* 4a. Verarbeitung von Geschlechtsdaten (Art. 9 DSGVO) */}
+                    <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">4a. Verarbeitung von Geschlechtsdaten (besondere Kategorien nach Art. 9 DSGVO)</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Zur Analyse von Entgeltunterschieden setzt die Plattform optional KI-gestützte Sprachmodelle ein. Dabei gilt:
+                        Die Plattform verarbeitet das Geschlecht (<strong>Geschlecht</strong>) der erfassten Mitarbeitenden als besondere Kategorie personenbezogener Daten im Sinne von Art. 9 DSGVO.
                     </p>
+                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">Zweck und Rechtsgrundlage</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        Die Verarbeitung des Geschlechtsmerkmals dient ausschließlich der Berechnung des geschlechtsspezifischen Entgeltgefälles (Gender Pay Gap) gemäß den Berichtspflichten der EU-Entgelttransparenzrichtlinie 2023/970 sowie des deutschen Entgelttransparenzgesetzes (EntgTranspG). Rechtsgrundlage ist Art. 9 Abs. 2 lit. b) DSGVO in Verbindung mit den arbeitsrechtlichen Pflichten zur Entgelttransparenz (EU-Richtlinie 2023/970, §§ 10 ff. EntgTranspG).
+                    </p>
+                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">Schutzmaßnahmen</h3>
                     <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
-                        <li>Die Verarbeitung erfolgt nur auf ausdrückliche Anforderung des Kunden.</li>
-                        <li>An das Sprachmodell werden ausschließlich aggregierte und anonymisierte Daten übermittelt, keine individuellen Gehaltsdaten.</li>
-                        <li>Die Ergebnisse sind als Unterstützung gedacht und ersetzen keine fachliche Bewertung.</li>
+                        <li><strong>Strikt rollenbasierter Zugriff (RBAC):</strong> Auf Geschlechtsdaten können nur Administratoren und HR-Manager zugreifen. Der Zugriff wird auf Datenbankebene via Row Level Security (RLS) durchgesetzt.</li>
+                        <li><strong>Keine Übermittlung an Logging- oder Fehlertracking-Systeme:</strong> Geschlechtsdaten werden nicht an Sentry oder andere externe Analyse-Dienste übertragen. Das Sentry-Scrubbing ist entsprechend konfiguriert.</li>
+                        <li><strong>Keine Nutzung zu anderen Zwecken:</strong> Geschlechtsdaten werden ausschließlich für die gesetzlich vorgeschriebene Pay-Gap-Berechnung verwendet. Eine Weitergabe an Dritte oder eine Nutzung zu Werbezwecken findet nicht statt.</li>
+                        <li><strong>Datenminimierung:</strong> Es werden nur Kategorien erfasst, die für die Berechnung nach der EU-Richtlinie erforderlich sind.</li>
                     </ul>
 
                     {/* 5. Datenverarbeitung im Detail */}
@@ -113,7 +119,7 @@ export default function DatenschutzPage() {
 
                     <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">5.1 Hosting und Infrastruktur</h3>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        <strong>Supabase (Datenbank):</strong> Die Plattform nutzt Supabase als Datenbankinfrastruktur. Alle Daten werden auf Servern in Frankfurt am Main, Deutschland (AWS eu-central-1) gespeichert. Supabase bietet PostgreSQL-Datenbanken mit integrierter Row Level Security, automatischen Backups und Verschlüsselung. Die Datenverarbeitung erfolgt ausschließlich innerhalb der Europäischen Union.
+                        <strong>Supabase (Datenbank):</strong> Die Plattform nutzt Supabase als Datenbankinfrastruktur. Alle Daten werden auf Servern in Dublin, Irland (AWS eu-west-1) gespeichert. Supabase bietet PostgreSQL-Datenbanken mit integrierter Row Level Security, automatischen Backups und Verschlüsselung. Die Datenverarbeitung erfolgt ausschließlich innerhalb der Europäischen Union.
                     </p>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         <strong>Vercel / Coolify (Webhosting):</strong> Die Webanwendung wird über eine Hosting-Infrastruktur bereitgestellt. Statische Assets können über ein Content Delivery Network (CDN) ausgeliefert werden. Es werden dabei keine personenbezogenen Daten dauerhaft auf dem Webserver gespeichert; die Datenhaltung erfolgt ausschließlich in der Supabase-Datenbank.
@@ -139,7 +145,12 @@ export default function DatenschutzPage() {
                         <strong>Sentry:</strong> Zur Erkennung und Behebung technischer Fehler setzen wir Sentry ein (Functional Software, Inc., San Francisco, USA). Sentry erfasst bei Auftreten eines Fehlers: Fehlermeldung und Stack-Trace, Browsertyp und -version, Betriebssystem, URL der betroffenen Seite, anonymisierte IP-Adresse (letztes Oktett wird entfernt). Es werden keine Gehaltsdaten oder andere Inhaltsdaten an Sentry übermittelt. Die Verarbeitung dient dem berechtigten Interesse an der Aufrechterhaltung der Betriebssicherheit und Fehlerbehebung (Art. 6 Abs. 1 lit. f DSGVO). Datenschutzerklärung von Sentry: <a href="https://sentry.io/privacy/" className="text-[#071423] font-medium underline underline-offset-2 hover:text-[#071423]/70" target="_blank" rel="noopener noreferrer">sentry.io/privacy</a>.
                     </p>
 
-                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">5.6 Analyse und Tracking</h3>
+                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">5.6 CDN und Netzwerk-Infrastruktur</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                        <strong>Cloudflare:</strong> Die Website klargehalt.de und ihre Subdomains werden über den Dienst Cloudflare, Inc. (101 Townsend St., San Francisco, CA 94107, USA) als Reverse-Proxy und Content Delivery Network (CDN) ausgeliefert. Cloudflare verarbeitet dabei IP-Adressen und Request-Metadaten (z.B. HTTP-Header, URL-Pfad) zum Zweck der DDoS-Abwehr, Verfügbarkeitssicherung und Performance-Optimierung. Es werden keine Inhaltsdaten (Gehaltsdaten, Nutzerdaten) dauerhaft bei Cloudflare gespeichert. Für die Übermittlung in die USA besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO) sowie die Anwendung von Standardvertragsklauseln (SCC). Datenschutzerklärung von Cloudflare: <a href="https://www.cloudflare.com/de-de/privacypolicy/" className="text-[#071423] font-medium underline underline-offset-2 hover:text-[#071423]/70" target="_blank" rel="noopener noreferrer">cloudflare.com/de-de/privacypolicy</a>.
+                    </p>
+
+                    <h3 className="text-lg font-semibold text-[#071423] mt-8 mb-3">5.7 Analyse und Tracking</h3>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Wir setzen <strong>keine Tracking-Cookies</strong> und <strong>kein Google Analytics</strong> oder vergleichbare Analyse-Dienste ein. Es erfolgt keine Weitergabe von Nutzungsdaten an Dritte zu Werbezwecken. Eine Analyse des Nutzungsverhaltens erfolgt ausschließlich serverseitig und anonymisiert zur Verbesserung der Plattform.
                     </p>
@@ -226,7 +237,7 @@ export default function DatenschutzPage() {
                                 <tr className="border-b border-slate-100">
                                     <td className="py-2 pr-4">Supabase Inc.</td>
                                     <td className="py-2 pr-4">Datenbank, Speicherung</td>
-                                    <td className="py-2 pr-4">Frankfurt, DE (EU)</td>
+                                    <td className="py-2 pr-4">Dublin, IE (EU)</td>
                                     <td className="py-2">AV-Vertrag, DSGVO-konform</td>
                                 </tr>
                                 <tr className="border-b border-slate-100">
@@ -252,6 +263,12 @@ export default function DatenschutzPage() {
                                     <td className="py-2 pr-4">Fehlertracking</td>
                                     <td className="py-2 pr-4">USA</td>
                                     <td className="py-2">SCC, Datenminimierung</td>
+                                </tr>
+                                <tr className="border-b border-slate-100">
+                                    <td className="py-2 pr-4">Cloudflare Inc.</td>
+                                    <td className="py-2 pr-4">CDN / Reverse-Proxy / DDoS-Schutz</td>
+                                    <td className="py-2 pr-4">EU/global Edge</td>
+                                    <td className="py-2">AV-Vertrag (Art. 28 DSGVO)</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -288,6 +305,7 @@ export default function DatenschutzPage() {
                         <li><strong>Serverprotokolle:</strong> 30 Tage, danach automatische Löschung.</li>
                         <li><strong>Fehlerberichte (Sentry):</strong> 90 Tage, danach automatische Löschung.</li>
                         <li><strong>Daten nach Testphase ohne Konvertierung:</strong> 90 Kalendertage nach Ablauf der Testphase, danach unwiderrufliche Löschung.</li>
+                        <li><strong>Konto-Löschung durch den Kunden:</strong> Bei Löschung des Kontos durch den Kontoinhaber wird das Konto zunächst 30 Kalendertage gesperrt (Reaktivierung möglich). Nach Ablauf dieser Frist werden personenbezogene Daten der Mitarbeitenden entfernt bzw. pseudonymisiert und der Zugang endgültig gelöscht. Die zur Erfüllung der EU-Entgelttransparenzrichtlinie (Richtlinie (EU) 2023/970) erforderliche Compliance-Dokumentation — Begründungs-Trail zu Entgeltentscheidungen und Audit-Protokoll — bleibt gemäß Art. 17 Abs. 3 lit. b DSGVO in anonymisierter Form gespeichert, da sie der Erfüllung einer rechtlichen Verpflichtung sowie der Geltendmachung und Verteidigung von Rechtsansprüchen (Beweislastumkehr) dient. In Sicherungskopien (Backups) können Restdaten für bis zu 7 Tage fortbestehen, bevor sie endgültig entfallen.</li>
                     </ul>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         Nach Ablauf der jeweiligen Speicherdauer werden die Daten automatisch und unwiderruflich gelöscht. Daten, die aufgrund gesetzlicher Aufbewahrungspflichten länger gespeichert werden müssen, sind für den regulären Zugriff gesperrt und werden nach Ablauf der gesetzlichen Frist gelöscht.

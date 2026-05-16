@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 
 const supabaseAdmin = () =>
   createServiceClient(
@@ -13,9 +14,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation gate (Risk #1): the assessment + its transitions/comments/
+  // snapshot were previously reachable by spoofing kg_active_org to a victim
+  // org. Validate active membership before any service-role read.
+  const guard = await guardOrgMember(context);
+  if (guard instanceof NextResponse) return guard;
 
   const { id } = await params;
   const supabase = supabaseAdmin();
@@ -24,7 +27,7 @@ export async function GET(
     .from('compliance_assessments')
     .select('*')
     .eq('id', id)
-    .eq('organization_id', context.activeOrganizationId)
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
   if (assessmentError) {

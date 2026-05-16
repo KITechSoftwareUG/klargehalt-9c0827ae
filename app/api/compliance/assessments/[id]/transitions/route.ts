@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 import { VALID_TRANSITIONS, type ComplianceAssessmentStatus, type ActorRole, type GapFlags } from '@/lib/types/compliance-workflow';
 import {
   sendAssessmentSubmittedToLawyer,
@@ -201,9 +202,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const context = await getServerAuthContext();
-  if (!context.isAuthenticated || !context.activeOrganizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Tenant-isolation gate (Risk #1): validate active membership before any
+  // service-role read/write — kg_active_org is an unverified cookie.
+  const guard = await guardOrgMember(context);
+  if (guard instanceof NextResponse) return guard;
 
   const { id } = await params;
   const supabase = supabaseAdmin();
@@ -227,7 +229,7 @@ export async function POST(
     .from('compliance_assessments')
     .select('id, status, organization_id, title, initiated_by, lawyer_id')
     .eq('id', id)
-    .eq('organization_id', context.activeOrganizationId)
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
   if (assessmentError) {
@@ -243,7 +245,7 @@ export async function POST(
     .from('user_roles')
     .select('role')
     .eq('user_id', context.user!.id)
-    .eq('organization_id', context.activeOrganizationId)
+    .eq('organization_id', guard.orgId)
     .maybeSingle();
 
   if (roleError) {
@@ -281,7 +283,7 @@ export async function POST(
   let analyzedRiskScore: number | null = null;
   let analyzedGapFlags: GapFlags | null = null;
   if (toStatus === 'ANALYZED') {
-    const result = await computeAndStoreAnalysis(supabase, id, context.activeOrganizationId);
+    const result = await computeAndStoreAnalysis(supabase, id, guard.orgId);
     analyzedRiskScore = result.risk_score;
     analyzedGapFlags = result.gap_flags;
   }
@@ -338,12 +340,12 @@ export async function POST(
           const { data: companyRow } = await supabase
             .from('companies')
             .select('name')
-            .eq('organization_id', context.activeOrganizationId)
+            .eq('organization_id', guard.orgId)
             .maybeSingle();
           await sendAssessmentSubmittedToLawyer(
             lawyerUser.email,
             lawyerName,
-            companyRow?.name ?? context.activeOrganizationId,
+            companyRow?.name ?? guard.orgId,
             assessmentTitle,
             assessmentUrl,
           );

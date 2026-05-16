@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
+import { guardOrgMember } from '@/lib/auth/api-guard';
 
 export async function GET(request: NextRequest) {
   const context = await getServerAuthContext();
-
-  if (!context.isAuthenticated || !context.user) {
-    return NextResponse.json({ error: 'Nicht authentifiziert' }, { status: 401 });
-  }
-
-  const orgId = context.activeOrganizationId;
-  if (!orgId) {
-    return NextResponse.json({ error: 'Keine aktive Organisation' }, { status: 400 });
-  }
+  // Tenant-isolation gate (Risk #1): the org filter below runs on a
+  // service-role client; validate membership before trusting the cookie org.
+  const guard = await guardOrgMember(context);
+  if (guard instanceof NextResponse) return guard;
+  const orgId = guard.orgId;
 
   const { searchParams } = request.nextUrl;
   const jobProfileId = searchParams.get('job_profile_id');

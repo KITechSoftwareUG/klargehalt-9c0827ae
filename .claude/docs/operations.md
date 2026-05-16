@@ -11,6 +11,7 @@
 | 5 | `?plan=` on `/sign-in` URL (not `/sign-up`) | No detection | Route sign-in `?plan=` to cookie same as sign-up |
 | 7 | `RESEND_API_KEY` missing | First send throws | Add startup env check |
 | 9 | pg_cron `cleanup_expired_trial_accounts` not scheduled | No detection | Run `SELECT cron.schedule(...)` in Supabase SQL editor |
+| 11 | `account-cleanup` cron not scheduled → tenants scheduled for deletion never get pseudonymized (PII retained past the 30-day promise + privacy-notice mismatch) | Check Coolify cron | Configure Coolify task → `GET /api/cron/account-cleanup` (header `x-cron-secret: $CRON_SECRET`), daily. Deferred until migration `20260516120000` is `supabase db push`-ed to prod. |
 
 ### Resolved (historical context)
 

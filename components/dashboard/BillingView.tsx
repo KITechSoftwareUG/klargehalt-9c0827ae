@@ -39,6 +39,10 @@ export default function BillingView() {
                 body: JSON.stringify({ tier, interval: billingInterval }),
             });
             const data = await res.json();
+            if (res.status === 403 && data?.code === 'CONTRACTS_NOT_ACCEPTED' && data?.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
             if (!res.ok) {
                 toast.error(data.error || 'Checkout konnte nicht gestartet werden');
                 return;

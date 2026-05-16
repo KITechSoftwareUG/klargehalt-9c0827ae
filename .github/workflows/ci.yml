@@ -23,3 +23,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Tenant-isolation guardrail (Risk #1)
+        run: npm run check:tenant-guards
