@@ -81,6 +81,8 @@ curl -X DELETE -H "Authorization: Bearer $COOLIFY_TOKEN" \
 
 > Cron für `trial-reminder` und `cleanup_expired_trial_accounts` (pg_cron) sind **noch nicht produktiv** — siehe `@.claude/docs/operations.md` Hard Failure Modes #3 und #9.
 
+> **Bei Deploy von `feature/account-deletion` anzulegen** (nach `supabase db push` der Migration `20260516120000`): Scheduled Task `account-cleanup-daily`, `frequency: "0 4 * * *"` UTC, Command `curl -fsS -H "x-cron-secret: $CRON_SECRET" https://app.klargehalt.de/api/cron/account-cleanup` — pseudonymisiert Tenants nach Ablauf der 30-Tage-Löschfrist. Ohne diesen Task bleibt PII über die 30-Tage-Zusage hinaus erhalten (Operations #11).
+
 ---
 
 ## 3. Supabase
