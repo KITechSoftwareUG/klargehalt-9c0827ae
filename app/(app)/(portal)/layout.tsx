@@ -11,7 +11,7 @@ import {
     Shield, Users, Settings, LogOut, CreditCard,
     Building2, Scale,
     Layers, ShieldCheck, Building, KeyRound, Menu, FileCheck,
-    Sparkles, Handshake, Bot, Lock, Rocket, BarChart3,
+    Sparkles, Handshake, Bot, Lock, Rocket, BarChart3, Mail,
 } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { TrialBanner, TrialHeaderBadge } from '@/components/TrialBanner';
@@ -32,8 +32,7 @@ type AppView =
     | 'abrechnung'
     | 'einstellungen'
     | 'audit'
-    | 'compliance-workflow'
-    | 'ki-agenten';
+    | 'compliance-workflow';
 
 const ROLE_LABELS: Record<string, { label: string; dotColor: string }> = {
     owner:      { label: 'Administrator', dotColor: 'bg-emerald-400' },
@@ -57,7 +56,6 @@ const VIEW_TO_PATH: Record<AppView, string> = {
     einstellungen:         '/einstellungen',
     audit:                 '/audit',
     'compliance-workflow': '/compliance-workflow',
-    'ki-agenten':          '/ki-agenten',
 };
 
 type NavItem = {
@@ -90,8 +88,6 @@ const MAIN_NAV: NavItem[] = [
     { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true, proLocked: true },
     { label: 'Abrechnung & Plan',      icon: CreditCard,  view: 'abrechnung',          group: 'Premium & Services', adminOnly: true },
     { label: 'Partnerschaften',         icon: Handshake,   disabled: true, badge: 'Bald verfügbar', group: 'Premium & Services', adminOnly: true },
-    // KI-Agenten
-    { label: 'KI-Agenten',  icon: Bot, view: 'ki-agenten', group: 'KI-Agenten', adminOnly: false, trialLocked: true, proLocked: true },
     // Konto
     { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: true },
     { label: 'Audit-Log',      icon: Shield,   view: 'audit',         group: 'Konto', adminOnly: true },
@@ -305,6 +301,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             )}
 
             {role === 'employee' && <div className="flex-1" />}
+
+            <div className="px-4 pb-2">
+                <a
+                    href="mailto:support@klargehalt.de?subject=Support%20Anfrage"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/5 hover:text-slate-300 transition-all duration-200"
+                >
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Hilfe & Support</span>
+                </a>
+            </div>
 
             <div className="border-t border-white/10 px-4 py-4 mt-auto">
                 <div className="flex items-center gap-3">
