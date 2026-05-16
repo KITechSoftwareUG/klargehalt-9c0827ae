@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { friendlyApiError, friendlyError } from '@/lib/api-error';
 
 export interface Company {
   id: string;
@@ -49,13 +50,15 @@ export function useCompany() {
     setLoading(true);
     try {
       const res = await fetch('/api/company');
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Company | null;
       setCompany(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching company:', error);
-      toast.error(`Fehler beim Laden der Firmendaten: ${message}`);
+      toast.error(`Fehler beim Laden der Firmendaten: ${friendlyError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -73,15 +76,17 @@ export function useCompany() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Company;
       toast.success('Firma erfolgreich erstellt');
       setCompany(data);
       return data;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error creating company:', error);
-      toast.error(`Fehler beim Erstellen der Firma: ${message}`);
+      toast.error(`Fehler beim Erstellen der Firma: ${friendlyError(error)}`);
       return null;
     }
   };
@@ -98,14 +103,16 @@ export function useCompany() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       toast.success('Firma erfolgreich aktualisiert');
       await fetchCompany();
       return true;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error updating company:', error);
-      toast.error(`Fehler beim Aktualisieren der Firma: ${message}`);
+      toast.error(`Fehler beim Aktualisieren der Firma: ${friendlyError(error)}`);
       return false;
     }
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { SalaryJustification } from '@/lib/types/salary-justification';
+import { friendlyApiError, friendlyError } from '@/lib/api-error';
 
 export interface Employee {
   id: string;
@@ -77,13 +78,15 @@ export function useEmployees() {
     setLoading(true);
     try {
       const res = await fetch('/api/employees');
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Employee[];
       setEmployees(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching employees:', error);
-      toast.error(`Fehler beim Laden der Mitarbeiter: ${message}`);
+      toast.error(`Fehler beim Laden der Mitarbeiter: ${friendlyError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -101,14 +104,17 @@ export function useEmployees() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Employee;
       toast.success('Mitarbeiter erfolgreich erstellt');
       await fetchEmployees();
       return data;
     } catch (error: unknown) {
       console.error('Error creating employee:', error);
-      toast.error('Fehler beim Erstellen des Mitarbeiters');
+      toast.error(`Fehler beim Erstellen des Mitarbeiters: ${friendlyError(error)}`);
       return null;
     }
   };
@@ -120,13 +126,16 @@ export function useEmployees() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       toast.success('Mitarbeiter erfolgreich aktualisiert');
       await fetchEmployees();
       return true;
     } catch (error: unknown) {
       console.error('Error updating employee:', error);
-      toast.error('Fehler beim Aktualisieren des Mitarbeiters');
+      toast.error(`Fehler beim Aktualisieren des Mitarbeiters: ${friendlyError(error)}`);
       return false;
     }
   };
@@ -134,13 +143,16 @@ export function useEmployees() {
   const deleteEmployee = async (id: string): Promise<boolean> => {
     try {
       const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       toast.success('Mitarbeiter erfolgreich archiviert');
       await fetchEmployees();
       return true;
     } catch (error: unknown) {
       console.error('Error deleting employee:', error);
-      toast.error('Fehler beim Löschen des Mitarbeiters');
+      toast.error(`Fehler beim Löschen des Mitarbeiters: ${friendlyError(error)}`);
       return false;
     }
   };

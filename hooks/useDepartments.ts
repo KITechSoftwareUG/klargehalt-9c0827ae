@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { friendlyApiError, friendlyError } from '@/lib/api-error';
 
 export interface Department {
   id: string;
@@ -30,13 +31,15 @@ export function useDepartments() {
     setLoading(true);
     try {
       const res = await fetch('/api/departments');
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Department[];
       setDepartments(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       console.error('Error fetching departments:', error);
-      toast.error(`Fehler beim Laden der Abteilungen: ${message}`);
+      toast.error(`Fehler beim Laden der Abteilungen: ${friendlyError(error)}`);
     } finally {
       setLoading(false);
     }
@@ -54,14 +57,17 @@ export function useDepartments() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       const data = await res.json() as Department;
       toast.success('Abteilung erfolgreich erstellt');
       await fetchDepartments();
       return data;
     } catch (error: unknown) {
       console.error('Error creating department:', error);
-      toast.error('Fehler beim Erstellen der Abteilung');
+      toast.error(`Fehler beim Erstellen der Abteilung: ${friendlyError(error)}`);
       return null;
     }
   };
@@ -73,13 +79,16 @@ export function useDepartments() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       toast.success('Abteilung erfolgreich aktualisiert');
       await fetchDepartments();
       return true;
     } catch (error: unknown) {
       console.error('Error updating department:', error);
-      toast.error('Fehler beim Aktualisieren der Abteilung');
+      toast.error(`Fehler beim Aktualisieren der Abteilung: ${friendlyError(error)}`);
       return false;
     }
   };
@@ -87,13 +96,16 @@ export function useDepartments() {
   const deleteDepartment = async (id: string): Promise<boolean> => {
     try {
       const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const msg = await friendlyApiError(res);
+        throw new Error(msg);
+      }
       toast.success('Abteilung erfolgreich gelöscht');
       await fetchDepartments();
       return true;
     } catch (error: unknown) {
       console.error('Error deleting department:', error);
-      toast.error('Fehler beim Löschen der Abteilung');
+      toast.error(`Fehler beim Löschen der Abteilung: ${friendlyError(error)}`);
       return false;
     }
   };

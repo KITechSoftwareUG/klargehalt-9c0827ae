@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getServerAuthContext } from '@/lib/auth/server';
 import { guardRole, pickFields, getCompanyId, EMPLOYEE_WRITE_FIELDS } from '@/lib/auth/api-guard';
 import { logAuditEntry } from '@/lib/audit-log';
 import { humanizePgError } from '@/lib/pg-error';
 import { getEffectiveTier, getPlanLimits, type SubscriptionStatus, type SubscriptionTier } from '@/lib/subscription';
+
+// Per-row validation schema for bulk import.
+// Required fields match DB NOT NULL constraints and compliance data quality requirements.
+const bulkEmployeeRowSchema = z.object({
+  first_name: z.string().min(1, 'first_name darf nicht leer sein'),
+  last_name: z.string().min(1, 'last_name darf nicht leer sein'),
+  gender: z.enum(['male', 'female', 'diverse', 'not_specified'], {
+    errorMap: () => ({ message: 'gender muss male, female, diverse oder not_specified sein' }),
+  }),
+  base_salary: z.number({ invalid_type_error: 'base_salary muss eine Zahl sein' }).positive('base_salary muss positiv sein'),
+  hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'hire_date muss im Format YYYY-MM-DD sein'),
+}).passthrough();
 
 /**
  * POST /api/employees/bulk  — atomic CSV import (Risk #3 + Risk #4).
@@ -104,6 +117,21 @@ export async function POST(request: NextRequest) {
           limit: limits.maxEmployees,
         },
         { status: 402 },
+      );
+    }
+  }
+
+  // ── Per-row Zod validation (required fields) ─────────────────────────────
+  // Runs after plan-limit check so we don't waste DB round-trips on bad data.
+  for (let i = 0; i < rows.length; i++) {
+    const result = bulkEmployeeRowSchema.safeParse(rows[i]);
+    if (!result.success) {
+      const firstIssue = result.error.issues[0];
+      const field = firstIssue?.path.join('.') ?? 'unbekanntes Feld';
+      const detail = firstIssue?.message ?? 'Ungültiger Wert';
+      return NextResponse.json(
+        { error: `Zeile ${i + 1}: ${field} — ${detail}` },
+        { status: 400 },
       );
     }
   }
