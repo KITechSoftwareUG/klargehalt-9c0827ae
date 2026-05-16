@@ -13,8 +13,7 @@ const CONSENT_KEY = 'kg_cookie_consent';
 
 function loadPlausible() {
   const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN || 'klargehalt.de';
-  const scriptUrl = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL;
-  if (!scriptUrl) return;
+  const scriptUrl = process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_URL || 'https://analytics.klargehalt.de/js/script.js';
   if (document.querySelector(`script[data-domain="${domain}"]`)) return;
   const script = document.createElement('script');
   script.defer = true;
