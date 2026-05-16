@@ -5,6 +5,7 @@ import { createClient as createSupabaseServiceClient } from '@supabase/supabase-
 import { type SubscriptionTier, getStripePriceId, PLANS } from '@/lib/subscription';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { guardRole } from '@/lib/auth/api-guard';
+import { checkContractsAccepted } from '@/lib/contracts';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,20 @@ export async function POST(request: NextRequest) {
     const priceId = getStripePriceId(tier, interval);
     if (!priceId) {
       return NextResponse.json({ error: 'Stripe price not configured for this plan' }, { status: 500 });
+    }
+
+    // Legal gate (BGB §305): no binding paid subscription may be created
+    // without prior AGB/Datenschutz/AVV acceptance. This is the real,
+    // non-bypassable enforcement — frontend gating is UX only.
+    if (!(await checkContractsAccepted(guard.orgId, serviceClient))) {
+      return NextResponse.json(
+        {
+          error: 'Bitte akzeptieren Sie zuerst die Vertragsbedingungen.',
+          code: 'CONTRACTS_NOT_ACCEPTED',
+          redirect: `/onboarding/contracts?checkout=${encodeURIComponent(tier)}&interval=${encodeURIComponent(interval)}&next=${encodeURIComponent('/abrechnung')}`,
+        },
+        { status: 403 },
+      );
     }
 
     // Use service client — org JWT may lag after onboarding, causing RLS to block the query
