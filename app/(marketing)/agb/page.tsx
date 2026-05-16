@@ -54,7 +54,6 @@ export default function AGBPage() {
                         <li>Rollenbasierte Zugriffskontrolle (RBAC) für Mitarbeitende, HR-Manager und Administratoren</li>
                         <li>Audit-Trail zur Nachverfolgung aller relevanten Aktionen</li>
                         <li>Datenexport für Berichtspflichten gemäß der EU-Richtlinie</li>
-                        <li>KI-gestützte Analyse und Erklärungen von Entgeltunterschieden</li>
                     </ul>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         (2) Der Anbieter stellt die Plattform als Software-as-a-Service (SaaS) über das Internet bereit. Die Plattform wird auf Servern in der Europäischen Union (Frankfurt am Main, Deutschland) gehostet.
@@ -98,7 +97,7 @@ export default function AGBPage() {
                     <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
                         <li>Verwaltung von bis zu 500 Mitarbeitenden</li>
                         <li>Erweiterte Gehaltsstruktur-Verwaltung mit Gehaltsbändern</li>
-                        <li>Detaillierte Gender-Pay-Gap-Analyse mit KI-gestützten Erklärungen</li>
+                        <li>Detaillierte Gender-Pay-Gap-Analyse und Compliance-Berichte</li>
                         <li>Unbegrenzte Benutzerkonten mit vollständigem Rollenmodell</li>
                         <li>Audit-Trail und Compliance-Berichte</li>
                         <li>Datenexport (CSV, PDF)</li>
@@ -143,7 +142,7 @@ export default function AGBPage() {
                         (1) Die monatlichen Preise für die einzelnen Tarife betragen:
                     </p>
                     <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1 mb-4">
-                        <li><strong>Basis-Tarif:</strong> 99,00 EUR pro Monat</li>
+                        <li><strong>Basis-Tarif:</strong> 149,00 EUR pro Monat</li>
                         <li><strong>Professional-Tarif:</strong> 299,00 EUR pro Monat</li>
                         <li><strong>Enterprise-Tarif:</strong> Individuelles Angebot auf Anfrage</li>
                     </ul>
@@ -279,10 +278,6 @@ export default function AGBPage() {
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         (6) Der Anbieter haftet nicht für die Erfüllung der Compliance-Pflichten des Kunden. Die Verantwortung für die Einhaltung der EU-Entgelttransparenzrichtlinie 2023/970 und der entsprechenden nationalen Umsetzungsgesetze verbleibt beim Kunden.
                     </p>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        (7) KI-gestützte Erklärungen und Analysen werden unter Einsatz von Sprachmodellen generiert und können fehlerhaft oder unvollständig sein. Der Kunde ist verpflichtet, diese Ergebnisse eigenständig zu prüfen, bevor er darauf basierende Entscheidungen trifft.
-                    </p>
-
                     {/* §12 */}
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">§12 Vertraulichkeit</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">

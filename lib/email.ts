@@ -142,7 +142,7 @@ export async function sendMidTrialEmail(
             </div>
             <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
               <span style="color: #2563eb; min-width: 16px;">→</span>
-              <span style="color: #334155; line-height: 1.5; font-size: 14px;">Gehaltsentscheidung dokumentieren: Jede Gehaltsänderung rechtssicher begründen</span>
+              <span style="color: #334155; line-height: 1.5; font-size: 14px;">Gehaltsentscheidung dokumentieren: Jede Gehaltsänderung nachvollziehbar und mit dokumentiertem Begründungs-Trail festhalten</span>
             </div>
             <div style="display: flex; align-items: flex-start; gap: 10px;">
               <span style="color: #2563eb; min-width: 16px;">→</span>

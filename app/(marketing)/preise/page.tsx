@@ -61,7 +61,6 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
             { name: 'Entscheidungs-Dokumentation (Begründungs-Trail)', basis: true, professional: true, enterprise: true },
             { name: 'Pay-Gap Berichte (PDF)', basis: false, professional: true, enterprise: true },
             { name: 'Trendanalyse über Zeiträume', basis: false, professional: true, enterprise: true },
-            { name: 'KI-gestützte Handlungsempfehlungen', basis: false, professional: true, enterprise: true },
         ],
     },
     {

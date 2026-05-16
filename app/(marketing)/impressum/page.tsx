@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'Impressum',
-    description: 'Impressum und Angaben gemäß § 5 TMG der KITech Software UG (haftungsbeschränkt).',
+    description: 'Impressum und Angaben gemäß § 5 DDG der KITech Software UG (haftungsbeschränkt).',
 };
 
 export default function ImpressumPage() {
@@ -15,7 +15,7 @@ export default function ImpressumPage() {
                         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.1] mb-4">
                             Impressum
                         </h1>
-                        <p className="text-sm text-white/40">Angaben gemäß § 5 TMG</p>
+                        <p className="text-sm text-white/40">Angaben gemäß § 5 DDG</p>
                     </div>
                 </div>
                 <div className="h-24 bg-gradient-to-b from-[#071423] to-white" />
@@ -29,7 +29,7 @@ export default function ImpressumPage() {
                         </p>
                     </div>
 
-                    <h2 className="text-xl font-bold text-[#071423] mb-4">Angaben gemäß § 5 TMG</h2>
+                    <h2 className="text-xl font-bold text-[#071423] mb-4">Angaben gemäß § 5 DDG</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-2">
                         KITech Software UG (haftungsbeschränkt)
                     </p>
@@ -84,8 +84,8 @@ export default function ImpressumPage() {
 
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">Haftung für Inhalte</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach
-                        den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter
+                        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten nach
+                        den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als Diensteanbieter
                         jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen
                         oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
                     </p>
