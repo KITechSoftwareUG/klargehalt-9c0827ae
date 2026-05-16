@@ -347,3 +347,53 @@ export const createOrganizationWithMembership = async (params: {
 
   return organization;
 };
+
+/** Primary email of a Logto user, or null on any error (best-effort lookup). */
+export const getLogtoUserEmail = async (userId: string): Promise<string | null> => {
+  try {
+    const user = await callManagementApi<LogtoUserResponse>(`/api/users/${userId}`);
+    return user?.primaryEmail ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Final Logto teardown for a deleted tenant (cron only). Deletes the Logto
+ * organization, then deletes each former member whose ONLY membership was this
+ * org — a user belonging to another tenant is kept (just detached). Fully
+ * best-effort + idempotent: the DB-side anonymization is the source of truth,
+ * Logto cleanup must never throw and abort the cron run.
+ */
+export const tearDownLogtoForOrg = async (orgId: string): Promise<void> => {
+  // Snapshot members before the org is gone.
+  let userIds: string[] = [];
+  try {
+    const users = await callManagementApi<LogtoUserResponse[]>(
+      `/api/organizations/${orgId}/users`
+    );
+    userIds = (users ?? []).map((u) => u.id);
+  } catch {
+    // Can't list — still attempt org delete below.
+  }
+
+  try {
+    await callManagementApi<null>(`/api/organizations/${orgId}`, { method: 'DELETE' });
+  } catch {
+    // Already gone — fine.
+  }
+
+  for (const userId of userIds) {
+    try {
+      const orgs = await callManagementApi<OrganizationResponse[]>(
+        `/api/users/${userId}/organizations`
+      );
+      // After the org delete, a single-tenant user has zero remaining orgs.
+      if (!orgs || orgs.length === 0) {
+        await callManagementApi<null>(`/api/users/${userId}`, { method: 'DELETE' });
+      }
+    } catch {
+      // Multi-tenant user or transient error — leave the account intact.
+    }
+  }
+};
