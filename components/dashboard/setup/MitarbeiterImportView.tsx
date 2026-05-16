@@ -1299,7 +1299,7 @@ function Step4Execute({
   // Auto-start once on mount
   useEffect(() => {
     void runImport();
-  }, []); // eslint-disable-line
+  }, []);
 
   return (
     <div className="space-y-6">
