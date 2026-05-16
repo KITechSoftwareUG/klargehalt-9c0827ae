@@ -11,7 +11,6 @@
 | Data fetching | TanStack Query |
 | Charts | Recharts |
 | Billing | Stripe (Checkout + Customer Portal) |
-| AI | Google Gemini API |
 | Error tracking | Sentry (org: `kitech-software-ug-haftungsbes`, project: `klargehalt`) |
 
 ---
