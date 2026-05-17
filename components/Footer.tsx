@@ -65,7 +65,7 @@ const Footer = () => {
         </div>
 
         <div className="pt-6 border-t border-white/[0.05] flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-[10px] text-white/30">2026 KITech Software UG (haftungsbeschränkt). Alle Rechte vorbehalten.</p>
+          <p className="text-[10px] text-white/30">© 2026 KITech Software. Alle Rechte vorbehalten.</p>
           <p className="text-[10px] text-white/30">Frankfurt, Deutschland</p>
         </div>
       </div>

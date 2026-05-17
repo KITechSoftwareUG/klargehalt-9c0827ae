@@ -573,27 +573,6 @@ export default function HomePage() {
       {/* ── SECURITY ────────────────────────────────────────────── */}
       <SecuritySection />
 
-      {/* ── PRICING TEASER ──────────────────────────────────────── */}
-      <section className="py-20 bg-white border-y border-[#e0e0e2]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8">
-          <FadeIn className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div>
-              <p className="text-[#946df7] text-sm font-semibold tracking-wide uppercase mb-2">Preise</p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#071423] tracking-tight">
-                Ab EUR 99 / Monat. Transparent.
-              </h2>
-              <p className="text-sm text-[#535a6b] mt-2">Kein Setup-Fee. Keine versteckten Kosten. 14 Tage kostenlos testen.</p>
-            </div>
-            <Link
-              href="/preise"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold bg-[#071423] text-white hover:bg-[#0d1f33] transition-colors whitespace-nowrap flex-shrink-0"
-            >
-              Alle Pakete ansehen <ArrowRight className="w-4 h-4" />
-            </Link>
-          </FadeIn>
-        </div>
-      </section>
-
       {/* ── FAQ ─────────────────────────────────────────────────── */}
       <FaqSection />
 
