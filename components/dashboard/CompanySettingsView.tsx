@@ -212,7 +212,7 @@ export default function CompanySettingsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Einstellungen</h1>
+        <h2 className="text-xl font-semibold text-foreground">Unternehmen</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Unternehmensdaten, Erscheinungsbild und regionale Standardeinstellungen.
         </p>

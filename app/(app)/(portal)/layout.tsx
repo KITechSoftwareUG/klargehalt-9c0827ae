@@ -92,8 +92,9 @@ const MAIN_NAV: NavItem[] = [
     { label: 'Partnerschaften',         icon: Handshake,   disabled: true, badge: 'Bald verfügbar', group: 'Premium & Services', adminOnly: true },
     // KI-Agenten
     { label: 'KI-Agenten',  icon: Bot, view: 'ki-agenten', group: 'KI-Agenten', adminOnly: false, trialLocked: true, proLocked: true },
-    // Konto
-    { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: true },
+    // Konto — Einstellungen reachable by all portal roles (personal account
+    // section lives here); company/privacy tabs are admin-gated inside the page.
+    { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: false },
     { label: 'Audit-Log',      icon: Shield,   view: 'audit',         group: 'Konto', adminOnly: true },
 ];
 
