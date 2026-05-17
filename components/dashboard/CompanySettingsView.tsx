@@ -9,12 +9,14 @@ import {
   Loader2,
   Globe,
   FileText,
+  Receipt,
   Save,
 } from 'lucide-react';
 import { useCompany, CompanyFormData } from '@/hooks/useCompany';
 import CompanySetup from '@/components/dashboard/CompanySetup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -83,6 +85,9 @@ interface FormState {
   default_currency: string;
   default_locale: string;
   default_timezone: string;
+  address: string;
+  vat_id: string;
+  billing_email: string;
 }
 
 export default function CompanySettingsView() {
@@ -105,6 +110,9 @@ export default function CompanySettingsView() {
         default_currency: company.default_currency ?? 'EUR',
         default_locale: company.default_locale ?? 'de-DE',
         default_timezone: company.default_timezone ?? 'Europe/Berlin',
+        address: company.address ?? '',
+        vat_id: company.vat_id ?? '',
+        billing_email: company.billing_email ?? '',
       });
       setLogoUrl(company.logo_url ?? null);
     }
@@ -136,11 +144,19 @@ export default function CompanySettingsView() {
     form.employee_size_band !== (company.employee_size_band ?? '__none') ||
     form.default_currency !== (company.default_currency ?? 'EUR') ||
     form.default_locale !== (company.default_locale ?? 'de-DE') ||
-    form.default_timezone !== (company.default_timezone ?? 'Europe/Berlin');
+    form.default_timezone !== (company.default_timezone ?? 'Europe/Berlin') ||
+    form.address !== (company.address ?? '') ||
+    form.vat_id !== (company.vat_id ?? '') ||
+    form.billing_email !== (company.billing_email ?? '');
 
   const handleSave = async () => {
     if (!form.name.trim()) {
       toast.error('Der Firmenname darf nicht leer sein');
+      return;
+    }
+    const billingEmail = form.billing_email.trim();
+    if (billingEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(billingEmail)) {
+      toast.error('Bitte eine gültige Rechnungs-E-Mail eingeben');
       return;
     }
     setSaving(true);
@@ -156,6 +172,9 @@ export default function CompanySettingsView() {
       default_currency: form.default_currency,
       default_locale: form.default_locale,
       default_timezone: form.default_timezone,
+      address: form.address.trim() || undefined,
+      vat_id: form.vat_id.trim() || undefined,
+      billing_email: billingEmail || undefined,
     };
     const ok = await updateCompany(payload);
     setSaving(false);
@@ -344,6 +363,58 @@ export default function CompanySettingsView() {
         </CardContent>
       </Card>
 
+      {/* Rechnungsdaten */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Receipt className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Rechnungsdaten</CardTitle>
+              <CardDescription className="mt-0.5">
+                Anschrift und USt-IdNr. für Rechnungen sowie eine optionale
+                Rechnungs-E-Mail.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="address">Rechnungsanschrift</Label>
+            <Textarea
+              id="address"
+              value={form.address}
+              onChange={(e) => set({ address: e.target.value })}
+              placeholder={'Musterstraße 1\n12345 Musterstadt'}
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="vat_id">USt-IdNr.</Label>
+              <Input
+                id="vat_id"
+                value={form.vat_id}
+                onChange={(e) => set({ vat_id: e.target.value })}
+                placeholder="DE123456789"
+                maxLength={20}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="billing_email">Rechnungs-E-Mail</Label>
+              <Input
+                id="billing_email"
+                type="email"
+                value={form.billing_email}
+                onChange={(e) => set({ billing_email: e.target.value })}
+                placeholder="rechnung@firma.de"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* EU-Berichtspflicht */}
       <Card>
         <CardHeader>
@@ -478,6 +549,9 @@ export default function CompanySettingsView() {
               default_currency: company.default_currency ?? 'EUR',
               default_locale: company.default_locale ?? 'de-DE',
               default_timezone: company.default_timezone ?? 'Europe/Berlin',
+              address: company.address ?? '',
+              vat_id: company.vat_id ?? '',
+              billing_email: company.billing_email ?? '',
             })
           }
         >

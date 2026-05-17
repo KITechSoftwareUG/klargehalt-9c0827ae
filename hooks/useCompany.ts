@@ -17,6 +17,9 @@ export interface Company {
   default_currency: string;
   default_locale: string;
   default_timezone: string;
+  address: string | null;
+  vat_id: string | null;
+  billing_email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +35,9 @@ export interface CompanyFormData {
   default_currency?: string;
   default_locale?: string;
   default_timezone?: string;
+  address?: string;
+  vat_id?: string;
+  billing_email?: string;
 }
 
 export function useCompany() {
