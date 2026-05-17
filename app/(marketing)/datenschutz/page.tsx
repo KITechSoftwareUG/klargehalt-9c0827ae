@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'Datenschutzerklärung',
-    description: 'Datenschutzerklärung der KITech Software UG (haftungsbeschränkt) für KlarGehalt — DSGVO-konforme Verarbeitung von Gehaltsdaten.',
+    description: 'Datenschutzerklärung der KITech Software für KlarGehalt — DSGVO-konforme Verarbeitung von Gehaltsdaten.',
 };
 
 export default function DatenschutzPage() {
@@ -34,7 +34,7 @@ export default function DatenschutzPage() {
                         Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) und anderer nationaler Datenschutzgesetze der EU-Mitgliedstaaten sowie sonstiger datenschutzrechtlicher Bestimmungen ist:
                     </p>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        KITech Software UG (haftungsbeschränkt)<br />
+                        KITech Software<br />
                         Deutschland<br />
                         E-Mail: datenschutz@klargehalt.de<br />
                         Website: klargehalt.de
@@ -330,7 +330,7 @@ export default function DatenschutzPage() {
                         Für Fragen zum Datenschutz und zur Ausübung Ihrer Rechte als betroffene Person wenden Sie sich bitte an:
                     </p>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        KITech Software UG (haftungsbeschränkt)<br />
+                        KITech Software<br />
                         Datenschutzbeauftragter<br />
                         E-Mail: datenschutz@klargehalt.de
                     </p>
@@ -370,7 +370,7 @@ export default function DatenschutzPage() {
 
                     <div className="mt-16 pt-8 border-t border-slate-200">
                         <p className="text-xs text-slate-400">
-                            KITech Software UG (haftungsbeschränkt) -- Stand: März 2026
+                            KITech Software -- Stand: März 2026
                         </p>
                     </div>
                 </div>

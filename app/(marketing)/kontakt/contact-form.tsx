@@ -79,7 +79,7 @@ export default function ContactForm() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-[#071423]">Hannover, Deutschland</p>
-                                        <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">KITech Software UG</p>
+                                        <p className="text-xs text-[var(--ep-gray-3)] mt-0.5">KITech Software</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">

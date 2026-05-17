@@ -288,7 +288,7 @@ export default async function CertificatePage({ params }: PageProps) {
             <p>
               Dieses Dokument wurde durch KlarGehalt generiert. Die Prüfung
               wurde durch einen unabhängigen Rechtsberater durchgeführt.
-              KlarGehalt GmbH übernimmt keine Haftung für den Inhalt der
+              KITech Software übernimmt keine Haftung für den Inhalt der
               anwaltlichen Bewertung.
             </p>
           </div>

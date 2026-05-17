@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'Allgemeine Geschäftsbedingungen',
-    description: 'AGB der KITech Software UG (haftungsbeschränkt) für die Nutzung von KlarGehalt — SaaS-Plattform für EU-Entgelttransparenz.',
+    description: 'AGB der KITech Software für die Nutzung von KlarGehalt — SaaS-Plattform für EU-Entgelttransparenz.',
 };
 
 export default function AGBPage() {
@@ -31,7 +31,7 @@ export default function AGBPage() {
                     {/* §1 */}
                     <h2 className="text-xl font-bold text-[#071423] mt-12 mb-4">§1 Geltungsbereich</h2>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        (1) Diese Allgemeinen Geschäftsbedingungen (nachfolgend &bdquo;AGB&ldquo;) gelten für alle Verträge zwischen der KITech Software UG (haftungsbeschränkt), Deutschland (nachfolgend &bdquo;Anbieter&ldquo;), und dem Kunden (nachfolgend &bdquo;Kunde&ldquo;) über die Nutzung der SaaS-Plattform &bdquo;KlarGehalt&ldquo; (nachfolgend &bdquo;Plattform&ldquo;), erreichbar unter klargehalt.de und app.klargehalt.de.
+                        (1) Diese Allgemeinen Geschäftsbedingungen (nachfolgend &bdquo;AGB&ldquo;) gelten für alle Verträge zwischen der KITech Software, Deutschland (nachfolgend &bdquo;Anbieter&ldquo;), und dem Kunden (nachfolgend &bdquo;Kunde&ldquo;) über die Nutzung der SaaS-Plattform &bdquo;KlarGehalt&ldquo; (nachfolgend &bdquo;Plattform&ldquo;), erreichbar unter klargehalt.de und app.klargehalt.de.
                     </p>
                     <p className="text-sm text-slate-600 leading-relaxed mb-4">
                         (2) Die Plattform richtet sich ausschließlich an Unternehmer im Sinne von §14 BGB (B2B). Die Nutzung durch Verbraucher im Sinne von §13 BGB ist ausgeschlossen.
@@ -367,7 +367,7 @@ export default function AGBPage() {
 
                     <div className="mt-16 pt-8 border-t border-slate-200">
                         <p className="text-xs text-slate-400">
-                            KITech Software UG (haftungsbeschränkt) -- Stand: März 2026
+                            KITech Software -- Stand: März 2026
                         </p>
                     </div>
                 </div>

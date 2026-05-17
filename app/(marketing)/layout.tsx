@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         'Lohngleichheit',
         'Gehaltsbänder',
     ],
-    authors: [{ name: 'KITech Software UG', url: SITE_URL }],
+    authors: [{ name: 'KITech Software', url: SITE_URL }],
     alternates: {
         canonical: '/',
     },
@@ -94,7 +94,7 @@ export default function MarketingLayout({
                             '@context': 'https://schema.org',
                             '@type': 'Organization',
                             name: 'klargehalt',
-                            legalName: 'KITech Software UG (haftungsbeschränkt)',
+                            legalName: 'KITech Software',
                             url: SITE_URL,
                             logo: `${SITE_URL}/favicon.png`,
                             description: SITE_DESCRIPTION,
