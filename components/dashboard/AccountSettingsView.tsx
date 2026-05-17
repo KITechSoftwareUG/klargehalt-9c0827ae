@@ -1,8 +1,13 @@
 'use client';
 
-import { Mail, User, Building2, Shield } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Mail, User, Building2, Shield, Loader2, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -42,12 +47,21 @@ function formatDate(value: string | null | undefined): string | null {
 /**
  * AccountSettingsView — the personal "Mein Konto" area.
  *
- * Phase 1: read-only profile summary (email visible, role, org, member-since).
- * Editability (full_name) + Sicherheit + Benachrichtigungen are added in
- * later phases. Visible to all portal roles — no admin gating here.
+ * Phase 2: editable display name (PATCH /api/profiles/me) + read-only
+ * identity summary. Email stays owned by the IdP (Logto) and is not
+ * editable here. Sicherheit + Benachrichtigungen are added in later
+ * phases. Visible to all portal roles — no admin gating here.
  */
 export default function AccountSettingsView() {
-  const { user, profile, role, organization, loading } = useAuth();
+  const { user, profile, role, organization, loading, refreshAuth } = useAuth();
+
+  const currentName = profile?.full_name ?? user?.fullName ?? '';
+  const [nameInput, setNameInput] = useState(currentName);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setNameInput(profile?.full_name ?? user?.fullName ?? '');
+  }, [profile?.full_name, user?.fullName]);
 
   if (loading) {
     return (
@@ -60,10 +74,41 @@ export default function AccountSettingsView() {
 
   const email =
     user?.email ?? user?.primaryEmailAddress?.emailAddress ?? '—';
-  const fullName = profile?.full_name ?? user?.fullName ?? null;
   const roleLabel = role ? ROLE_LABELS[role as AppRole] ?? role : '—';
   const orgName = organization?.name ?? '—';
   const memberSince = formatDate(profile?.created_at);
+
+  const trimmed = nameInput.trim();
+  const dirty = trimmed !== currentName.trim();
+
+  const handleSaveName = async () => {
+    if (!trimmed) {
+      toast.error('Der Name darf nicht leer sein');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/profiles/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: trimmed }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(data?.error ?? 'Speichern fehlgeschlagen');
+      }
+      toast.success('Name aktualisiert');
+      await refreshAuth();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Speichern fehlgeschlagen';
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -83,17 +128,38 @@ export default function AccountSettingsView() {
             <div>
               <CardTitle className="text-base">Profil</CardTitle>
               <CardDescription className="mt-0.5">
-                Diese Daten stammen aus Ihrem Login-Konto.
+                Ihr Anzeigename. Die E-Mail-Adresse wird über Ihr
+                Login-Konto verwaltet.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <ReadOnlyRow
-            icon={<User className="h-4 w-4 text-muted-foreground" />}
-            label="Name"
-            value={fullName ?? 'Nicht hinterlegt'}
-          />
+        <CardContent className="space-y-5">
+          <div className="grid gap-2">
+            <Label htmlFor="full_name">Name</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="full_name"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Vor- und Nachname"
+                maxLength={120}
+                className="max-w-sm"
+                disabled={saving}
+              />
+              {dirty && (
+                <Button size="sm" onClick={handleSaveName} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-1.5 h-4 w-4" />
+                  )}
+                  Speichern
+                </Button>
+              )}
+            </div>
+          </div>
+
           <ReadOnlyRow
             icon={<Mail className="h-4 w-4 text-muted-foreground" />}
             label="E-Mail-Adresse"
