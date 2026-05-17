@@ -1,8 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Mail, User, Building2, Shield, Loader2, Save } from 'lucide-react';
+import {
+  Mail,
+  User,
+  Building2,
+  Shield,
+  Loader2,
+  Save,
+  KeyRound,
+  ShieldCheck,
+  ShieldAlert,
+  ExternalLink,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -33,6 +44,11 @@ const ROLE_LABELS: Record<AppRole, string> = {
   auditor: 'Auditor',
 };
 
+// Logto account center — same target as MfaBanner. Password + MFA are
+// managed by the IdP (Logto); we never implement auth ourselves
+// (see .claude/docs/security.md §2 "Keine eigene Auth-Logik").
+const LOGTO_ACCOUNT_URL = 'https://auth.klargehalt.de/account';
+
 function formatDate(value: string | null | undefined): string | null {
   if (!value) return null;
   const d = new Date(value);
@@ -53,7 +69,22 @@ function formatDate(value: string | null | undefined): string | null {
  * phases. Visible to all portal roles — no admin gating here.
  */
 export default function AccountSettingsView() {
-  const { user, profile, role, organization, loading, refreshAuth } = useAuth();
+  const { user, profile, role, organization, loading, mfaEnabled, refreshAuth } =
+    useAuth();
+
+  // When the user returns from the Logto account tab (password / MFA),
+  // re-pull auth so the MFA status badge updates automatically.
+  const handleVisibility = useCallback(() => {
+    if (document.visibilityState === 'visible') {
+      void refreshAuth();
+    }
+  }, [refreshAuth]);
+
+  useEffect(() => {
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibility);
+  }, [handleVisibility]);
 
   const currentName = profile?.full_name ?? user?.fullName ?? '';
   const [nameInput, setNameInput] = useState(currentName);
@@ -184,7 +215,81 @@ export default function AccountSettingsView() {
           )}
         </CardContent>
       </Card>
+
+      <SecurityCard mfaEnabled={mfaEnabled} />
     </div>
+  );
+}
+
+function openLogtoAccount() {
+  window.open(LOGTO_ACCOUNT_URL, '_blank', 'noopener,noreferrer');
+}
+
+interface SecurityCardProps {
+  mfaEnabled: boolean;
+}
+
+function SecurityCard({ mfaEnabled }: SecurityCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Shield className="h-4 w-4" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Sicherheit</CardTitle>
+            <CardDescription className="mt-0.5">
+              Passwort und Zwei-Faktor-Authentifizierung werden in Ihrem
+              Login-Konto verwaltet.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <div className="flex items-center gap-3">
+            {mfaEnabled ? (
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <ShieldAlert className="h-4 w-4 text-amber-600" />
+            )}
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Zwei-Faktor-Authentifizierung
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {mfaEnabled
+                  ? 'Aktiv — Ihr Konto ist zusätzlich abgesichert.'
+                  : 'Nicht aktiv — empfohlen, um Ihr Konto abzusichern.'}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={openLogtoAccount}>
+            <ShieldCheck className="mr-1.5 h-4 w-4" />
+            {mfaEnabled ? '2FA verwalten' : '2FA einrichten'}
+            <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <div className="flex items-center gap-3">
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Passwort</p>
+              <p className="text-xs text-muted-foreground">
+                Passwort im Login-Konto ändern.
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={openLogtoAccount}>
+            <KeyRound className="mr-1.5 h-4 w-4" />
+            Passwort ändern
+            <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
