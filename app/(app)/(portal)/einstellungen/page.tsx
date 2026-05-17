@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, FileUp, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, FileUp } from 'lucide-react';
 import CompanySettingsView from '@/components/dashboard/CompanySettingsView';
 import AccountSettingsView from '@/components/dashboard/AccountSettingsView';
+import PrivacySettingsView from '@/components/dashboard/PrivacySettingsView';
 import { useRoleAccess } from '@/components/RoleGuard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -61,38 +62,11 @@ export default function EinstellungenPage() {
 
                 {isAdmin && (
                     <TabsContent value="datenschutz" className="mt-6">
-                        <PrivacyPlaceholderCard />
+                        <PrivacySettingsView />
                     </TabsContent>
                 )}
             </Tabs>
         </div>
-    );
-}
-
-function PrivacyPlaceholderCard() {
-    return (
-        <Card className="border-slate-200">
-            <CardHeader>
-                <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <ShieldCheck className="h-4 w-4" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-base">
-                            Daten &amp; Datenschutz
-                        </CardTitle>
-                        <CardDescription className="mt-0.5">
-                            Datenexport (DSGVO Art. 15) und Konto-Löschung.
-                        </CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">
-                    Dieser Bereich wird in Kürze verfügbar.
-                </p>
-            </CardContent>
-        </Card>
     );
 }
 
