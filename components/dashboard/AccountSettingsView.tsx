@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   ShieldAlert,
   ExternalLink,
+  Bell,
+  Lock,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
@@ -217,7 +220,119 @@ export default function AccountSettingsView() {
       </Card>
 
       <SecurityCard mfaEnabled={mfaEnabled} />
+      <NotificationCard />
     </div>
+  );
+}
+
+const REQUIRED_NOTIFICATIONS = [
+  'Abrechnung & Zahlungen',
+  'Sicherheit & Konto',
+  'Einladungen',
+  'Compliance-Workflow',
+];
+
+function NotificationCard() {
+  const [productUpdates, setProductUpdates] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/profiles/me/notifications');
+        if (res.ok) {
+          const data = (await res.json()) as { product_updates?: boolean };
+          if (active) setProductUpdates(data.product_updates !== false);
+        }
+      } catch {
+        // Keep optimistic default (on) — non-blocking.
+      } finally {
+        if (active) setLoaded(true);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleToggle = async (next: boolean) => {
+    const previous = productUpdates;
+    setProductUpdates(next);
+    setSaving(true);
+    try {
+      const res = await fetch('/api/profiles/me/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_updates: next }),
+      });
+      if (!res.ok) throw new Error('Speichern fehlgeschlagen');
+      toast.success('Benachrichtigungen aktualisiert');
+    } catch {
+      setProductUpdates(previous);
+      toast.error('Speichern fehlgeschlagen');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Bell className="h-4 w-4" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Benachrichtigungen</CardTitle>
+            <CardDescription className="mt-0.5">
+              Welche E-Mails Sie von KlarGehalt erhalten.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              Produkt-Tipps &amp; Hinweise
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Gelegentliche Hinweise zur Nutzung während der Testphase.
+            </p>
+          </div>
+          <Switch
+            checked={productUpdates}
+            onCheckedChange={handleToggle}
+            disabled={!loaded || saving}
+            aria-label="Produkt-Tipps & Hinweise"
+          />
+        </div>
+
+        <div className="rounded-md border border-border px-3 py-2.5">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Immer aktiv — gesetzlich/betrieblich erforderlich
+          </p>
+          <ul className="space-y-1.5">
+            {REQUIRED_NOTIFICATIONS.map((label) => (
+              <li
+                key={label}
+                className="flex items-center gap-2 text-sm text-foreground"
+              >
+                <Lock className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                {label}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Diese Benachrichtigungen können nicht deaktiviert werden, da sie
+            für Abrechnung, Kontosicherheit und die Erfüllung der
+            EU-Entgelttransparenzrichtlinie erforderlich sind.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
