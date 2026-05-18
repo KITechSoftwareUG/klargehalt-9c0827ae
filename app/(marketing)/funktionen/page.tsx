@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, Building2, Users, Briefcase, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const partners = [
     { name: 'SAP', icon: Building2 },
@@ -27,6 +30,7 @@ const moduleColors = [
 const modules = [
     {
         number: '01',
+        image: 'feat-gehaltsstrukturen.png',
         title: 'Gehaltsstrukturen erfassen',
         subtitle: 'Job-Profile & Gehaltsbänder',
         description: 'Definieren Sie Ihre Gehaltsstruktur zentral. Job-Profile mit Leveln, Abteilungen und Standorten anlegen. Gehaltsbänder mit Min/Max/Median hinterlegen. CSV-Import für bestehende Daten.',
@@ -35,24 +39,26 @@ const modules = [
             'Gehaltsbänder mit Min, Max und Median',
             'CSV-Import für bestehende Mitarbeiterdaten',
             'Flexible Gruppierung nach beliebigen Kriterien',
-            'Historische Daten für Vergleichszeitraeume',
+            'Historische Daten für Vergleichszeiträume',
         ],
     },
     {
         number: '02',
+        image: 'feat-pay-gap.png',
         title: 'Pay-Gap automatisch berechnen',
         subtitle: 'Gender-Pay-Gap Analyse',
         description: 'Die EU-Richtlinie verlangt Median-Vergleiche nach Geschlecht, aufgeschlüsselt nach Job-Profil. KlarGehalt berechnet diese automatisch und markiert Abweichungen ab 5%.',
         capabilities: [
             'Median- und Durchschnitts-Pay-Gap pro Job-Profil',
             'Automatische Abweichungsmarker (5% / 10% Schwellen)',
-            'Aufschluesselung nach Geschlecht, Abteilung, Standort',
+            'Aufschlüsselung nach Geschlecht, Abteilung, Standort',
             'Trendanalyse über mehrere Zeiträume',
             'Export als PDF-Bericht für Behörden und Prüfer',
         ],
     },
     {
         number: '03',
+        image: 'feat-rollen.png',
         title: 'Rollen und Zugriffsrechte',
         subtitle: 'RBAC auf Datenbankebene',
         description: 'Drei Rollen — Admin, HR-Manager, Mitarbeiter. Jede Rolle sieht exakt das, was sie sehen darf. Die Zugriffskontrolle wird nicht im Frontend simuliert, sondern auf Datenbankebene mit Row Level Security durchgesetzt.',
@@ -66,6 +72,7 @@ const modules = [
     },
     {
         number: '04',
+        image: 'feat-hr-auskunft.png',
         title: 'HR-Auskunftsprozess',
         subtitle: 'Dokumentierte Auskünfte ohne Mitarbeiterportal',
         description: 'KlarGehalt hilft HR, Auskunftsprozesse und Nachweise intern zu dokumentieren. Es gibt keine interne Gehaltstransparenz und kein Self-Service-Portal für Mitarbeiter.',
@@ -79,31 +86,45 @@ const modules = [
     },
     {
         number: '05',
+        image: 'feat-audit-trail.png',
         title: 'Audit-Trail',
         subtitle: 'Lückenlose Protokollierung',
-        description: 'Wer hat wann was geaendert? Jede Aktion wird protokolliert — von der Gehaltsänderung bis zum Datenzugriff. Exportierbar für Wirtschaftsprüfer, Behörden und interne Revision.',
+        description: 'Wer hat wann was geändert? Jede Aktion wird protokolliert — von der Gehaltsänderung bis zum Datenzugriff. Exportierbar für Wirtschaftsprüfer, Behörden und interne Revision.',
         capabilities: [
             'Automatische Protokollierung aller Änderungen',
             'Benutzer, Zeitstempel und Änderungsdetails',
             'Export als CSV oder PDF für Prüfer',
-            'Unveränderbare Eintraege (append-only)',
+            'Unveränderbare Einträge (append-only)',
             'Filterbar nach Benutzer, Zeitraum und Aktion',
         ],
     },
     {
         number: '06',
+        image: 'feat-eu-hosting.png',
         title: 'EU-Hosting & Verschlüsselung',
         subtitle: 'Daten bleiben in der EU',
-        description: 'Alle Daten liegen auf Servern in Frankfurt. Verschlüsselung in Transit (TLS 1.3) und at Rest (AES-256). Kein Transfer in Drittlaender, kein US Cloud Act.',
+        description: 'Alle Daten liegen auf Servern in Frankfurt. Verschlüsselung in Transit (TLS 1.3) und at Rest (AES-256). Kein Transfer in Drittländer, kein US Cloud Act.',
         capabilities: [
             'Hosting in Frankfurt, Deutschland',
             'AES-256 Verschlüsselung at rest',
             'TLS 1.3 Verschlüsselung in transit',
-            'Kein Datentransfer in Drittlaender',
+            'Kein Datentransfer in Drittländer',
             'Regelmäßige Sicherheitsaudits',
         ],
     },
 ];
+
+// Build-time check: only render <Image> for screenshots that actually exist in
+// public/screenshots/. Missing files fall back to the placeholder box — no
+// broken images, no layout shift. Re-evaluated on each build (Coolify rebuild
+// picks up screenshots the user drops in later — see docs/SCREENSHOTS.md).
+const existingScreenshots: ReadonlySet<string> = (() => {
+    try {
+        return new Set(fs.readdirSync(path.join(process.cwd(), 'public', 'screenshots')));
+    } catch {
+        return new Set<string>();
+    }
+})();
 
 export default function FunktionenPage() {
     return (
@@ -165,10 +186,20 @@ export default function FunktionenPage() {
                                 className={`rounded-2xl aspect-[4/3] flex items-center justify-center relative overflow-hidden ${i % 2 === 1 ? 'lg:order-1' : ''}`}
                                 style={{ backgroundColor: color.bg }}
                             >
-                                <div className="text-center">
-                                    <span className="text-6xl font-extrabold" style={{ color: color.accent, opacity: 0.3 }}>{m.number}</span>
-                                    <p className="text-xs mt-2" style={{ color: color.text }}>Screenshot folgt</p>
-                                </div>
+                                {existingScreenshots.has(m.image) ? (
+                                    <Image
+                                        src={`/screenshots/${m.image}`}
+                                        alt={`Screenshot: ${m.title}`}
+                                        fill
+                                        sizes="(max-width: 1024px) 100vw, 50vw"
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div className="text-center">
+                                        <span className="text-6xl font-extrabold" style={{ color: color.accent, opacity: 0.3 }}>{m.number}</span>
+                                        <p className="text-xs mt-2" style={{ color: color.text }}>Screenshot folgt</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         );
