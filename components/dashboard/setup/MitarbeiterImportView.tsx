@@ -196,11 +196,26 @@ function normalizeHireDate(v: string): string | null {
   return null;
 }
 
+// Swiss (de-CH) numbers group thousands with an apostrophe and use a period
+// as the decimal separator: 1'000'000.50. CSV/Excel exports emit the ASCII
+// apostrophe (U+0027); Swiss typography uses the right single quote (U+2019),
+// some tools the modifier-letter apostrophe (U+02BC).
+function hasSwissGrouping(s: string): boolean {
+  return s.includes("'") || s.includes('’') || s.includes('ʼ');
+}
+
+function stripSwissGrouping(s: string): string {
+  return s.replace(/['’ʼ]/g, '');
+}
+
 function normalizeSalary(v: string): number | null {
   // Strip currency symbols, spaces, "EUR"
   let s = v.trim().replace(/[€$£\sCHFEUR]/g, '');
-  // de-DE format: "50.000" or "50.000,00" — dots are thousands separators, comma is decimal
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) {
+  if (hasSwissGrouping(s)) {
+    // de-CH format: "1'000'000.50" — apostrophe is thousands, period is decimal
+    s = stripSwissGrouping(s);
+  } else if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) {
+    // de-DE format: "50.000" or "50.000,00" — dots are thousands separators, comma is decimal
     s = s.replace(/\./g, '').replace(',', '.');
   } else {
     // en-US format: "50,000" or "50,000.00"
@@ -220,7 +235,8 @@ function normalizeBirthYear(v: string): number | null {
 }
 
 function normalizeNumber(v: string): number | null {
-  const n = parseFloat(v.trim().replace(',', '.'));
+  // Strip Swiss apostrophe grouping first so "12'000" → 12000, not 12
+  const n = parseFloat(stripSwissGrouping(v.trim()).replace(',', '.'));
   if (isNaN(n) || n < 0) return null;
   return n;
 }
