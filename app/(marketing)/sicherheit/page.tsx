@@ -47,8 +47,8 @@ const dsgvoArticles = [
     { article: 'Art. 5', title: 'Grundsätze', desc: 'Datenminimierung, Zweckbindung und Speicherbegrenzung sind in der Architektur verankert, nicht nur in Richtlinien.' },
     { article: 'Art. 6', title: 'Rechtsgrundlage', desc: 'Verarbeitung auf Basis des berechtigten Interesses (Compliance-Pflicht) und Vertragsdurchführung.' },
     { article: 'Art. 15', title: 'Auskunftsrecht', desc: 'Auskunftsprozesse werden durch HR dokumentiert und revisionssicher nachgehalten.' },
-    { article: 'Art. 17', title: 'Recht auf Löschung', desc: 'Datenlösch-Workflows sind implementiert. Aufbewahrungsfristen werden automatisch ueberwacht.' },
-    { article: 'Art. 25', title: 'Privacy by Design', desc: 'Datenschutz ist in die Architektur eingebaut — nicht nachträglich ergaenzt.' },
+    { article: 'Art. 17', title: 'Recht auf Löschung', desc: 'Datenlösch-Workflows sind implementiert. Aufbewahrungsfristen werden automatisch überwacht.' },
+    { article: 'Art. 25', title: 'Privacy by Design', desc: 'Datenschutz ist in die Architektur eingebaut — nicht nachträglich ergänzt.' },
     { article: 'Art. 32', title: 'Technische Maßnahmen', desc: 'Verschlüsselung, Zugriffskontrolle und regelmäßige Sicherheitsüberprüfungen.' },
 ];
 
@@ -148,7 +148,7 @@ export default function SicherheitPage() {
                                 { step: '1', label: 'Authentifizierung', desc: 'Login über unseren Auth-Server (EU-gehostet). Multi-Faktor optional. JWT-Token mit Organisation-ID.' },
                                 { step: '2', label: 'Autorisierung', desc: 'Jede Anfrage wird gegen das Rollenmodell geprüft. Nur berechtigte Rollen erhalten Zugriff.' },
                                 { step: '3', label: 'Datenbank-Ebene', desc: 'Row Level Security filtert automatisch nach Organisation. Kein Code-Bug kann diese Schicht umgehen.' },
-                                { step: '4', label: 'Antwort', desc: 'Nur die Daten, die der Benutzer sehen darf. Verschluesselt uebertragen. Kein Caching sensibler Daten.' },
+                                { step: '4', label: 'Antwort', desc: 'Nur die Daten, die der Benutzer sehen darf. Verschlüsselt übertragen. Kein Caching sensibler Daten.' },
                             ].map((s) => (
                                 <div key={s.step} className="flex gap-6 py-6 border-b border-slate-100 last:border-0">
                                     <span className="text-2xl font-extrabold text-slate-200 w-8 flex-shrink-0">{s.step}</span>
