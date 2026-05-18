@@ -155,7 +155,7 @@ function FeatureCell({ value }: { value: FeatureValue }) {
 }
 
 export default function PreisePage() {
-    const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [openFaq, setOpenFaq] = useState<number | null>(0);
     const [interval, setInterval] = useState<Interval>('yearly');
 
     return (

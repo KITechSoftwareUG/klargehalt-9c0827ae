@@ -10,6 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/preise',        priority: 0.9, changeFrequency: 'weekly' },
     { path: '/funktionen',    priority: 0.9, changeFrequency: 'weekly' },
     { path: '/eu-richtlinie', priority: 0.8, changeFrequency: 'monthly' },
+    { path: '/partner',       priority: 0.7, changeFrequency: 'monthly' },
+    { path: '/anwalt',        priority: 0.6, changeFrequency: 'monthly' },
     { path: '/ueber-uns',     priority: 0.6, changeFrequency: 'monthly' },
     { path: '/sicherheit',    priority: 0.6, changeFrequency: 'monthly' },
     { path: '/karriere',      priority: 0.5, changeFrequency: 'monthly' },

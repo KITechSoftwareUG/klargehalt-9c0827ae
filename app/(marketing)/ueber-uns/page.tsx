@@ -67,7 +67,7 @@ export default function UeberUnsPage() {
                             </h2>
                             <div className="space-y-4 text-sm text-slate-500 leading-relaxed">
                                 <p>
-                                    <strong className="text-[#071423]">Entgelttransparenz darf kein Luxus sein.</strong> Grosse Konzerne
+                                    <strong className="text-[#071423]">Entgelttransparenz darf kein Luxus sein.</strong> Große Konzerne
                                     können sich Beratungshäuser und Custom-Entwicklungen leisten. Mittelständler nicht.
                                 </p>
                                 <p>
@@ -244,8 +244,8 @@ export default function UeberUnsPage() {
                             </p>
                             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                                 Neue Rolle?
-                                <br />Take it, and
-                                <br />make it.
+                                <br />Ergreif sie.
+                                <br />Gestalte sie.
                             </h2>
                             <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[44ch]">
                                 Wir suchen Menschen, die mit uns die Zukunft der Entgelttransparenz gestalten.

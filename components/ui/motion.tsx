@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useRef, type ReactNode } from 'react';
 
 interface FadeInProps {
@@ -19,20 +19,27 @@ export function FadeIn({
   once = true,
 }: FadeInProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once, margin: '-80px 0px' });
+  const reduceMotion = useReducedMotion();
+  // Positive bottom margin: trigger ~300px before the element enters the
+  // viewport so content is already revealed by the time it scrolls into
+  // view — prevents the "blank white section" effect on fast scroll.
+  const isInView = useInView(ref, { once, margin: '0px 0px 300px 0px' });
 
-  const initial = {
-    opacity: 0,
-    y: direction === 'up' ? 24 : direction === 'down' ? -24 : 0,
-    x: direction === 'left' ? 24 : direction === 'right' ? -24 : 0,
-  };
+  const visible = { opacity: 1, y: 0, x: 0 };
+  const initial = reduceMotion
+    ? visible
+    : {
+        opacity: 0,
+        y: direction === 'up' ? 24 : direction === 'down' ? -24 : 0,
+        x: direction === 'left' ? 24 : direction === 'right' ? -24 : 0,
+      };
 
   return (
     <motion.div
       ref={ref}
       className={className}
       initial={initial}
-      animate={isInView ? { opacity: 1, y: 0, x: 0 } : initial}
+      animate={reduceMotion || isInView ? visible : initial}
       transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
@@ -48,14 +55,15 @@ interface StaggerContainerProps {
 
 export function StaggerContainer({ children, className, staggerDelay = 0.08 }: StaggerContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px 0px' });
+  const reduceMotion = useReducedMotion();
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 300px 0px' });
 
   return (
     <motion.div
       ref={ref}
       className={className}
       initial="hidden"
-      animate={isInView ? 'visible' : 'hidden'}
+      animate={reduceMotion || isInView ? 'visible' : 'hidden'}
       variants={{
         hidden: {},
         visible: { transition: { staggerChildren: staggerDelay } },
