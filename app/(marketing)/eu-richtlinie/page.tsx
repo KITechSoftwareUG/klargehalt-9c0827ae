@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 };
 
 const timeline = [
-    { date: 'Juni 2023', event: 'Richtlinie 2023/970 in Kraft getreten', desc: 'Veroeffentlichung im Amtsblatt der Europaeischen Union. Mitgliedstaaten haben drei Jahre zur Umsetzung.' },
+    { date: 'Juni 2023', event: 'Richtlinie 2023/970 in Kraft getreten', desc: 'Veröffentlichung im Amtsblatt der Europäischen Union. Mitgliedstaaten haben drei Jahre zur Umsetzung.' },
     { date: 'Juni 2026', event: 'Umsetzungsfrist für Mitgliedstaaten', desc: 'Bis zum 7. Juni 2026 muss die Richtlinie in nationales Recht umgesetzt sein. Deutschland arbeitet am Entgelttransparenzgesetz 2.0.' },
-    { date: 'Juni 2027', event: 'Erster Berichtszeitraum (250+ MA)', desc: 'Unternehmen mit 250+ Mitarbeitern müssen ihren ersten Gender-Pay-Gap Bericht vorlegen. Danach jaehrlich.' },
+    { date: 'Juni 2027', event: 'Erster Berichtszeitraum (250+ MA)', desc: 'Unternehmen mit 250+ Mitarbeitern müssen ihren ersten Gender-Pay-Gap Bericht vorlegen. Danach jährlich.' },
     { date: 'Juni 2031', event: 'Erster Berichtszeitraum (100-249 MA)', desc: 'Unternehmen mit 100-249 Mitarbeitern müssen erstmals berichten. Danach alle drei Jahre.' },
 ];
 
@@ -19,8 +19,8 @@ const requirements = [
     {
         title: 'Entgelttransparenz bei der Einstellung',
         article: 'Art. 5',
-        desc: 'Stellenausschreibungen müssen Gehaltsangaben oder Gehaltsspannen enthalten. Arbeitgeber duerfen Bewerber nicht nach ihrem aktuellen Gehalt fragen.',
-        impact: 'HR-Abteilungen müssen Gehaltsbänder für jede offene Stelle definieren und in Stellenanzeigen veroeffentlichen.',
+        desc: 'Stellenausschreibungen müssen Gehaltsangaben oder Gehaltsspannen enthalten. Arbeitgeber dürfen Bewerber nicht nach ihrem aktuellen Gehalt fragen.',
+        impact: 'HR-Abteilungen müssen Gehaltsbänder für jede offene Stelle definieren und in Stellenanzeigen veröffentlichen.',
     },
     {
         title: 'Auskunftsrecht für Beschäftigte',
@@ -31,7 +31,7 @@ const requirements = [
     {
         title: 'Gender-Pay-Gap Berichterstattung',
         article: 'Art. 9',
-        desc: 'Unternehmen müssen den Gender Pay Gap nach verschiedenen Kriterien berechnen und veroeffentlichen: Median, Durchschnitt, nach Entgeltgruppen.',
+        desc: 'Unternehmen müssen den Gender Pay Gap nach verschiedenen Kriterien berechnen und veröffentlichen: Median, Durchschnitt, nach Entgeltgruppen.',
         impact: 'Automatisierte Berechnung und Berichterstellung wird notwendig. Manuelle Excel-Berechnungen skalieren nicht.',
     },
     {
@@ -41,16 +41,16 @@ const requirements = [
         impact: 'Unternehmen müssen nicht nur den Gap berechnen, sondern auch dokumentieren, welche Faktoren ihn erklären — oder Maßnahmen einleiten.',
     },
     {
-        title: 'Recht auf Entschaedigung',
+        title: 'Recht auf Entschädigung',
         article: 'Art. 16',
-        desc: 'Arbeitnehmer, die aufgrund von Entgeltdiskriminierung benachteiligt wurden, haben Anspruch auf vollständige Entschaedigung — einschliesslich Nachzahlung und Schadensersatz.',
+        desc: 'Arbeitnehmer, die aufgrund von Entgeltdiskriminierung benachteiligt wurden, haben Anspruch auf vollständige Entschädigung — einschließlich Nachzahlung und Schadensersatz.',
         impact: 'Die Beweislast liegt beim Arbeitgeber. Wer keine saubere Dokumentation hat, steht vor Gericht schlecht da.',
     },
     {
         title: 'Sanktionen',
         article: 'Art. 23',
-        desc: 'Mitgliedstaaten müssen wirksame, verhaeltnismaessige und abschreckende Sanktionen festlegen. Dazu gehören Geldstrafen.',
-        impact: 'Die genauen Bußgelder werden im nationalen Gesetz geregelt. Erfahrungsgemaess orientieren sie sich an der Unternehmensgroesse.',
+        desc: 'Mitgliedstaaten müssen wirksame, verhältnismäßige und abschreckende Sanktionen festlegen. Dazu gehören Geldstrafen.',
+        impact: 'Die genauen Bußgelder werden im nationalen Gesetz geregelt. Erfahrungsgemäß orientieren sie sich an der Unternehmensgröße.',
     },
 ];
 
@@ -58,10 +58,48 @@ const whoIsAffected = [
     { size: '1 - 99 Mitarbeiter', obligation: 'Entgelttransparenz bei Einstellung + Auskunftsrecht', reporting: 'Keine regelmäßige Berichtspflicht', deadline: 'Ab Umsetzung (Juni 2026)' },
     { size: '100 - 149 Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Alle 3 Jahre', deadline: 'Erster Bericht: Juni 2031' },
     { size: '150 - 249 Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Alle 3 Jahre', deadline: 'Erster Bericht: Juni 2031' },
-    { size: '250+ Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Jaehrlich', deadline: 'Erster Bericht: Juni 2027' },
+    { size: '250+ Mitarbeiter', obligation: 'Alle Pflichten inkl. Berichterstattung', reporting: 'Jährlich', deadline: 'Erster Bericht: Juni 2027' },
 ];
 
+// Regenerate the page once per day so the deadline countdown stays accurate
+// without a redeploy (the directive's transposition deadline is fixed).
+export const revalidate = 86400;
+
+const DIRECTIVE_IN_FORCE = new Date('2023-06-07T00:00:00');
+const TRANSPOSITION_DEADLINE = new Date('2026-06-07T00:00:00');
+
+function getDeadlineCountdown(): { label: string; elapsedPct: number } {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const now = Date.now();
+    const daysRemaining = Math.max(
+        0,
+        Math.ceil((TRANSPOSITION_DEADLINE.getTime() - now) / msPerDay),
+    );
+    const totalDays = Math.round(
+        (TRANSPOSITION_DEADLINE.getTime() - DIRECTIVE_IN_FORCE.getTime()) / msPerDay,
+    );
+    const elapsedPct = Math.min(
+        100,
+        Math.max(0, Math.round(((totalDays - daysRemaining) / totalDays) * 100)),
+    );
+
+    let label: string;
+    if (daysRemaining <= 0) {
+        label = 'Frist erreicht';
+    } else if (daysRemaining === 1) {
+        label = 'nur noch 1 Tag';
+    } else if (daysRemaining <= 45) {
+        label = `nur noch ${daysRemaining} Tage`;
+    } else {
+        label = `~${Math.round(daysRemaining / 30)} Monate`;
+    }
+
+    return { label, elapsedPct };
+}
+
 export default function EuRichtliniePage() {
+    const { label: countdownLabel, elapsedPct } = getDeadlineCountdown();
+
     return (
         <>
             {/* Hero */}
@@ -82,12 +120,12 @@ export default function EuRichtliniePage() {
                         </div>
                         <div className="bg-[var(--ep-yellow)]/10 border border-[var(--ep-yellow)]/20 rounded-2xl p-8">
                             <p className="text-[var(--ep-yellow)] text-xs font-bold uppercase tracking-wider mb-3">Countdown</p>
-                            <p className="text-4xl font-extrabold text-white mb-1">~3 Monate</p>
+                            <p className="text-4xl font-extrabold text-white mb-1">{countdownLabel}</p>
                             <p className="text-sm text-white/50">bis zur Umsetzungsfrist der Richtlinie (EU) 2023/970</p>
                             <div className="mt-5 h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-[var(--ep-yellow)] rounded-full" style={{ width: '92%' }} />
+                                <div className="h-full bg-[var(--ep-yellow)] rounded-full" style={{ width: `${elapsedPct}%` }} />
                             </div>
-                            <p className="text-[10px] text-white/30 mt-2">92% der Frist verstrichen</p>
+                            <p className="text-[10px] text-white/30 mt-2">{elapsedPct}% der Frist verstrichen</p>
                         </div>
                     </div>
                 </div>
@@ -109,7 +147,7 @@ export default function EuRichtliniePage() {
                                     unabhängig vom Geschlecht.
                                 </p>
                                 <p>
-                                    Das klingt nach einem Grundsatz, der laengst gelten sollte. In der Praxis zeigt sich aber:
+                                    Das klingt nach einem Grundsatz, der längst gelten sollte. In der Praxis zeigt sich aber:
                                     Der <strong className="text-[#071423]">Gender Pay Gap in Deutschland liegt bei 18%</strong> (Statistisches Bundesamt, 2024).
                                     Auch der bereinigte Gap — also nach Abzug struktureller Unterschiede — liegt bei 6%.
                                 </p>
@@ -120,12 +158,12 @@ export default function EuRichtliniePage() {
                             </div>
                         </div>
                         <div className="bg-[#071423] rounded-2xl p-8 lg:p-10 text-white">
-                            <h3 className="text-sm font-bold text-white mb-6">Die drei Saeulen der Richtlinie</h3>
+                            <h3 className="text-sm font-bold text-white mb-6">Die drei Säulen der Richtlinie</h3>
                             <div className="space-y-6">
                                 {[
                                     { n: '1', title: 'Transparenz vor der Einstellung', desc: 'Gehaltsangaben in Stellenanzeigen. Kein Fragen nach dem Vorgehalt.' },
-                                    { n: '2', title: 'Transparenz im Arbeitsverhaeltnis', desc: 'Auskunftsrecht für Mitarbeiter. Gender-Pay-Gap Berichtspflicht.' },
-                                    { n: '3', title: 'Durchsetzung', desc: 'Beweislastumkehr. Entschaedigungsansprueche. Bußgelder bei Verstoss.' },
+                                    { n: '2', title: 'Transparenz im Arbeitsverhältnis', desc: 'Auskunftsrecht für Mitarbeiter. Gender-Pay-Gap Berichtspflicht.' },
+                                    { n: '3', title: 'Durchsetzung', desc: 'Beweislastumkehr. Entschädigungsansprüche. Bußgelder bei Verstoß.' },
                                 ].map((s) => (
                                     <div key={s.n} className="flex gap-4">
                                         <span className="text-2xl font-extrabold text-white/20 w-6 flex-shrink-0">{s.n}</span>
@@ -172,7 +210,7 @@ export default function EuRichtliniePage() {
                         Wer ist betroffen?
                     </h2>
                     <p className="text-base text-slate-500 mb-12 max-w-[55ch]">
-                        Grundsaetzlich alle Arbeitgeber in der EU. Die Berichtspflicht haengt von der Unternehmensgroesse ab.
+                        Grundsätzlich alle Arbeitgeber in der EU. Die Berichtspflicht hängt von der Unternehmensgröße ab.
                     </p>
 
                     <div className="overflow-x-auto">
@@ -263,10 +301,10 @@ export default function EuRichtliniePage() {
             <section className="py-20 lg:py-24 bg-[#071423]">
                 <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-4">
-                        Die Frist laeuft. Handeln Sie jetzt.
+                        Die Frist läuft. Handeln Sie jetzt.
                     </h2>
                     <p className="text-sm text-slate-400 mb-8 max-w-[50ch] mx-auto">
-                        Je frueher Sie Gehaltsstrukturen erfassen, desto besser stehen Sie da — bei Behörden, Prüfern und Ihren Mitarbeitern.
+                        Je früher Sie Gehaltsstrukturen erfassen, desto besser stehen Sie da — bei Behörden, Prüfern und Ihren Mitarbeitern.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Link href="/kontakt">
@@ -275,7 +313,7 @@ export default function EuRichtliniePage() {
                             </Button>
                         </Link>
                         <Link href="/funktionen">
-                            <Button variant="outline" className="h-12 px-8 rounded-lg text-sm font-semibold border-white/20 text-white hover:bg-white/10 cursor-pointer">
+                            <Button variant="outline" className="h-12 px-8 rounded-lg text-sm font-semibold bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer">
                                 Funktionen ansehen
                             </Button>
                         </Link>
