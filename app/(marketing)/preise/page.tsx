@@ -71,7 +71,7 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
             { name: 'HR-geführter Auskunftsprozess', basis: true, professional: true, enterprise: true },
             { name: 'Multi-Faktor-Authentifizierung (TOTP)', basis: true, professional: true, enterprise: true },
             { name: 'Single Sign-On (SSO/SAML)', basis: false, professional: false, enterprise: true },
-            { name: 'Auditor-Zugang (read-only)', basis: false, professional: false, enterprise: true },
+            { name: 'Auditor-Zugang (read-only)', basis: false, professional: false, enterprise: 'Geplant' },
         ],
     },
     {
@@ -87,12 +87,11 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
     {
         category: 'Datenschutz & Sicherheit',
         features: [
-            { name: 'Ende-zu-Ende-Verschlüsselung', basis: true, professional: true, enterprise: true },
+            { name: 'Verschlüsselung (AES-256 at-rest, TLS 1.3)', basis: true, professional: true, enterprise: true },
             { name: 'EU-Rechenzentrum (Frankfurt)', basis: true, professional: true, enterprise: true },
             { name: 'DSGVO-konforme Datenverarbeitung', basis: true, professional: true, enterprise: true },
             { name: 'AV-Vertrag (Art. 28 DSGVO)', basis: true, professional: true, enterprise: true },
-            { name: 'BSI-konforme Passwortrichtlinie', basis: true, professional: true, enterprise: true },
-            { name: 'Eigener Tenant (Datenisolierung)', basis: true, professional: true, enterprise: true },
+            { name: 'Mandantentrennung (Row Level Security)', basis: true, professional: true, enterprise: true },
         ],
     },
     {
@@ -103,7 +102,7 @@ const comparisonFeatures: { category: string; features: { name: string; basis: F
             { name: 'Prioritäts-Support (< 4h Reaktionszeit)', basis: false, professional: true, enterprise: true },
             { name: 'Onboarding-Begleitung', basis: false, professional: true, enterprise: true },
             { name: 'Dedizierter Ansprechpartner', basis: false, professional: false, enterprise: true },
-            { name: 'SLA (99,9% Uptime)', basis: false, professional: false, enterprise: true },
+            { name: 'Individuelles SLA (verhandelbar)', basis: false, professional: false, enterprise: true },
             { name: 'Custom Integrationen (API)', basis: false, professional: false, enterprise: true },
         ],
     },
