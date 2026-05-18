@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendTrialEndingEmail, sendMidTrialEmail } from '@/lib/email';
+import { shouldSendNotification } from '@/lib/notification-preferences';
 
 const supabaseAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -78,6 +79,12 @@ export async function GET(request: NextRequest) {
         if (!profile.email) continue;
         try {
           if (window.type === 'mid_trial') {
+            // Mid-trial nudge is the one genuinely optional mail — respect
+            // the user's product_updates opt-out. Trial-ending below is
+            // account-critical and intentionally never gated.
+            if (!(await shouldSendNotification('product_updates', profile.email))) {
+              continue;
+            }
             await sendMidTrialEmail(profile.email, profile.full_name as string, company.name as string);
           } else {
             await sendTrialEndingEmail(profile.email, profile.full_name as string, daysLeft, company.name as string);
