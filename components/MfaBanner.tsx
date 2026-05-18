@@ -54,13 +54,14 @@ export function MfaBanner() {
     // Logto account center, MFA section. Deep-link + ?redirect= back to the
     // app so Logto routes a session-less user through its auth flow instead
     // of dead-ending on the Account Center "Seite nicht gefunden" screen.
+    // Same-tab navigation (NOT window.open): the Account Center "Zurück"
+    // button uses window.history.back(), which dead-ends in a fresh _blank
+    // tab. In-place keeps history so Back works; ?redirect= returns here.
     const redirect = encodeURIComponent(
       `${window.location.origin}/einstellungen`,
     );
-    window.open(
+    window.location.assign(
       `https://auth.klargehalt.de/account/mfa?redirect=${redirect}`,
-      '_blank',
-      'noopener,noreferrer',
     );
   };
 

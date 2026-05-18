@@ -343,10 +343,13 @@ function openLogtoAccount(section: 'password' | 'mfa') {
   const redirect = encodeURIComponent(
     `${window.location.origin}/einstellungen`,
   );
-  window.open(
+  // Same-tab navigation (NOT window.open). The Logto Account Center's
+  // "Zurück" button calls window.history.back(); in a fresh _blank tab
+  // there is no history so it dead-ends. Navigating in-place keeps
+  // /einstellungen in history (Back works) and ?redirect= returns the
+  // user here after the change.
+  window.location.assign(
     `${LOGTO_ACCOUNT_BASE}/${section}?redirect=${redirect}`,
-    '_blank',
-    'noopener,noreferrer',
   );
 }
 
