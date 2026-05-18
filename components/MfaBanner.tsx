@@ -51,8 +51,17 @@ export function MfaBanner() {
   };
 
   const goToMfaSetup = () => {
-    // Logto account center — MFA section is enabled with "Edit" permission
-    window.open('https://auth.klargehalt.de/account', '_blank', 'noopener');
+    // Logto account center, MFA section. Deep-link + ?redirect= back to the
+    // app so Logto routes a session-less user through its auth flow instead
+    // of dead-ending on the Account Center "Seite nicht gefunden" screen.
+    const redirect = encodeURIComponent(
+      `${window.location.origin}/einstellungen`,
+    );
+    window.open(
+      `https://auth.klargehalt.de/account/mfa?redirect=${redirect}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   };
 
   return (
