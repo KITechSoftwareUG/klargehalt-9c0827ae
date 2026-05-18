@@ -89,8 +89,10 @@ const MAIN_NAV: NavItem[] = [
     { label: 'Anwaltsprüfung',         icon: Scale,       view: 'compliance-workflow', group: 'Premium & Services', adminOnly: true, proLocked: true },
     { label: 'Abrechnung & Plan',      icon: CreditCard,  view: 'abrechnung',          group: 'Premium & Services', adminOnly: true },
     { label: 'Partnerschaften',         icon: Handshake,   disabled: true, badge: 'Bald verfügbar', group: 'Premium & Services', adminOnly: true },
-    // Konto
-    { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: true },
+    // Konto — Einstellungen reachable by all portal roles (personal account
+    // section lives here); company/privacy tabs are admin-gated inside the page.
+    // (KI-Agenten nav intentionally dropped — main removed it as a go-live blocker.)
+    { label: 'Einstellungen',  icon: Settings, view: 'einstellungen', group: 'Konto', adminOnly: false },
     { label: 'Audit-Log',      icon: Shield,   view: 'audit',         group: 'Konto', adminOnly: true },
 ];
 

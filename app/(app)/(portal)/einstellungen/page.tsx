@@ -4,21 +4,74 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowRight, FileUp } from 'lucide-react';
 import CompanySettingsView from '@/components/dashboard/CompanySettingsView';
 import DangerZoneCard from '@/components/dashboard/DangerZoneCard';
-import { RoleGuard } from '@/components/RoleGuard';
-import AccessDenied from '@/components/dashboard/AccessDenied';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AccountSettingsView from '@/components/dashboard/AccountSettingsView';
+import PrivacySettingsView from '@/components/dashboard/PrivacySettingsView';
+import { useRoleAccess } from '@/components/RoleGuard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export default function EinstellungenPage() {
+    // Personal "Mein Konto" is available to every portal role.
+    // Company + privacy tabs are admin/owner only (real enforcement: RLS).
+    const isAdmin = useRoleAccess('admin');
+
     return (
-        <RoleGuard roles={['admin']} fallback={<AccessDenied />}>
-            <div className="space-y-8">
-                <CompanySettingsView />
-                <DataMigrationCard />
-                {/* Owner-only — DangerZoneCard renders null for non-owners */}
-                <DangerZoneCard />
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-semibold text-foreground">
+                    Einstellungen
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Ihr Konto, Ihr Unternehmen und Datenschutz an einem Ort.
+                </p>
             </div>
-        </RoleGuard>
+
+            <Tabs defaultValue="konto" className="w-full">
+                <TabsList>
+                    <TabsTrigger value="konto">Mein Konto</TabsTrigger>
+                    {isAdmin && (
+                        <TabsTrigger value="unternehmen">
+                            Unternehmen
+                        </TabsTrigger>
+                    )}
+                    {isAdmin && (
+                        <TabsTrigger value="datenschutz">
+                            Datenschutz
+                        </TabsTrigger>
+                    )}
+                </TabsList>
+
+                <TabsContent value="konto" className="mt-6">
+                    <AccountSettingsView />
+                </TabsContent>
+
+                {isAdmin && (
+                    <TabsContent value="unternehmen" className="mt-6">
+                        <div className="space-y-8">
+                            <CompanySettingsView />
+                            <DataMigrationCard />
+                        </div>
+                    </TabsContent>
+                )}
+
+                {isAdmin && (
+                    <TabsContent value="datenschutz" className="mt-6">
+                        <div className="space-y-8">
+                            <PrivacySettingsView />
+                            {/* Owner-only — DangerZoneCard renders null for non-owners */}
+                            <DangerZoneCard />
+                        </div>
+                    </TabsContent>
+                )}
+            </Tabs>
+        </div>
     );
 }
 
