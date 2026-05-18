@@ -182,7 +182,7 @@ export default function FunktionenPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
                         <div>
                             <p className="text-[var(--ep-teal)] text-sm font-semibold tracking-wide uppercase mb-3">
-                                Integrationen
+                                Integrationen · In Vorbereitung
                             </p>
                             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                                 Die klargehalt
@@ -190,8 +190,9 @@ export default function FunktionenPage() {
                                 <br />digital.
                             </h2>
                             <p className="text-base text-white/60 leading-relaxed mb-8 max-w-[48ch]">
-                                Nahtlose Integration in Ihre bestehende HR-Landschaft.
-                                Verbinden Sie klargehalt mit den Tools, die Sie bereits nutzen.
+                                Geplante Integrationen in Ihre bestehende HR-Landschaft —
+                                damit sich KlarGehalt künftig mit den Tools verbindet, die Sie
+                                bereits nutzen. Heute exportieren Sie Daten per CSV/Excel.
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">

@@ -60,12 +60,20 @@ export default function KarrierePage() {
                                     Sie finden sich in unserer Mission wieder und möchten Teil des Teams werden?
                                     Schicken Sie uns Ihre Bewerbung — wir freuen uns über jede ernsthafte Nachricht.
                                 </p>
-                                <Link href="mailto:info@klargehalt.de?subject=Initiativbewerbung">
-                                    <Button className="bg-[#071423] text-white hover:bg-[#0d1f33] h-10 px-5 rounded-lg text-sm font-semibold cursor-pointer group">
-                                        Jetzt bewerben
-                                        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                                    </Button>
-                                </Link>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <Link href="mailto:info@klargehalt.de?subject=Initiativbewerbung">
+                                        <Button className="bg-[#071423] text-white hover:bg-[#0d1f33] h-10 px-5 rounded-lg text-sm font-semibold cursor-pointer group">
+                                            Jetzt bewerben
+                                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                                        </Button>
+                                    </Link>
+                                    <Link href="/funktionen">
+                                        <Button variant="outline" className="h-10 px-5 rounded-lg text-sm font-semibold cursor-pointer group border-slate-200 text-[#071423] hover:bg-slate-50">
+                                            Produkt entdecken
+                                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                                        </Button>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>

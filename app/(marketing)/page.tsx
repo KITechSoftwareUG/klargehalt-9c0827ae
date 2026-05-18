@@ -379,7 +379,7 @@ function SecuritySection() {
         </StaggerContainer>
 
         <FadeIn delay={0.2} className="mt-8 flex flex-wrap gap-2">
-          {['DSGVO-konform', 'Art. 15 & 17', 'ISO 27001 angestrebt', 'EU-RL 2023/970', 'TLS 1.3', 'AES-256'].map((badge) => (
+          {['DSGVO-konform', 'Art. 15 & 17', 'ISO-27001-Infrastruktur', 'EU-RL 2023/970', 'TLS 1.3', 'AES-256'].map((badge) => (
             <span
               key={badge}
               className="px-3 py-1.5 rounded-lg border border-[#e0e0e2] text-[11px] font-medium text-[#535a6b]"
@@ -436,7 +436,7 @@ function FinalCta() {
           <h2 className="text-3xl sm:text-4xl lg:text-[52px] font-extrabold text-white tracking-tight leading-[1.08] mb-6">
             Compliance beginnt heute.
             <br />
-            <span className="text-white/30">Nicht im Mai 2026.</span>
+            <span className="text-white/30">Nicht im Juni 2026.</span>
           </h2>
           <p className="text-base text-white/50 leading-relaxed max-w-[50ch] mx-auto mb-10">
             Starten Sie kostenlos. Keine Kreditkarte, kein Risiko.
@@ -510,7 +510,7 @@ export default function HomePage() {
               </h1>
 
               <p className="text-base lg:text-lg text-white/55 leading-relaxed max-w-[48ch] mb-8">
-                Die einzige Plattform für die EU-Entgelttransparenzrichtlinie —
+                Die Compliance-Plattform für die EU-Entgelttransparenzrichtlinie —
                 speziell für den deutschen Mittelstand. Gehaltsstrukturen erfassen,
                 Gender-Pay-Gap berechnen, EU-konform berichten.
               </p>
@@ -527,7 +527,7 @@ export default function HomePage() {
                   href="/kontakt"
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold border border-white/20 text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  Demo in 20 min ansehen
+                  Demo anfragen — 20 min, unverbindlich
                 </Link>
               </div>
 
