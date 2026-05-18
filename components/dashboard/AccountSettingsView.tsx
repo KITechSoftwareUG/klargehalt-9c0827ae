@@ -50,7 +50,10 @@ const ROLE_LABELS: Record<AppRole, string> = {
 // Logto account center — same target as MfaBanner. Password + MFA are
 // managed by the IdP (Logto); we never implement auth ourselves
 // (see .claude/docs/security.md §2 "Keine eigene Auth-Logik").
-const LOGTO_ACCOUNT_URL = 'https://auth.klargehalt.de/account';
+// We deep-link to the specific section and pass ?redirect= back to the
+// app. The bare /account with no redirect is a session-less direct hit
+// and dead-ends on the Account Center "Seite nicht gefunden" screen.
+const LOGTO_ACCOUNT_BASE = 'https://auth.klargehalt.de/account';
 
 function formatDate(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -336,8 +339,15 @@ function NotificationCard() {
   );
 }
 
-function openLogtoAccount() {
-  window.open(LOGTO_ACCOUNT_URL, '_blank', 'noopener,noreferrer');
+function openLogtoAccount(section: 'password' | 'mfa') {
+  const redirect = encodeURIComponent(
+    `${window.location.origin}/einstellungen`,
+  );
+  window.open(
+    `${LOGTO_ACCOUNT_BASE}/${section}?redirect=${redirect}`,
+    '_blank',
+    'noopener,noreferrer',
+  );
 }
 
 interface SecurityCardProps {
@@ -380,7 +390,11 @@ function SecurityCard({ mfaEnabled }: SecurityCardProps) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={openLogtoAccount}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openLogtoAccount('mfa')}
+          >
             <ShieldCheck className="mr-1.5 h-4 w-4" />
             {mfaEnabled ? '2FA verwalten' : '2FA einrichten'}
             <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
@@ -397,7 +411,11 @@ function SecurityCard({ mfaEnabled }: SecurityCardProps) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={openLogtoAccount}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openLogtoAccount('password')}
+          >
             <KeyRound className="mr-1.5 h-4 w-4" />
             Passwort ändern
             <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
